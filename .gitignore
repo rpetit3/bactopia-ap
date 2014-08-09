@@ -1,7 +1,8 @@
 bin/fastq_interleave
 bin/fastq_stats
-bin/fastQValidator
+bin/fastq_validator
 src/fastQValidator/
 src/libStatGen/
 staphopia/*.pyc
+staphopia/tasks/*pyc
 

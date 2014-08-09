@@ -1,0 +1,102 @@
+#! /usr/bin/python
+'''
+    Author: Robert A Petit III
+    Date: 5/2/2013
+    
+    usage: fastq_cleanup.py [--coverage FLOAT] [--genome_size INT]
+                            [--total_read_count INT] [--read_length_cutoff INT]
+                            [--paired_reads] [--min_mean_quality INT]
+                            [--min_read_length INT] [-i STRING] [-h] [--version]
+
+    Filter low quality reads, and reduce the read count to a given coverage. 
+    Input is read from STDIN, cleaned up, and printed to STDOUT.
+    
+    Ex: zcat SOME.fastq.gz | fastq_cleanup.py --total_read_count 836846
+'''
+def define_min_mean_quality(stats):
+    quality = 20
+    if stats['coverage'] >= 225:
+        quality = stats['qual_75th']
+    elif stats['coverage'] >= 112.5:
+        quality = stats['qual_median']
+    elif stats['coverage'] >= 75:
+        quality = stats['qual_25th']
+    elif stats['qual_mean'] - 2*stats['qual_std'] >= 20:
+        quality = stats['qual_mean'] - 2*stats['qual_std']
+
+    return int(quality)
+
+
+if __name__ == '__main__':
+    import sys
+    import os
+    import json
+    import argparse as ap
+    from staphopia import fastq
+    
+    
+    parser = ap.ArgumentParser(prog='fastq_cleanup.py', 
+                               conflict_handler='resolve', 
+                               description="".join(["Filter low quality reads,",
+                                                   " and reduce the read count",
+                                                   " to a given coverage. ", 
+                                                   "Input is read from STDIN,",
+                                                   " cleaned up, and printed",
+                                                   " to STDOUT."]))
+    group1 = parser.add_argument_group('Options', '')
+    group1.add_argument('--stats', metavar="STR", type=str, 
+                        help='Read statisitcs from fastq_stats',
+                        default=False)
+    group1.add_argument('--coverage', metavar="FLOAT", type=float, 
+                        help='Subsample coverage. (Default: Take all)',
+                        default=False)
+    group1.add_argument('--genome_size', metavar="INT", type=int, 
+                        help='Estimated genome size. (Default: 2814816)',
+                        default=2814816)
+    group1.add_argument('--total_read_count', metavar="INT", type=int, 
+                        help='Total count of input reads.')
+    group1.add_argument('--read_length_cutoff', metavar="INT", type=int, 
+                        help='Trim reads to a certain length.', default=False)
+    group1.add_argument('--paired_reads', action='store_true', default=False, 
+                        help='Input is interleaved paired end reads.', )
+    group1.add_argument('--min_mean_quality', metavar="INT", type=int, 
+                        help='Minimum mean read quality cutoff. (Default: 20)',
+                        default=20)
+    group1.add_argument('--min_read_length', metavar="INT", type=int, 
+                        help='Minimum read length cutoff. (Default: 35bp)',
+                        default=35)
+    
+    group2 = parser.add_argument_group('Extra', '')
+    group2.add_argument('-i', '--jobid', help='Job ID of sequence', 
+                        metavar="STRING")
+
+    group3 = parser.add_argument_group('Optional', '')
+    group3.add_argument('-h', '--help', action='help', 
+                        help='Show this help message and exit')
+    group3.add_argument('--version', action='version', version='%(prog)s v0.1', 
+                        help='Show program\'s version number and exit')
+   
+    if len(sys.argv)==1:
+        parser.print_usage()
+        sys.exit(1)
+
+    args = parser.parse_args() 
+
+    # Read JSON output of fastq_stats
+    if args.stats:
+        with open(args.stats, 'r') as f:
+            stats = json.loads(f.readline().rstrip())
+            args.min_mean_quality = define_min_mean_quality(stats)
+            args.total_read_count = stats['total_reads']
+            args.min_read_length = stats['min_read_length']
+            args.coverage = 50
+    
+    subsample = args.coverage * args.genome_size if args.coverage else False
+
+    # Process FASTQ
+    fq = fastq.CleanUpFASTQ(subsample, args.paired_reads, 
+                            args.read_length_cutoff, args.min_mean_quality, 
+                            args.min_read_length)
+    fq.fastq = [line.rstrip() for line in sys.stdin.readlines()]
+    fq.generate_order(args.total_read_count)
+    fq.clean_up_fastq()
