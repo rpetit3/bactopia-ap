@@ -3,15 +3,15 @@
     Author: Robert A Petit III
     Date: 5/2/2013
     
-    usage: fastq_cleanup.py [--coverage FLOAT] [--genome_size INT]
-                            [--total_read_count INT] [--read_length_cutoff INT]
-                            [--paired_reads] [--min_mean_quality INT]
-                            [--min_read_length INT] [-i STRING] [-h] [--version]
+    usage: fastq_cleanup [--coverage FLOAT] [--genome_size INT]
+                         [--total_read_count INT] [--read_length_cutoff INT]
+                         [--paired_reads] [--min_mean_quality INT]
+                         [--min_read_length INT] [-i STRING] [-h] [--version]
 
     Filter low quality reads, and reduce the read count to a given coverage. 
     Input is read from STDIN, cleaned up, and printed to STDOUT.
     
-    Ex: zcat SOME.fastq.gz | fastq_cleanup.py --total_read_count 836846
+    Ex: zcat SOME.fastq.gz | fastq_cleanup --total_read_count 836846
 '''
 def define_min_mean_quality(stats):
     quality = 20
@@ -35,14 +35,12 @@ if __name__ == '__main__':
     from staphopia import fastq
     
     
-    parser = ap.ArgumentParser(prog='fastq_cleanup.py', 
-                               conflict_handler='resolve', 
-                               description="".join(["Filter low quality reads,",
-                                                   " and reduce the read count",
-                                                   " to a given coverage. ", 
-                                                   "Input is read from STDIN,",
-                                                   " cleaned up, and printed",
-                                                   " to STDOUT."]))
+    parser = ap.ArgumentParser(
+        prog='fastq_cleanup', 
+        conflict_handler='resolve', 
+        description=('Filter low quality reads and reduce the read count to a '
+                     'given coverage. Input is read from STDIN cleaned up, and '
+                     'printed to STDOUT.'))
     group1 = parser.add_argument_group('Options', '')
     group1.add_argument('--stats', metavar="STR", type=str, 
                         help='Read statisitcs from fastq_stats',

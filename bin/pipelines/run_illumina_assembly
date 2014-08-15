@@ -1,0 +1,79 @@
+#! /usr/bin/env python
+from ruffus import *
+
+from staphopia.tasks import assembly, fastq
+
+parser = cmdline.get_argparse(description='WHAT DOES THIS PIPELINE DO?')
+parser.add_argument("--input_file")
+options = parser.parse_args()
+
+config = {
+    'is_paired':False,
+    'n_cpu':'23',
+    'fastq_cleanup':'/home/rpetit/staphopia/analysis-pipeline/bin/fastq_cleanup',
+    'fastq_stats':'/home/rpetit/staphopia/analysis-pipeline/bin/fastq_stats',
+    'fastq_validator':'/home/rpetit/staphopia/analysis-pipeline/bin/fastq_validator',
+}
+
+# Pipeline --------------------------------------------------------------------
+def validator():
+    results = fastq.validator(options.input_file, config)
+
+@follows(validator)
+@transform(options.input_file, suffix('.gz'), '.stats')
+def raw_stats(input_file, output_file):
+    results = fastq.stats(input_file, output_file, config)
+
+@follows(raw_stats)
+@transform(options.input_file, regex(r"(.*).fastq.gz"), 
+           r"\1.cleanup.fastq.gz", r"\1.fastq.stats")
+def cleanup(input_file, output_file, stats_file):
+    results = fastq.cleanup(input_file, stats_file, output_file, config)
+
+@follows(cleanup)
+@transform(cleanup, suffix('.gz'), '.stats')
+def cleanup_stats(input_file, output_file):
+    results = fastq.stats(input_file, output_file, config)
+
+@follows(cleanup_stats)
+@mkdir('assembly')
+@transform(cleanup, regex(r"(.*)"), r"assembly/kmergenie.dat")
+def kmergenie(input_file, output_file):
+    results = assembly.kmergenie(input_file, output_file, config)
+
+@follows(kmergenie)
+@transform(kmergenie, regex(r"(.*).dat"), r"\1.sorted.dat")
+def sort_kmergenie(input_file, output_file):
+    results = assembly.sort_kmergenie(input_file, output_file)
+
+@follows(sort_kmergenie)    
+@mkdir('assembly/velvet')
+@merge([cleanup, sort_kmergenie], 'assembly/velvet/completed')
+def velvet(input_files, output_dir):
+    results = assembly.velvet(input_files, output_dir, config)
+
+@follows(velvet)    
+@mkdir('assembly/spades')    
+@transform(cleanup, regex(r"(.*)"), r"assembly/spades/completed")
+def spades(input_file, output_file):
+    results = assembly.spades(input_file, output_file, config)
+    
+@follows(spades)
+@transform(options.input_file, regex(r"(.*).fastq.gz"),
+           r"\1.contigs.fasta.gz", r"\1.scaffolds.fasta.gz")
+def move_assembly(input_file, contigs, scaffolds):
+    spades_dir = "assembly/spades"
+    results = assembly.move_spades(spades_dir, contigs, scaffolds)
+
+@follows(move_assembly)
+@transform(velvet, regex(r"(.*)"), r"\1.cleanup")
+def cleanup_velvet(input_file, output_file):
+    results = assembly.cleanup_velvet(input_file, output_file)
+
+@follows(cleanup_velvet)
+@transform(spades, regex(r"(.*)"), r"\1.cleanup")
+def cleanup_spades(input_file, output_file):
+    results = assembly.cleanup_spades(input_file, output_file)
+    
+# -----------------------------------------------------------------------------
+pipeline_run(exceptions_terminate_immediately = True, verbose=5)
