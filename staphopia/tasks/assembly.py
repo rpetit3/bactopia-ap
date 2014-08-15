@@ -4,7 +4,6 @@
     These tasks include all assembly related tasks
 '''
 import os
-import subprocess
 
 from staphopia.tasks import shared 
 
@@ -13,52 +12,57 @@ def kmergenie(fastq, output_file, config):
     Run kmer genie to predict the optimal value for K
     '''
     output_prefix = os.path.splitext(output_file)[0]
-    cmd = ['kmergenie', fastq, '-t', config['n_cpu'], '-o', output_prefix]
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = p.communicate()
-    
+    kmergenie = shared.run_command(
+        ['kmergenie', fastq, '-t', config['n_cpu'], '-o', output_prefix], 
+        stdout=output_prefix+'.out', 
+        stderr=output_prefix+'.err'
+    )
+                
     # Clean up histograms
-    shared.find_and_remove_files(os.path.dirname(output_file), 
-                                 '*.histo')
+    shared.find_and_remove_files(os.path.dirname(output_file), '*.histo')
     
 def sort_kmergenie(kmergenie_dat, output_file):
     '''
     Sort kmergenie, keeping only the top three predicted kmer values
     '''
-    sort = subprocess.Popen(['sort', '-k2,2rn', kmergenie_dat], 
-                            stdout=subprocess.PIPE)
-    p = subprocess.Popen(['head', '-n', '3'], stdin=sort.stdout,
-                         stdout=open(output_file, 'w'))
-    sort.wait()
+    sort = shared.pipe_command(
+        ['sort', '-k2,2rn', kmergenie_dat],
+        ['head', '-n', '3'],
+        stdout=output_file
+    )
     
 
-def velvet(input_files, output_file, config, k = '31', cov_cutoff='auto'):
+def velvet(input_files, output_file, config):
     '''
     Run Velvet assembler for a specific kmer value.
     '''
+    log_dir = output_file.replace('completed', 'logs')
     completed = []
-    paired = '-interleaved -shortPaired' if config['is_paired'] else '-short'
+    paired = '-shortPaired' if config['is_paired'] else '-short'
     fastq, kmergenie = input_files
     fh = open(kmergenie, 'r')
     for line in fh:
         k, total, cov_cutoff = line.rstrip().split(' ')
         output_dir = output_file.replace('completed', k)
+
         
-        velveth = ['velveth', output_dir, k, paired, '-fastq.gz', fastq]
-        p = subprocess.Popen(velveth, stdout=subprocess.PIPE, 
-                             stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate()
-    
-        velvetg = ['velvetg', output_dir, '-cov_cutoff', cov_cutoff, 
-                   '-min_contig_lgth', '100', '-very_clean', 'yes']
-        p = subprocess.Popen(velvetg, stdout=subprocess.PIPE, 
-                             stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate()
+        velveth = shared.run_command(
+            ['velveth', output_dir, k, paired, '-fastq.gz', fastq], 
+            stdout='{0}/{1}_velveth.out'.format(log_dir, k), 
+            stderr='{0}/{1}_velveth.err'.format(log_dir, k)
+        )
+
+        velvetg = shared.run_command(
+            ['velvetg', output_dir, '-cov_cutoff', cov_cutoff, 
+             '-min_contig_lgth', '100', '-very_clean', 'yes'],
+            stdout='{0}/{1}_velvetg.out'.format(log_dir, k), 
+            stderr='{0}/{1}_velvetg.err'.format(log_dir, k)
+        )
         
         completed.append(shared.try_to_complete_task(output_dir+'/contigs.fa', 
                                                      output_dir+'/completed'))
     fh.close()
-        
+    
     if all(i == True for i in completed):
         if shared.complete_task(output_file):
             return True
@@ -68,16 +72,15 @@ def velvet(input_files, output_file, config, k = '31', cov_cutoff='auto'):
         raise Exception("One or more Velvet assemblies did not complete")
     
 def cleanup_velvet(input_file, output_file):
-    # Cleanup and compress Velvet Directories
+    '''
+    Clean up and compress Velvet Directories
+    '''
     base_dir = input_file.replace('completed', '')
     shared.find_and_remove_files(base_dir, '*PreGraph')
     velvet_dirs = shared.find_dirs(base_dir, "*", '1', '1')
-    if shared.compress_and_remove(input_file.replace('completed', 
-                                                     'velvet.tar.gz'), 
-                                  velvet_dirs, has_dirs=True):
-        if shared.try_to_complete_task(input_file.replace('completed', 
-                                                          'velvet.tar.gz'),
-                                       output_file):
+    velvet_tar_gz = input_file.replace('completed', 'velvet.tar.gz')
+    if shared.compress_and_remove(velvet_tar_gz, velvet_dirs):
+        if shared.try_to_complete_task(velvet_tar_gz, output_file):
             return True
         else:
             raise Exception("Unable to complete Velvet clean up.")                
@@ -88,10 +91,13 @@ def spades(fastq, output_file, config):
     '''
     Run Spades assembler
     '''
-    paired = '--12' if config['is_paired'] else '-s'
-    p = subprocess.Popen(['find', '-name', 'contigs.fa'], stdout=subprocess.PIPE, 
-                         stderr=subprocess.PIPE)
-    stdout, stderr = p.communicate()
+    # As of Spades 3.1.1 it takes forever (20+ minutes) during the mismatch 
+    # correction step until fixed treat all reads as single end.  I know this 
+    # is not optimal, but until something better comes up we will go with it.
+    #paired = '--12' if config['is_paired'] else '-s'
+    paired = '-s'
+    stdout, stderr = shared.run_command(['find', '-name', 'contigs.fa'])
+
     velvet_dirs = []
     for line in stdout.split('\n'):
         if line:
@@ -99,12 +105,12 @@ def spades(fastq, output_file, config):
             velvet_dirs.append(line)
     
     output_dir = output_file.replace('completed', '')
-    spades = ['spades.py', paired, fastq, '--careful', '-t', config['n_cpu'], 
-              '--only-assembler', '-o', output_dir]
-    spades.extend(velvet_dirs)
-    
-    p = subprocess.Popen(spades, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = p.communicate()
+    spades = shared.run_command(
+        ['spades.py', paired, fastq, '--careful', '-t', config['n_cpu'], 
+         '--only-assembler', '-o', output_dir] + velvet_dirs, 
+        stderr='{0}spades.err'.format(output_dir) 
+     )
+
     
     if shared.try_to_complete_task(output_dir+'contigs.fasta', output_file):
         return True
@@ -112,13 +118,23 @@ def spades(fastq, output_file, config):
         raise Exception("Spades assembly did not complete.")
 
 def move_spades(spades_dir, contigs, scaffolds):
-    p = subprocess.Popen(['gzip', '-c', '--best', spades_dir+'/contigs.fasta'],
-                         stdout=open(contigs, 'w'), stderr=subprocess.PIPE)
-    p = subprocess.Popen(['gzip', '-c', '--best', spades_dir+'/scaffolds.fasta'], 
-                         stdout=open(scaffolds, 'w'), stderr=subprocess.PIPE)
+    '''
+    Move the final assembly from Spades to the root directory of the project.
+    '''
+    gzip_contigs = shared.run_command(
+        ['gzip', '-c', '--best', spades_dir+'/contigs.fasta'],
+        stdout=contigs
+    )
+    
+    gzip_scaffolds = shared.run_command(
+        ['gzip', '-c', '--best', spades_dir+'/scaffolds.fasta'],
+        stdout=scaffolds
+    )
     
 def cleanup_spades(input_file, output_file):
-    # Cleanup and compress Spades Directories
+    '''
+    Clean up and compress Spades Directories
+    '''
     base_dir = input_file.replace('completed', '')
     remove_these = ['*final_contigs*', '*before_rr*', '*pe_before_traversal*',
                     '*simplified_contigs*']
@@ -128,12 +144,9 @@ def cleanup_spades(input_file, output_file):
     shared.find_and_remove_files(base_dir, "*scaffolds*", min_depth='2')
     
     spades_files = shared.find_files(base_dir, '*', '1', '1')
-    if shared.compress_and_remove(input_file.replace('completed', 
-                                                     'spades.tar.gz'),
-                                  spades_files, has_dirs=True):                           
-        if shared.try_to_complete_task(input_file.replace('completed', 
-                                                          'spades.tar.gz'), 
-                                       output_file):
+    spades_tar_gz = input_file.replace('completed', 'spades.tar.gz')
+    if shared.compress_and_remove(spades_tar_gz, spades_files):                           
+        if shared.try_to_complete_task(spades_tar_gz, output_file):
             shared.complete_task(input_file)
             return True
         else:
@@ -145,13 +158,4 @@ def newbler(fastq, output_file):
     '''
     Run Newbler assembler
     '''
-
-
-def cleanup(output_dir):
-    '''
-    Clean up all intermediate files created by assembly tasks
-    '''
-    # kmergenie histograms
-    p = subprocess.Popen(['rm', '-rf', output_dir+'/*.histo'], 
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = p.communicate()
+    pass
