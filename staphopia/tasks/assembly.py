@@ -91,9 +91,9 @@ def spades(fastq, output_file, config):
     '''
     Run Spades assembler
     '''
-    # As of Spades 3.1.1 it takes forever (20+ minutes) during the mismatch 
-    # correction step until fixed treat all reads as single end.  I know this 
-    # is not optimal, but until something better comes up we will go with it.
+    # As of Spades 3.1.1 it just hangs during the mismatch correction step until 
+    # fixed treat all reads as single end.  I know this  not optimal, but until 
+    # something better comes up we will go with it.
     #paired = '--12' if config['is_paired'] else '-s'
     paired = '-s'
     stdout, stderr = shared.run_command(['find', '-name', 'contigs.fa'])

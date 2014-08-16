@@ -14,7 +14,6 @@ def run_command(cmd, stdout=False, stderr=False):
     stdout = open(stdout, 'w') if stdout else subprocess.PIPE
     stderr = open(stderr, 'w') if stderr else subprocess.PIPE
     p = subprocess.Popen(cmd, stdout=stdout, stderr=stderr)
-    p.wait()
     
     return p.communicate()
     
