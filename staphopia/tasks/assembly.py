@@ -159,3 +159,22 @@ def newbler(fastq, output_file):
     Run Newbler assembler
     '''
     pass
+    
+    
+def makeblastdb(input_file, output_file):
+    '''
+    Make a BLST database of the new assembly
+    '''
+    scaffolds = input_file.replace('completed', 'scaffolds.fasta')
+    output_prefix = output_file.replace('completed', 'assembly')
+    makeblastdb = shared.run_command(
+        ['makeblastdb', 'in', scaffolds, '-dbtype', 'nucl', 
+         '-out', output_prefix],
+        stdout=output_prefix+'.out',
+        stderr=output_prefix+'.err'
+    )
+    
+    if shared.try_to_complete_task(output_prefix+'.nin', output_file):
+        return True
+    else:
+        raise Exception("makeblastdb did not complete successfully.")  

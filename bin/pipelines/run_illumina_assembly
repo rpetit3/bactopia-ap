@@ -4,7 +4,8 @@ from ruffus import *
 from staphopia.tasks import assembly, fastq
 
 parser = cmdline.get_argparse(description='WHAT DOES THIS PIPELINE DO?')
-parser.add_argument("-i", "--input_file", dest="input_file", help="Input file")
+parser.add_argument("-i", "--input_file", dest="input_file", help="Input file", 
+                    required=True)
 parser.add_argument('--paired', action='store_true', default=False, 
                   help='Input is interleaved paired end reads.', )
 parser.add_argument('-p', '--processors', metavar="INT", type=int, default=1,
@@ -16,32 +17,9 @@ options = parser.parse_args()
 config = {
     'is_paired':options.paired,
     'n_cpu':str(options.processors),
-    'fastq_cleanup':'/home/rpetit/staphopia/analysis-pipeline/bin/fastq_cleanup',
-    'fastq_stats':'/home/rpetit/staphopia/analysis-pipeline/bin/fastq_stats',
-    'fastq_validator':'/home/rpetit/staphopia/analysis-pipeline/bin/fastq_validator',
 }
 
 # Pipeline --------------------------------------------------------------------
-def validator():
-    results = fastq.validator(options.input_file, config)
-
-@follows(validator)
-@transform(options.input_file, suffix('.gz'), '.stats')
-def raw_stats(input_file, output_file):
-    results = fastq.stats(input_file, output_file, config)
-
-@follows(raw_stats)
-@transform(options.input_file, regex(r"(.*).fastq.gz"), 
-           r"\1.cleanup.fastq.gz", r"\1.fastq.stats")
-def cleanup(input_file, output_file, stats_file):
-    results = fastq.cleanup(input_file, stats_file, output_file, config)
-
-@follows(cleanup)
-@transform(cleanup, suffix('.gz'), '.stats')
-def cleanup_stats(input_file, output_file):
-    results = fastq.stats(input_file, output_file, config)
-
-@follows(cleanup_stats)
 @mkdir('assembly')
 @transform(cleanup, regex(r"(.*)"), r"assembly/kmergenie.dat")
 def kmergenie(input_file, output_file):
@@ -63,14 +41,20 @@ def velvet(input_files, output_dir):
 @transform(cleanup, regex(r"(.*)"), r"assembly/spades/completed")
 def spades(input_file, output_file):
     results = assembly.spades(input_file, output_file, config)
-    
+
 @follows(spades)
+@mkdir('assembly/blastdb')  
+@transform(spades,  regex(r"(.*)"), r"assembly/blastdb/completed")
+def makeblastdb(input_file, output_file):
+    results = assembly.move_spades(input_file, output_file)
+    
+@follows(makeblastdb)
 @transform(options.input_file, regex(r"(.*).fastq.gz"),
            r"\1.contigs.fasta.gz", r"\1.scaffolds.fasta.gz")
 def move_assembly(input_file, contigs, scaffolds):
     spades_dir = "assembly/spades"
     results = assembly.move_spades(spades_dir, contigs, scaffolds)
-
+    
 @follows(move_assembly)
 @transform(velvet, regex(r"(.*)"), r"\1.cleanup")
 def cleanup_velvet(input_file, output_file):

@@ -1,10 +1,9 @@
 #! /usr/bin/python
-"""
-     Author: Robert A. Petit III
-       Date: 06/09/2014
+'''
+    Author: Robert A. Petit III
 
     [TODO: Elaborate on description]
-"""
+'''
 import random
 import re
 import numpy as np

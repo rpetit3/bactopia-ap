@@ -1,0 +1,35 @@
+#! /usr/bin/env python
+from ruffus import *
+
+from staphopia.tasks import mlst
+
+parser = cmdline.get_argparse(description='WHAT DOES THIS PIPELINE DO?')
+parser.add_argument("-f", "--fastq", dest="fastq", help="Input FASTQ file", 
+                    required=True)
+parser.add_argument("-a", "--assembly", dest="assembly", help="Input assembly file", 
+                    required=True)
+parser.add_argument('-p', '--processors', metavar="INT", type=int, default=1,
+                  help='Number of processors to use. (Default 1)')
+options = parser.parse_args()
+
+config = {
+    'n_cpu':str(options.processors),
+    'mlst_db':'/home/rpetit/test/mlst_db/Staphylococcus_aureus.fasta',
+    'mlst_definitions':'/home/rpetit/test/mlst_db/saureus.txt',
+    'mlst_blastdb':'/home/rpetit/test/mlst_db/blastdb',
+}
+
+# Pipeline --------------------------------------------------------------------
+@mkdir('mlst/srst2')    
+@transform(options.fastq, regex(r"(.*)"), r"mlst/srst2/completed")
+def srst2(input_file, output_file):
+    results = mlst.srst2(input_file, output_file, config)
+    
+@follows(srst2)
+@mkdir('mlst/blastn')   
+@transform(options.assembly, regex(r"(.*)"), r"mlst/blastn/completed")
+def blast_alleles(input_file, output_file):
+    results = mlst.blast_alleles(input_file, output_file, config)
+
+# -----------------------------------------------------------------------------
+pipeline_run(exceptions_terminate_immediately = True, verbose=5)
