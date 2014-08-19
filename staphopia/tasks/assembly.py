@@ -178,3 +178,18 @@ def makeblastdb(input_file, output_file):
         return True
     else:
         raise Exception("makeblastdb did not complete successfully.")  
+        
+def assembly_stats(input_file, output_file, config):
+    '''
+    Calculate statistics of a given assembly.
+    '''
+    stats_file = input_file.replace('fasta.gz', 'stats')
+    assembly_stats = shared.run_command(
+        [config['assemblathon_stats'], '-genome_size', '2800000', '-csv',
+         input_file]
+    )
+
+    if shared.try_to_complete_task(stats_file, output_file):
+        return True
+    else:
+        raise Exception("Assembly stats did not complete successfully.") 

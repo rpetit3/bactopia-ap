@@ -44,14 +44,17 @@ def pipe_commands(cmd_1, cmd_2, cmd_3, stdout=False, stderr=False):
     
     return p3.communicate()
     
-def try_to_complete_task(test_this_file, touch_this_file):
+def try_to_complete_task(test_this_file, touch_this_file, touch_file=True):
     '''
     Test to make sure a file exists and is not empty before completing a task.
     '''
     file_not_empty = False
     try:
         if os.stat(test_this_file).st_size > 0:
-           file_not_empty = complete_task(touch_this_file)
+            if touch_file:
+                file_not_empty = complete_task(touch_this_file)
+            else:
+                file_not_empty = True
         else:
            pass
     except OSError:
