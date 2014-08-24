@@ -4,6 +4,8 @@ from ruffus import *
 from staphopia.tasks import sccmec
 
 parser = cmdline.get_argparse(description='WHAT DOES THIS PIPELINE DO?')
+parser.add_argument("-f", "--fastq", dest="fastq", help="Input FASTQ file", 
+                    required=True)
 parser.add_argument("--blastdb", dest="blastdb", required=True,
                     help="BLAST database to query genes against.")
 parser.add_argument('-p', '--processors', metavar="INT", type=int, default=1,
@@ -14,6 +16,7 @@ config = {
     'n_cpu':str(options.processors),
     'primers':'/home/rpetit/staphopia/analysis-pipeline/tool-data/sccmec_primers.fasta',
     'proteins':'/home/rpetit/staphopia/analysis-pipeline/tool-data/sccmec_proteins.fasta',
+    'cassettes':'/home/rpetit/staphopia/analysis-pipeline/tool-data/sccmec/sccmec_cassettes',
 }
 
 blastdb_exists = options.blastdb + ".out"
@@ -29,5 +32,31 @@ def blast_genes(blastdb, output_file):
 def blast_primers(blastdb, output_file):
     results = sccmec.blast_primers(options.blastdb, output_file, config)
 
+@mkdir('sccmec/cassettes')  
+@follows(blast_primers)
+@transform(options.fastq, regex(r"(.*)"), r"sccmec/cassettes/completed.sai")
+def bwa_aln(input_file, output_file):
+    results = sccmec.bwa_aln(options.fastq, output_file, config)
+  
+@follows(bwa_aln)
+@transform(bwa_aln, regex(r"(.*).sai"), r"\1.sam")  
+def bwa_samse(input_file, output_file):
+    results = sccmec.bwa_samse(input_file, options.fastq, output_file, config)
+    
+@follows(bwa_samse)
+@transform(bwa_samse, regex(r"(.*).sam"), r"\1.bam")  
+def sam_to_bam(input_file, output_file):
+    results = sccmec.sam_to_bam(input_file, output_file)
+    
+@follows(sam_to_bam)
+@transform(sam_to_bam, regex(r"(.*).bam"), r"\1.coverage")  
+def genome_coverage_bed(input_file, output_file):
+    results = sccmec.genome_coverage_bed(input_file, output_file)
+  
+@follows(genome_coverage_bed)
+@transform(genome_coverage_bed, regex(r"(.*).coverage"), r"\1.cleanup")  
+def cleanup_mapping(input_file, output_file):
+    results = sccmec.cleanup_mapping(output_file)
+  
 # -----------------------------------------------------------------------------
 pipeline_run(exceptions_terminate_immediately = True, verbose=5)

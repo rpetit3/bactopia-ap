@@ -112,10 +112,8 @@ def compress_and_remove(output_file, files, tarball=True):
         else:
             return False
     else:
-        if gzip_files(output_file, files):
-            return True
-        else:
-            return False
+        gzip_files(files)
+        return True
     
 def create_tar_gz(output_file, files):
     '''
