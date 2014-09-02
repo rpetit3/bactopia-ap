@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+from os.path import dirname
 from ruffus import *
 
 from staphopia.tasks import snp
@@ -8,17 +9,21 @@ parser.add_argument("-f", "--fastq", dest="fastq", help="Input FASTQ file",
                     required=True)
 parser.add_argument('-p', '--processors', metavar="INT", type=int, default=1,
                   help='Number of processors to use. (Default 1)')
+parser.add_argument('--tag', help='Prefix for final VCF. (Default variants)',
+                    dest='tag', default='variants')
 options = parser.parse_args()
 
 config = {
     'n_cpu':str(options.processors),
     'reference':'/home/rpetit/staphopia/analysis-pipeline/tool-data/snp/n315.fasta',
+    'ref_genbank':'/home/rpetit/staphopia/analysis-pipeline/tool-data/snp/n315.gb',
     'sam_format_converter':'/usr/local/bin/SamFormatConverter.jar',
     'add_or_replace_read_groups':'/usr/local/bin/AddOrReplaceReadGroups.jar',
     'build_bam_index':'/usr/local/bin/BuildBamIndex.jar',
     'sort_sam':'/usr/local/bin/SortSam.jar',
     'create_sequence_dictionary':'/usr/local/bin/CreateSequenceDictionary.jar',
     'gatk':'/usr/local/bin/GenomeAnalysisTK.jar',
+    'vcf_annotator':'/home/rpetit/repos/vcf-annotator/bin/vcf-annotator'
 }
 
 # Pipeline --------------------------------------------------------------------
@@ -115,6 +120,27 @@ def variant_filtration(input_file, output_file):
     input_vcf = input_file.replace('completed', 'gatk')
     output_vcf = output_file.replace('completed', 'gatk')
     results = snp.variant_filtration(input_vcf, output_vcf, output_file, config)
+    
+@follows(variant_filtration)
+@transform(variant_filtration, regex(r"(.*).vcf"), r"\1_annotated.vcf")
+def vcf_annotator(input_file, output_file):
+    input_vcf = input_file.replace('completed', 'gatk')
+    output_vcf = output_file.replace('completed', 'gatk')
+    results = snp.vcf_annotator(input_vcf, output_vcf, output_file, config)
      
+@follows(vcf_annotator)
+@transform(vcf_annotator, regex(r"(.*).vcf"), r"\1.vcf.gz")
+def move_final_vcf(input_file, output_file):
+    input_vcf = input_file.replace('completed', 'gatk')
+    output_vcf = '{0}.variants.vcf.gz'.format(options.tag)
+    results = snp.move_final_vcf(input_vcf, output_vcf, output_file)
+    
+@follows(move_final_vcf)
+@transform(move_final_vcf, regex(r"(.*).vcf.gz"), r"\1.cleanup")
+def cleanup(input_file, output_file):
+    base_dir = dirname(input_file.replace('completed', 'gatk'))
+    tar_gz = '{0}/gatk/gatk.tar.gz'.format(dirname(base_dir))
+    results = snp.cleanup(base_dir, tar_gz, output_file)
+ 
 # -----------------------------------------------------------------------------
 pipeline_run(exceptions_terminate_immediately = True, verbose=5)

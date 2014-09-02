@@ -7,7 +7,6 @@ import os
 
 from staphopia.tasks import shared 
 
-
 def bwa_aln(fastq, output_sai, output_file, config):
     bwa_aln = shared.run_command(
         ['bwa', 'aln', '-e', '10', '-f', output_sai , '-t', config['n_cpu'], 
@@ -135,3 +134,44 @@ def variant_filtration(input_vcf, output_vcf, output_file, config):
         return True
     else:
         raise Exception("VariantFiltration did not complete successfully.")
+
+
+def vcf_annotator(input_vcf, output_vcf, output_file, config):
+    vcf_annotator = shared.run_command(
+        [config['vcf_annotator'], '--gb', config['ref_genbank'], '--vcf', 
+         input_vcf],
+        stdout=output_vcf
+    )
+
+    if shared.try_to_complete_task(output_vcf, output_file):
+        return True
+    else:
+        raise Exception("vcf-annotator did not complete successfully.")
+        
+def move_final_vcf(input_vcf, compressed_vcf, output_file):
+    gzip_vcf = shared.run_command(
+        ['gzip', '-c', '--best', input_vcf],
+        stdout=compressed_vcf
+    )
+    
+    if shared.try_to_complete_task(compressed_vcf, output_file):
+        return True
+    else:
+        raise Exception("final vcf gzip did not complete successfully.")
+    
+def cleanup(base_dir, tar_gz, output_file):
+    remove_these = ['*.bam', '*.bai', '*.intervals',
+                    '*.sam', '*.sai']
+    for name in remove_these:
+        shared.find_and_remove_files(base_dir, name)
+
+    gatk_files = shared.find_files(base_dir, '*', '1', '1')
+    if shared.compress_and_remove(tar_gz, gatk_files):                           
+        if shared.try_to_complete_task(tar_gz, output_file):
+            return True
+        else:
+            raise Exception("Unable to complete GATK clean up.")  
+    else:
+        raise Exception("Cannot compress GATK output, please check.")
+
+    
