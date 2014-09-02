@@ -38,3 +38,11 @@ def cleanup(fastq, stats_file, output_file, config):
         ['gzip', '--best', '-'],
         stdout=output_file
     )
+    
+def save(sample_id, table, input, version, output, config, is_production):
+    '''
+    
+    '''
+    save = shared.save(
+        config, sample_id, table, input, version, output, is_production
+    )

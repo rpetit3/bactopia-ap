@@ -139,5 +139,18 @@ def remove(files):
     Delete a list of files
     '''
     rm = run_command(['rm', '-rf'] + files)
-
+    
+def save(config, sample_id, table, json_input, pipeline_version, output_file, 
+         is_production):
+    settings = 'staphopia.settings.prod' if is_production else 'staphopia.settings.dev'
+    stdout, stderr = run_command(
+        ['python', config['manage'], 'insert_results', '--settings', settings, 
+         '--sample_id', str(sample_id), '--table', table, '--input', json_input, 
+         '--pipeline_version', pipeline_version], 
+    )
+    
+    if stdout.split('\n')[0].startswith('CommandError'):
+        raise Exception("Unable to save to database.")
+    else:
+        return complete_task(output_file)
     
