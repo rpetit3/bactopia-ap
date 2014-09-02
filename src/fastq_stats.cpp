@@ -7,6 +7,7 @@
 #include <math.h>
 #include <sstream>
 using namespace std;
+const float VERSION = 0.1;
 const int MAX_READ_LENGTH = 50000;
 const float GENOME_SIZE = 2814816.0;
 
@@ -18,7 +19,7 @@ class Stats {
         unsigned long int total_bp;
         unsigned int min_read_length;
         unsigned int max_read_length;
-        float avg_read_length;
+        float mean_read_length;
         
         // Qual stats
         vector<double> per_read_qual;
@@ -70,7 +71,7 @@ class Stats {
                 total_bp += *j;
             }
             
-            avg_read_length = total_bp / float(total_reads);
+            mean_read_length = total_bp / float(total_reads);
         }
         
         void qual_stats(void) {
@@ -102,7 +103,7 @@ class Stats {
             json << "\"total_reads\":" << total_reads << ",";
             json << "\"coverage\":" << total_bp / GENOME_SIZE << ",";
             json << "\"min_read_length\":" << min_read_length << ",";
-            json << "\"avg_read_length\":" << avg_read_length << ",";
+            json << "\"mean_read_length\":" << mean_read_length << ",";
             json << "\"max_read_length\":" << max_read_length << ",";
             json << "\"qual_mean\":" << qual_mean << ",";
             json << "\"qual_std\":" << qual_std << ",";
@@ -125,7 +126,7 @@ class Stats {
             cout << "Overall 75th Percentile Phred Quality: " << setprecision(5) << qual_75th << endl;
             cout << "Total Basepairs: " << total_bp << endl;
             cout << "Total Reads: " << total_reads << endl;
-            cout << "Mean Read Length: " << avg_read_length << endl;
+            cout << "Mean Read Length: " << mean_read_length << endl;
             cout << "Minimum Read Length: " << min_read_length << endl;
             cout << "Maximum Read Length: " << max_read_length << endl;
             cout << "Estimated Coverage: " << total_bp / GENOME_SIZE << endl;
