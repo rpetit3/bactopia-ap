@@ -193,3 +193,11 @@ def assembly_stats(input_file, output_file, config):
         return True
     else:
         raise Exception("Assembly stats did not complete successfully.") 
+        
+def save(sample_id, table, input, version, output, config, is_production):
+    '''
+    
+    '''
+    save = shared.save(
+        config, sample_id, table, input, version, output, is_production
+    )
