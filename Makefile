@@ -93,7 +93,7 @@ samtools_0118: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~# 
-snp: bwa samtools bedtools picardtools gatk ;
+snp: bwa samtools bedtools picardtools gatk vcfannotator ;
 
 bwa: ;
 	wget -P $(THIRD_PARTY) $(AWS_S3)/bwa-0.7.10.tar.bz2
@@ -129,6 +129,19 @@ gatk: ;
 	mv $(THIRD_PARTY)/GenomeAnalysisTK.jar  $(THIRD_PARTY)/gatk
 	mv $(THIRD_PARTY)/resources $(THIRD_PARTY)/gatk
 	ln -s $(THIRD_PARTY)/gatk/GenomeAnalysisTK.jar $(THIRD_PARTY_BIN)/GenomeAnalysisTK.jar
+    
+vcfannotator: ; 
+	git clone git@github.com:rpetit3/vcf-annotator.git $(THIRD_PARTY)/python/vcf-annotator
+	sed -i 's=    import sys=    import sys\n    sys.path.append("$(THIRD_PARTY)/python/vcf-annotator")\n=' $(THIRD_PARTY)/python/vcf-annotator/bin/vcf-annotator
+	# BioPython
+	wget -P $(THIRD_PARTY) $(AWS_S3)/biopython-1.64.tar.gz
+	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/biopython-1.64.tar.gz && mv $(THIRD_PARTY)/biopython-1.64/ $(THIRD_PARTY)/python/biopython/
+	ln -s $(THIRD_PARTY)/python/biopython/Bio $(THIRD_PARTY)/python/vcf-annotator/Bio
+	# PyVCF
+	wget -P $(THIRD_PARTY) $(AWS_S3)/PyVCF-0.6.7.tar.gz
+	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/PyVCF-0.6.7.tar.gz && mv $(THIRD_PARTY)/PyVCF-0.6.7/ $(THIRD_PARTY)/python/pyvcf/
+	ln -s $(THIRD_PARTY)/python/pyvcf/vcf $(THIRD_PARTY)/python/vcf-annotator/vcf
+	ln -s $(THIRD_PARTY)/python/vcf-annotator/bin/vcf-annotator $(THIRD_PARTY_BIN)/vcf-annotator
     
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
