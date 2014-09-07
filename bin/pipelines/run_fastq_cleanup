@@ -2,6 +2,7 @@
 from ruffus import *
 
 from staphopia.tasks import fastq
+from staphopia.config import *
 
 parser = cmdline.get_argparse(description='WHAT DOES THIS PIPELINE DO?')
 parser.add_argument("-i", "--input_file", dest="input_file", help="Input file", 
@@ -22,9 +23,9 @@ VERSION = '0.1'
 config = {
     'is_paired':options.paired,
     'n_cpu':str(options.processors),
-    'fastq_cleanup':'/home/rpetit/staphopia/analysis-pipeline/bin/fastq_cleanup',
-    'fastq_stats':'/home/rpetit/staphopia/analysis-pipeline/bin/fastq_stats',
-    'fastq_validator':'/home/rpetit/staphopia/analysis-pipeline/bin/fastq_validator',
+    'fastq_cleanup':PATH+'/fastq_cleanup',
+    'fastq_stats':PATH+'/fastq_stats',
+    'fastq_validator':PATH+'/fastq_validator',
     'manage':'/home/rpetit/staphopia/staphopia.com/manage.py',
 }
 

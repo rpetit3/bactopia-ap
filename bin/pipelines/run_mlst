@@ -2,6 +2,7 @@
 from ruffus import *
 
 from staphopia.tasks import mlst
+from staphopia.config import *
 
 parser = cmdline.get_argparse(description='WHAT DOES THIS PIPELINE DO?')
 parser.add_argument("-f", "--fastq", dest="fastq", help="Input FASTQ file", 
@@ -14,9 +15,11 @@ options = parser.parse_args()
 
 config = {
     'n_cpu':str(options.processors),
-    'mlst_db':'/home/rpetit/test/mlst_db/Staphylococcus_aureus.fasta',
-    'mlst_definitions':'/home/rpetit/test/mlst_db/saureus.txt',
-    'mlst_blastdb':'/home/rpetit/test/mlst_db/blastdb',
+    'mlst_db':BASE_DIR+'/tool-data/mlst/Staphylococcus_aureus.fasta',
+    'mlst_definitions':BASE_DIR+'/tool-data/mlst/saureus.txt',
+    'mlst_blastdb':BASE_DIR+'/tool-data/mlst/blastdb',
+    'srst2':THIRD_PARTY_PATH+'/srst2',
+    'blastn':THIRD_PARTY_PATH+'/blastn',
 }
 
 # Pipeline --------------------------------------------------------------------

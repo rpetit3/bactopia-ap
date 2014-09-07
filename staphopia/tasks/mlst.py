@@ -11,9 +11,9 @@ def srst2(input_file, output_file, config):
     output_prefix = output_file.replace('completed', 'srst2')
     n_cpu = '-p {0}'.format(config['n_cpu'])
     srst2 = shared.run_command(
-        ['srst2', '--input_se', input_file, '--mlst_db', config['mlst_db'], 
-         '--mlst_definitions', config['mlst_definitions'], '--other', n_cpu,
-         '--output', output_prefix],
+        [config['srst2'], '--input_se', input_file, '--mlst_db', 
+         config['mlst_db'], '--mlst_definitions', config['mlst_definitions'], 
+         '--other', n_cpu, '--output', output_prefix],
         stdout=output_prefix+'.log',
         stderr=output_prefix+'.err'
     )
@@ -36,8 +36,9 @@ def blast_alleles(input_file, output_file, config):
     for allele in alleles:
         blastdb = '{0}/{1}.tfa'.format(config['mlst_blastdb'], allele)
         blastn = shared.run_command(
-            ['blastn', '-db', blastdb, '-query', input_file, '-outfmt', outfmt, 
-             '-max_target_seqs', '1', '-num_threads', config['n_cpu']]
+            [config['blastn'], '-db', blastdb, '-query', input_file, 
+             '-outfmt', outfmt, '-max_target_seqs', '1', '-num_threads', 
+             config['n_cpu']]
         )
         results.append(blastn[0].split('\n')[0])
         

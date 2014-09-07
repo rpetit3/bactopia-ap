@@ -2,6 +2,7 @@
 from ruffus import *
 
 from staphopia.tasks import assembly, fastq
+from staphopia.config import *
 
 parser = cmdline.get_argparse(description='WHAT DOES THIS PIPELINE DO?')
 parser.add_argument("-i", "--input_file", dest="input_file", help="Input file", 
@@ -23,7 +24,12 @@ VERSION = "0.1"
 config = {
     'is_paired':options.paired,
     'n_cpu':str(options.processors),
-    'assemblathon_stats':'/home/rpetit/src/assemblathon2-analysis/assemblathon_stats.pl',
+    'kmergenie':THIRD_PARTY_PATH+'/kmergenie',
+    'velvetg':THIRD_PARTY_PATH+'/velvetg',
+    'velveth':THIRD_PARTY_PATH+'/velveth',
+    'spades':THIRD_PARTY_PATH+'/spades.py',
+    'makeblastdb':THIRD_PARTY_PATH+'/makeblastdb',
+    'assemblathon_stats':THIRD_PARTY_PATH+'/assemblathon_stats.pl',
     'manage':'/home/rpetit/staphopia/staphopia.com/manage.py',
 }
 

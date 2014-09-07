@@ -9,8 +9,8 @@ from staphopia.tasks import shared
 
 def bwa_aln(fastq, output_sai, output_file, config):
     bwa_aln = shared.run_command(
-        ['bwa', 'aln', '-e', '10', '-f', output_sai , '-t', config['n_cpu'], 
-         config['reference'], fastq]
+        [config['bwa'], 'aln', '-e', '10', '-f', output_sai , '-t', 
+         config['n_cpu'], config['reference'], fastq]
     )
     
     if shared.try_to_complete_task(output_sai, output_file):
@@ -20,7 +20,8 @@ def bwa_aln(fastq, output_sai, output_file, config):
         
 def bwa_samse(input_sai, fastq, output_sam, output_file, config):
     bwa_samse = shared.run_command(
-        ['bwa', 'samse', '-f', output_sam, config['reference'], input_sai, fastq]
+        [config['bwa'], 'samse', '-f', output_sam, config['reference'], 
+         input_sai, fastq]
     )
     
     if shared.try_to_complete_task(output_sam, output_file):
@@ -103,7 +104,7 @@ def sort_sam(input_bam, output_bam, output_file, config):
 
 def samtools_view(input_bam, output_bam, output_file, config):
     samtools_sort = shared.run_command(
-        ['samtools', 'view', '-bhF', '4', '-o', output_bam, input_bam]
+        [config['samtools'], 'view', '-bhF', '4', '-o', output_bam, input_bam]
     )
 
     if shared.try_to_complete_task(output_bam, output_file):

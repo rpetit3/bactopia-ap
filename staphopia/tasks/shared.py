@@ -121,7 +121,7 @@ def create_tar_gz(output_file, files):
     '''
     tar_gz = pipe_command(
         ['tar', '-cf', '-'] + filter(None, files),
-        ['gzip', '--best'],
+        ['gzip'],
         stdout=output_file
     )
     
@@ -132,7 +132,7 @@ def gzip_files(files):
     Compress a list of files with gzip
     '''
     for file in files:
-        gzip = run_command(['gzip', '--best', file])
+        gzip = run_command(['gzip', file])
         
 def remove(files):
     '''

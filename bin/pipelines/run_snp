@@ -3,6 +3,7 @@ from os.path import dirname
 from ruffus import *
 
 from staphopia.tasks import snp
+from staphopia.config import *
 
 parser = cmdline.get_argparse(description='WHAT DOES THIS PIPELINE DO?')
 parser.add_argument("-f", "--fastq", dest="fastq", help="Input FASTQ file", 
@@ -15,15 +16,17 @@ options = parser.parse_args()
 
 config = {
     'n_cpu':str(options.processors),
-    'reference':'/home/rpetit/staphopia/analysis-pipeline/tool-data/snp/n315.fasta',
-    'ref_genbank':'/home/rpetit/staphopia/analysis-pipeline/tool-data/snp/n315.gb',
-    'sam_format_converter':'/usr/local/bin/SamFormatConverter.jar',
-    'add_or_replace_read_groups':'/usr/local/bin/AddOrReplaceReadGroups.jar',
-    'build_bam_index':'/usr/local/bin/BuildBamIndex.jar',
-    'sort_sam':'/usr/local/bin/SortSam.jar',
-    'create_sequence_dictionary':'/usr/local/bin/CreateSequenceDictionary.jar',
-    'gatk':'/usr/local/bin/GenomeAnalysisTK.jar',
-    'vcf_annotator':'/home/rpetit/repos/vcf-annotator/bin/vcf-annotator'
+    'reference':BASE_DIR+'/tool-data/snp/n315.fasta',
+    'ref_genbank':BASE_DIR+'/tool-data/snp/n315.gb',
+    'bwa':THIRD_PARTY_PATH+'/bwa',
+    'samtools':THIRD_PARTY_PATH+'/samtools-1.0',
+    'sam_format_converter':THIRD_PARTY_PATH+'/SamFormatConverter.jar',
+    'add_or_replace_read_groups':THIRD_PARTY_PATH+'/AddOrReplaceReadGroups.jar',
+    'build_bam_index':THIRD_PARTY_PATH+'/BuildBamIndex.jar',
+    'sort_sam':THIRD_PARTY_PATH+'/SortSam.jar',
+    'create_sequence_dictionary':THIRD_PARTY_PATH+'/CreateSequenceDictionary.jar',
+    'gatk':THIRD_PARTY_PATH+'/GenomeAnalysisTK.jar',
+    'vcf_annotator':THIRD_PARTY_PATH+'/bin/vcf-annotator'
 }
 
 # Pipeline --------------------------------------------------------------------

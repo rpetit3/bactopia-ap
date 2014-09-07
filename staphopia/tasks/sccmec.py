@@ -11,7 +11,7 @@ def blast_genes(blastdb, output_file, config):
     outfmt = "6 qseqid nident qlen length sstart send pident ppos bitscore evalue gaps"
     tblastn_results = output_file.replace('completed', 'tblastn')
     tblastn = shared.run_command(
-        ['tblastn', '-db', blastdb, '-query', config['proteins'], 
+        [config['tblastn'], '-db', blastdb, '-query', config['proteins'], 
          '-outfmt', outfmt, '-num_threads', config['n_cpu'], '-evalue', 
          '0.0001', '-max_target_seqs', '1'],
         stdout=tblastn_results,
@@ -27,9 +27,9 @@ def blast_primers(blastdb, output_file, config):
     outfmt = "6 qseqid nident qlen length sstart send pident ppos bitscore evalue"
     blastn_results = output_file.replace('completed', 'blastn')
     blastn = shared.run_command(
-        ['blastn', '-max_target_seqs', '1', '-dust', 'no', '-word_size', '7', 
-         '-perc_identity', '100', '-db', blastdb, '-outfmt', outfmt, 
-         '-query', config['primers']],
+        [config['blastn'], '-max_target_seqs', '1', '-dust', 'no',
+         '-word_size', '7', '-perc_identity', '100', '-db', blastdb, 
+         '-outfmt', outfmt, '-query', config['primers']],
         stdout=blastn_results,
     )
 
@@ -41,7 +41,7 @@ def blast_primers(blastdb, output_file, config):
 def bwa_aln(fastq, output_file, config):
     sai_output = output_file.replace('completed', 'sccmec')
     bwa_aln = shared.run_command(
-        ['bwa', 'aln', '-f', sai_output , '-t', config['n_cpu'], 
+        [config['bwa'], 'aln', '-f', sai_output , '-t', config['n_cpu'], 
          config['cassettes'], fastq]
     )
     
@@ -54,7 +54,7 @@ def bwa_samse(sai, fastq, output_file, config):
     sai_input = sai.replace('completed', 'sccmec')
     sam_output = output_file.replace('completed', 'sccmec')
     bwa_samse = shared.run_command(
-        ['bwa', 'samse', '-n', '9999', '-f', sam_output, 
+        [config['bwa'], 'samse', '-n', '9999', '-f', sam_output, 
          config['cassettes'], sai_input, fastq]
     )
     
@@ -63,13 +63,13 @@ def bwa_samse(sai, fastq, output_file, config):
     else:
         raise Exception("bwa samse did not complete successfully.")
     
-def sam_to_bam(input_file, output_file):
+def sam_to_bam(input_file, output_file, config):
     sam_input = input_file.replace('completed', 'sccmec')
     bam_output = output_file.replace('completed', 'sccmec')
     bam_prefix = bam_output.replace('.bam', '')
     samtools_view = shared.pipe_command(
-        ['samtools', 'view', '-bS', sam_input],
-        ['samtools', 'sort', '-', bam_prefix]
+        [config['samtools'], 'view', '-bS', sam_input],
+        [config['samtools'], 'sort', '-', bam_prefix]
     )
  
     if shared.try_to_complete_task(bam_output, output_file):
@@ -77,11 +77,11 @@ def sam_to_bam(input_file, output_file):
     else:
         raise Exception("sam to bam did not complete successfully.")
  
-def genome_coverage_bed(input_file, output_file):
+def genome_coverage_bed(input_file, output_file, config):
     bam_input = input_file.replace('completed', 'sccmec')
     coverage_output = output_file.replace('completed', 'sccmec')
     genome_coverage_bed = shared.run_command(
-        ['genomeCoverageBed', '-ibam', bam_input, '-d'],
+        [config['genomeCoverageBed'], '-ibam', bam_input, '-d'],
         stdout=coverage_output
     )
 
@@ -105,8 +105,3 @@ def cleanup_mapping(output_file):
             raise Exception("Unable to complete mapping clean up.")  
     else:
         raise Exception("Cannot compress coverage output, please check.")
-
-
-
-    
-   

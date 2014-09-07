@@ -2,6 +2,7 @@
 from ruffus import *
 
 from staphopia.tasks import virulence
+from staphopia.config import *
 
 parser = cmdline.get_argparse(description='WHAT DOES THIS PIPELINE DO?')
 parser.add_argument("--blastdb", dest="blastdb", required=True,
@@ -12,7 +13,8 @@ options = parser.parse_args()
 
 config = {
     'n_cpu':str(options.processors),
-    'virulence_genes':'/home/rpetit/staphopia/analysis-pipeline/tool-data/virulence_genes.fasta',
+    'virulence_genes':BASE_DIR+'/tool-data/virulence_genes.fasta',
+    'tblastn':THIRD_PARTY_PATH+'/tblastn',
 }
 
 blastdb_exists = options.blastdb + ".out"

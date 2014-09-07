@@ -3,7 +3,12 @@ THIRD_PARTY := $(TOP_DIR)/src/third-party
 THIRD_PARTY_BIN := $(TOP_DIR)/bin/third-party
 AWS_S3 := https://s3.amazonaws.com/analysis-pipeline/src
 
-all: fastq assembly mlst snp jellyfish ;
+all: fastq assembly mlst snp jellyfish config ;
+
+config: ;
+	echo "PATH = '$(TOP_DIR)/bin'" > staphopia/config.py
+	echo "THIRD_PARTY_PATH = '$(THIRD_PARTY_BIN)'" >> staphopia/config.py
+	echo "BASE_DIR = '$(TOP_DIR)'" >> staphopia/config.py
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
@@ -54,6 +59,7 @@ assemblathon2_analysis: ;
 	cd $(THIRD_PARTY)/JSON && perl Makefile.PL PREFIX=$(THIRD_PARTY)/assemblathon2-analysis && cd $(TOP_DIR)
 	make -C $(THIRD_PARTY)/JSON
 	make -C $(THIRD_PARTY)/JSON install
+	ln -s $(THIRD_PARTY)/assemblathon2-analysis/assemblathon_stats.pl $(THIRD_PARTY_BIN)/assemblathon_stats.pl
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #

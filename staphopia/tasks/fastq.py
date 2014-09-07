@@ -35,7 +35,7 @@ def cleanup(fastq, stats_file, output_file, config):
     fastq_cleanup = shared.pipe_commands(
         ['zcat', fastq],
         [config['fastq_cleanup'], '--stats', stats_file],
-        ['gzip', '--best', '-'],
+        ['gzip', '-'],
         stdout=output_file
     )
     

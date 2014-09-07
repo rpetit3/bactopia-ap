@@ -2,6 +2,7 @@
 from ruffus import *
 
 from staphopia.tasks import sccmec
+from staphopia.config import *
 
 parser = cmdline.get_argparse(description='WHAT DOES THIS PIPELINE DO?')
 parser.add_argument("-f", "--fastq", dest="fastq", help="Input FASTQ file", 
@@ -14,9 +15,14 @@ options = parser.parse_args()
 
 config = {
     'n_cpu':str(options.processors),
-    'primers':'/home/rpetit/staphopia/analysis-pipeline/tool-data/sccmec_primers.fasta',
-    'proteins':'/home/rpetit/staphopia/analysis-pipeline/tool-data/sccmec_proteins.fasta',
-    'cassettes':'/home/rpetit/staphopia/analysis-pipeline/tool-data/sccmec/sccmec_cassettes',
+    'primers':BASE_DIR+'/tool-data/sccmec_primers.fasta',
+    'proteins':BASE_DIR+'/tool-data/sccmec_proteins.fasta',
+    'cassettes':BASE_DIR+'/tool-data/sccmec/sccmec_cassettes',
+    'blastn':THIRD_PARTY_PATH+'/blastn',
+    'tblastn':THIRD_PARTY_PATH+'/tblastn',
+    'bwa':THIRD_PARTY_PATH+'/bwa',
+    'samtools':THIRD_PARTY_PATH+'/samtools-1.0',
+    'genomeCoverageBed':THIRD_PARTY_PATH+'/genomeCoverageBed',
 }
 
 blastdb_exists = options.blastdb + ".out"
@@ -46,12 +52,12 @@ def bwa_samse(input_file, output_file):
 @follows(bwa_samse)
 @transform(bwa_samse, regex(r"(.*).sam"), r"\1.bam")  
 def sam_to_bam(input_file, output_file):
-    results = sccmec.sam_to_bam(input_file, output_file)
+    results = sccmec.sam_to_bam(input_file, output_file, config)
     
 @follows(sam_to_bam)
 @transform(sam_to_bam, regex(r"(.*).bam"), r"\1.coverage")  
 def genome_coverage_bed(input_file, output_file):
-    results = sccmec.genome_coverage_bed(input_file, output_file)
+    results = sccmec.genome_coverage_bed(input_file, output_file, config)
   
 @follows(genome_coverage_bed)
 @transform(genome_coverage_bed, regex(r"(.*).coverage"), r"\1.cleanup")  

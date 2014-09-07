@@ -11,9 +11,9 @@ def blast_genes(blastdb, output_file, config):
     outfmt = "6 qseqid nident qlen length sstart send pident ppos bitscore evalue gaps"
     tblastn_results = output_file.replace('completed', 'tblastn.txt')
     tblastn = shared.run_command(
-        ['tblastn', '-db', blastdb, '-query', config['resistance_genes'], 
-         '-outfmt', outfmt, '-num_threads', config['n_cpu'], '-evalue', 
-         '0.0001', '-max_target_seqs', '1'],
+        [config['tblastn'], '-db', blastdb, '-query', 
+         config['resistance_genes'], '-outfmt', outfmt, '-num_threads', 
+         config['n_cpu'], '-evalue', '0.0001', '-max_target_seqs', '1'],
         stdout=tblastn_results,
     )
 

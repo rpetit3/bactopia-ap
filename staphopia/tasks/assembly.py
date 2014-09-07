@@ -13,7 +13,8 @@ def kmergenie(fastq, output_file, config):
     '''
     output_prefix = os.path.splitext(output_file)[0]
     kmergenie = shared.run_command(
-        ['kmergenie', fastq, '-t', config['n_cpu'], '-o', output_prefix], 
+        [config['kmergenie'], fastq, '-t', config['n_cpu'], 
+         '-o', output_prefix], 
         stdout=output_prefix+'.out', 
         stderr=output_prefix+'.err'
     )
@@ -47,13 +48,13 @@ def velvet(input_files, output_file, config):
 
         
         velveth = shared.run_command(
-            ['velveth', output_dir, k, paired, '-fastq.gz', fastq], 
+            [config['velveth'], output_dir, k, paired, '-fastq.gz', fastq], 
             stdout='{0}/{1}_velveth.out'.format(log_dir, k), 
             stderr='{0}/{1}_velveth.err'.format(log_dir, k)
         )
 
         velvetg = shared.run_command(
-            ['velvetg', output_dir, '-cov_cutoff', cov_cutoff, 
+            [config['velvetg'], output_dir, '-cov_cutoff', cov_cutoff, 
              '-min_contig_lgth', '100', '-very_clean', 'yes'],
             stdout='{0}/{1}_velvetg.out'.format(log_dir, k), 
             stderr='{0}/{1}_velvetg.err'.format(log_dir, k)
@@ -106,7 +107,7 @@ def spades(fastq, output_file, config):
     
     output_dir = output_file.replace('completed', '')
     spades = shared.run_command(
-        ['spades.py', paired, fastq, '--careful', '-t', config['n_cpu'], 
+        [config['spades'], paired, fastq, '--careful', '-t', config['n_cpu'], 
          '--only-assembler', '-o', output_dir] + velvet_dirs, 
         stderr='{0}spades.err'.format(output_dir) 
      )
@@ -122,12 +123,12 @@ def move_spades(spades_dir, contigs, scaffolds):
     Move the final assembly from Spades to the root directory of the project.
     '''
     gzip_contigs = shared.run_command(
-        ['gzip', '-c', '--best', spades_dir+'/contigs.fasta'],
+        ['gzip', '-c', spades_dir+'/contigs.fasta'],
         stdout=contigs
     )
     
     gzip_scaffolds = shared.run_command(
-        ['gzip', '-c', '--best', spades_dir+'/scaffolds.fasta'],
+        ['gzip', '-c', spades_dir+'/scaffolds.fasta'],
         stdout=scaffolds
     )
     
@@ -168,7 +169,7 @@ def makeblastdb(input_file, output_file):
     scaffolds = input_file.replace('completed', 'scaffolds.fasta')
     output_prefix = output_file.replace('completed', 'assembly')
     makeblastdb = shared.run_command(
-        ['makeblastdb', 'in', scaffolds, '-dbtype', 'nucl', 
+        [config['makeblastdb'], 'in', scaffolds, '-dbtype', 'nucl', 
          '-out', output_prefix],
         stdout=output_prefix+'.out',
         stderr=output_prefix+'.err'
