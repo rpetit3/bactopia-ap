@@ -20,7 +20,7 @@ def kmergenie(fastq, output_file, config):
     )
                 
     # Clean up histograms
-    shared.find_and_remove_files(os.path.dirname(output_file), '*.histo')
+    shared.find_and_remove_files(os.path.dirname(output_file), '*histo*')
     
 def sort_kmergenie(kmergenie_dat, output_file):
     '''
@@ -162,14 +162,14 @@ def newbler(fastq, output_file):
     pass
     
     
-def makeblastdb(input_file, output_file):
+def makeblastdb(input_file, output_file, config):
     '''
     Make a BLST database of the new assembly
     '''
     scaffolds = input_file.replace('completed', 'scaffolds.fasta')
     output_prefix = output_file.replace('completed', 'assembly')
     makeblastdb = shared.run_command(
-        [config['makeblastdb'], 'in', scaffolds, '-dbtype', 'nucl', 
+        [config['makeblastdb'], '-in', scaffolds, '-dbtype', 'nucl', 
          '-out', output_prefix],
         stdout=output_prefix+'.out',
         stderr=output_prefix+'.err'

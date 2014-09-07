@@ -60,7 +60,7 @@ def spades(input_file, output_file):
 @mkdir('assembly/blastdb')  
 @transform(spades,  regex(r"(.*)"), r"assembly/blastdb/completed")
 def makeblastdb(input_file, output_file):
-    results = assembly.makeblastdb(input_file, output_file)
+    results = assembly.makeblastdb(input_file, output_file, config)
     
 @follows(makeblastdb)
 @transform(options.input_file, regex(r"(.*).cleanup.fastq.gz"),

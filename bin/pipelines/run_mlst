@@ -18,7 +18,7 @@ config = {
     'mlst_db':BASE_DIR+'/tool-data/mlst/Staphylococcus_aureus.fasta',
     'mlst_definitions':BASE_DIR+'/tool-data/mlst/saureus.txt',
     'mlst_blastdb':BASE_DIR+'/tool-data/mlst/blastdb',
-    'srst2':THIRD_PARTY_PATH+'/srst2',
+    'srst2':THIRD_PARTY_PATH+'/srst2.py',
     'blastn':THIRD_PARTY_PATH+'/blastn',
 }
 

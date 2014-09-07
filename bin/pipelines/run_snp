@@ -27,7 +27,7 @@ config = {
     'sort_sam':THIRD_PARTY_PATH+'/SortSam.jar',
     'create_sequence_dictionary':THIRD_PARTY_PATH+'/CreateSequenceDictionary.jar',
     'gatk':THIRD_PARTY_PATH+'/GenomeAnalysisTK.jar',
-    'vcf_annotator':THIRD_PARTY_PATH+'/bin/vcf-annotator'
+    'vcf_annotator':THIRD_PARTY_PATH+'/vcf-annotator'
 }
 
 # Pipeline --------------------------------------------------------------------
