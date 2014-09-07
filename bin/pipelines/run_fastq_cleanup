@@ -25,7 +25,7 @@ config = {
     'n_cpu':str(options.processors),
     'fastq_cleanup':PATH+'/fastq_cleanup',
     'fastq_stats':PATH+'/fastq_stats',
-    'fastq_validator':PATH+'/fastq_validator',
+    'fastq_validator':THIRD_PARTY_PATH+'/fastq_validator',
     'manage':'/home/rpetit/staphopia/staphopia.com/manage.py',
 }
 
