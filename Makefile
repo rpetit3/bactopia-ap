@@ -99,7 +99,7 @@ samtools_0118: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~# 
-snp: bwa samtools bedtools picardtools gatk vcfannotator ;
+snp: bwa samtools bedtools java picardtools gatk vcfannotator ;
 
 bwa: ;
 	wget -P $(THIRD_PARTY) $(AWS_S3)/bwa-0.7.10.tar.bz2
@@ -118,6 +118,11 @@ bedtools: ;
 	make -C $(THIRD_PARTY)/bedtools
 	ln -s $(THIRD_PARTY)/bedtools/bin/bedtools $(THIRD_PARTY_BIN)/bedtools
 	ln -s $(THIRD_PARTY)/bedtools/bin/genomeCoverageBed $(THIRD_PARTY_BIN)/genomeCoverageBed
+  
+java: ;
+	wget -P $(THIRD_PARTY) $(AWS_S3)/jdk-7u60-ea-bin-b15-linux-x64-16_apr_2014.tar.gz
+	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/jdk-7u60-ea-bin-b15-linux-x64-16_apr_2014.tar.gz && mv $(THIRD_PARTY)/jdk1.7.0_60 $(THIRD_PARTY)/jdk
+	ln -s $(THIRD_PARTY)/jdk/bin/java $(THIRD_PARTY_BIN)/java
     
 picardtools: ;
 	wget -P $(THIRD_PARTY) $(AWS_S3)/picard-tools-1.119.zip 
@@ -167,6 +172,7 @@ jellyfish: ;
 clean: ;
 	rm -rf $(THIRD_PARTY)/*
 	rm -rf $(THIRD_PARTY_BIN)/*
+	rm staphopia/config.py
 	rm bin/fastq_interleave
 	rm bin/fastq_stats
     

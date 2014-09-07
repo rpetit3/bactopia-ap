@@ -18,6 +18,7 @@ config = {
     'n_cpu':str(options.processors),
     'reference':BASE_DIR+'/tool-data/snp/n315.fasta',
     'ref_genbank':BASE_DIR+'/tool-data/snp/n315.gb',
+    'java':THIRD_PARTY_PATH+'/java',
     'bwa':THIRD_PARTY_PATH+'/bwa',
     'samtools':THIRD_PARTY_PATH+'/samtools-1.0',
     'sam_format_converter':THIRD_PARTY_PATH+'/SamFormatConverter.jar',

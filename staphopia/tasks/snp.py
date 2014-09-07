@@ -31,7 +31,7 @@ def bwa_samse(input_sai, fastq, output_sam, output_file, config):
 
 def sam_to_bam(input_sam, output_bam, output_file, config):
     sam_to_bam = shared.run_command(
-        ['java', '-Xmx4g', '-jar', config['sam_format_converter'], 
+        [config['java'], '-Xmx4g', '-jar', config['sam_format_converter'], 
          'INPUT='+ input_sam, 'VALIDATION_STRINGENCY=LENIENT', 
          'OUTPUT='+ output_bam]
     )
@@ -43,7 +43,7 @@ def sam_to_bam(input_sam, output_bam, output_file, config):
  
 def add_or_replace_read_groups(input_bam, output_bam, output_file, config):
     add_or_replace = shared.run_command(
-        ['java', '-Xmx4g', '-jar', config['add_or_replace_read_groups'], 
+        [config['java'], '-Xmx4g', '-jar', config['add_or_replace_read_groups'], 
          'INPUT='+ input_bam , 'OUTPUT='+ output_bam, 'SORT_ORDER=coordinate', 
          'RGID=GATK', 'RGLB=GATK', 'RGPL=Illumina', 'RGSM=GATK', 'RGPU=GATK', 
          'VALIDATION_STRINGENCY=LENIENT']
@@ -52,11 +52,11 @@ def add_or_replace_read_groups(input_bam, output_bam, output_file, config):
     if shared.try_to_complete_task(output_bam, output_file):
         return True
     else:
-        raise Exception("AddOrReplaceReadGroups did not complete successfully.")
+        raise Exception("AddOrReplaceReadGroups didn't complete successfully.")
     
 def build_bam_index(input_bam, output_file, config):
     build_bam_index = shared.run_command(
-        ['java', '-Xmx4g', '-jar', config['build_bam_index'], 
+        [config['java'], '-Xmx4g', '-jar', config['build_bam_index'], 
          'INPUT='+ input_bam, 'VALIDATION_STRINGENCY=LENIENT']
     )   
     
@@ -68,7 +68,7 @@ def build_bam_index(input_bam, output_file, config):
   
 def realigner_target_creator(input_bam, output_intervals, output_file, config):
     realigner_target_creator = shared.run_command(
-        ['java', '-Xmx4g', '-jar', config['gatk'], '-I', input_bam, 
+        [config['java'], '-Xmx4g', '-jar', config['gatk'], '-I', input_bam, 
          '-T', 'RealignerTargetCreator', '-R', config['reference'], 
          '-o', output_intervals]
     )
@@ -76,13 +76,14 @@ def realigner_target_creator(input_bam, output_intervals, output_file, config):
     if shared.try_to_complete_task(output_intervals, output_file):
         return True
     else:
-        raise Exception("RealignerTargetCreator did not complete successfully.")
+        raise Exception("RealignerTargetCreator didn't complete successfully.")
         
 def indel_realigner(input_bam, input_interval, output_bam, output_file, config):
     indel_realigner = shared.run_command(
-        ['java', '-Xmx4g', '-jar', config['gatk'], '-T', 'IndelRealigner', 
-         '-l', 'INFO', '-I', input_bam, '-R', config['reference'], 
-         '-targetIntervals', input_interval, '-o', output_bam]
+        [config['java'], '-Xmx4g', '-jar', config['gatk'], '-T', 
+         'IndelRealigner', '-l', 'INFO', '-I', input_bam, 
+         '-R', config['reference'], '-targetIntervals', input_interval, 
+         '-o', output_bam]
     )
 
     if shared.try_to_complete_task(output_bam, output_file):
@@ -92,8 +93,8 @@ def indel_realigner(input_bam, input_interval, output_bam, output_file, config):
     
 def sort_sam(input_bam, output_bam, output_file, config):
     sort_sam = shared.run_command(
-        ['java', '-Xmx4g', '-jar', config['sort_sam'], 'INPUT='+ input_bam, 
-         'SORT_ORDER=coordinate', 'OUTPUT='+ output_bam, 
+        [config['java'], '-Xmx4g', '-jar', config['sort_sam'], 
+         'INPUT='+ input_bam, 'SORT_ORDER=coordinate', 'OUTPUT='+ output_bam, 
          'VALIDATION_STRINGENCY=LENIENT']
     )
     
@@ -114,10 +115,11 @@ def samtools_view(input_bam, output_bam, output_file, config):
     
 def unified_genotyper(input_bam, output_vcf, output_file, config):
     unified_genotyper = shared.run_command(
-        ['java', '-Xmx4g', '-jar', config['gatk'], '-T', 'UnifiedGenotyper', 
-         '-glm', 'BOTH', '-R', config['reference'], '-dcov', '500',
-          '-I', input_bam, '-o', output_vcf, '-stand_call_conf', '30.0', 
-          '-stand_emit_conf', '10.0', '-rf', 'BadCigar']
+        [config['java'], '-Xmx4g', '-jar', config['gatk'], '-T', 
+         'UnifiedGenotyper', '-glm', 'BOTH', '-R', config['reference'], 
+         '-dcov', '500', '-I', input_bam, '-o', output_vcf, 
+         '-stand_call_conf', '30.0', '-stand_emit_conf', '10.0', 
+         '-rf', 'BadCigar']
     )
     if shared.try_to_complete_task(output_vcf, output_file):
         return True
@@ -126,9 +128,9 @@ def unified_genotyper(input_bam, output_vcf, output_file, config):
     
 def variant_filtration(input_vcf, output_vcf, output_file, config):
     variant_filtration = shared.run_command(
-        ['java', '-Xmx4g', '-jar', config['gatk'], '-T', 'VariantFiltration', 
-         '-R', config['reference'], '-filter', '-cluster', '3', '-window', '10', 
-         '-V', input_vcf, '-o', output_vcf]
+        [config['java'], '-Xmx4g', '-jar', config['gatk'], '-T', 
+         'VariantFiltration', '-R', config['reference'], '-filter', 
+         '-cluster', '3', '-window', '10', '-V', input_vcf, '-o', output_vcf]
     )
     
     if shared.try_to_complete_task(output_vcf, output_file):
@@ -151,7 +153,7 @@ def vcf_annotator(input_vcf, output_vcf, output_file, config):
         
 def move_final_vcf(input_vcf, compressed_vcf, output_file):
     gzip_vcf = shared.run_command(
-        ['gzip', '-c', '--best', input_vcf],
+        ['gzip', '-c', input_vcf],
         stdout=compressed_vcf
     )
     
