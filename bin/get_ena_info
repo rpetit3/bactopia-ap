@@ -1,0 +1,152 @@
+#! /usr/bin/env python 
+'''
+    get_ena_info
+    
+    Retrieve WGS project information from the ENA database.  This script does 
+    not download sequence data, only associated meta-data and download links.
+    
+    By default Aspera Connect download links are being retrieved, its a free 
+    service and saves alot of time, so why not use it?
+'''
+if __name__ == '__main__':
+    import sys
+    import os
+    import urllib2
+    import argparse as ap
+    
+    parser = ap.ArgumentParser(prog='get_ena_info.py', 
+                               conflict_handler='resolve', 
+                               description='Pull project info from ENA')
+                               
+    group1 = parser.add_argument_group('Options', '')
+    group1.add_argument('--info_output', metavar='STRING', default='./info.txt',
+                        help='File to output ENA info to. (Default: info.txt)')
+    group1.add_argument('--runs_output', metavar='STRING', default='./runs.txt',
+                        help='File to output ENA runs to. (Default: runs.txt)')    
+    group1.add_argument('--missing', metavar='STRING', 
+                        default='./missing_fastq.txt',
+                        help=('File to output ENA runs missing FASTQ links. '
+                              '(Default: missing_fastq.txt)'))   
+    group1.add_argument('--genome_size', metavar='INT', type=int, 
+                        help='Estimate sequencing coverage. (Default: 2878897)', 
+                        default=2878897)
+
+    group2 = parser.add_argument_group('Optional', '')
+    group2.add_argument('-h', '--help', action='help', help='Show help message')
+    group2.add_argument('--version', action='version', version='%(prog)s v0.1', 
+                        help='Show program\'s version number and exit')
+                        
+    args = parser.parse_args()  
+        
+    # ENA browser info: http://www.ebi.ac.uk/ena/about/browser
+    address = 'http://www.ebi.ac.uk/ena/data/warehouse/search'
+    query = ['"tax_tree(1280)', 'AND', 'library_source=GENOMIC', 'AND',
+             '(library_strategy=OTHER OR library_strategy=WGS OR',
+             'library_strategy=WGA)', 'AND', '(library_selection=MNase OR',
+             'library_selection=RANDOM OR library_selection=unspecified OR',
+             ' library_selection="size fractionation")"']
+    query = urllib2.quote(' '.join(query))
+    result = 'result=read_run'
+    display = 'display=report'
+    limit = 'limit=1000000'
+    fields = ['study_accession', 'sample_accession', 'experiment_accession',
+              'run_accession', 'submission_accession', 'tax_id', 
+              'scientific_name', 'instrument_platform', 'instrument_model',
+              'library_layout', 'library_strategy', 'library_selection',
+              'read_count', 'base_count', 'center_name', 'first_public', 
+              'fastq_bytes', 'fastq_md5', 'fastq_aspera', 'fastq_ftp']
+    fields = ','.join(fields)
+              
+    
+    url = '{0}?query={1}&{2}&{3}&{4}&fields={5}'.format(address, query, result, 
+                                                        display, limit, fields)
+                                    
+    f = urllib2.urlopen(url)
+    data = f.readlines()
+    f.close()
+    if len(data) <= 1:
+        print 'ERROR nothing returned from ENA'
+        sys.exit()
+    
+    info_fields = [
+        'experiment_accession', 'study_accession', 'sample_accession', 
+        'submission_accession', 'tax_id', 'scientific_name', 
+        'instrument_platform', 'instrument_model', 'library_layout', 
+        'library_strategy', 'library_selection', 'center_name'
+    ]
+    run_fields = [
+        'experiment_accession', 'is_paired', 'run_accession', 'read_count', 
+        'base_count', 'first_public', 'fastq_bytes', 'fastq_md5', 
+        'fastq_aspera', 'fastq_ftp'
+    ]
+    ena_info = {}
+    ena_runs = []
+    missing_fh = open(args.missing, 'w')
+    for line in data:
+        line = line.rstrip()
+        if line.startswith(fields[0]):
+            missing_fh.write('{0}\n'.format(line))
+        else:
+            cols = line.split('\t')
+            if len(cols) == 20:
+                mean_read_length = ''
+                coverage = ''
+                try:
+                    mean_read_length = float(cols[13]) / float(cols[12])
+                    coverage = float(cols[13]) / args.genome_size
+                except:
+                    continue
+                    
+                if cols[2] not in ena_info:
+                    ena_info[cols[2]] = {
+                        'experiment_accession':cols[2],
+                        'study_accession':cols[0], 
+                        'sample_accession':cols[1], 
+                        'submission_accession':cols[4], 
+                        'tax_id':cols[5], 
+                        'scientific_name':cols[6], 
+                        'instrument_platform':cols[7], 
+                        'instrument_model':cols[8],
+                        'library_layout':cols[9], 
+                        'library_strategy':cols[10], 
+                        'library_selection':cols[11],
+                        'center_name':cols[14],
+                    }
+                    
+                ena_runs.append({
+                    'experiment_accession':cols[2],
+                    'is_paired':'1' if cols[9] == 'PAIRED' else '0',
+                    'run_accession':cols[3],
+                    'read_count':cols[12], 
+                    'base_count':cols[13],
+                    'mean_read_length':mean_read_length,
+                    'coverage':coverage,
+                    'first_public':cols[15],
+                    'fastq_bytes':cols[16], 
+                    'fastq_md5':cols[17], 
+                    'fastq_aspera':cols[18], 
+                    'fastq_ftp':cols[19],
+                })
+            else:
+                missing_fh.write('{0}\n'.format(line))
+    missing_fh.close()
+    
+    # Print Info
+    info_fh = open(args.info_output, 'w')
+    info_fh.write('{0}\n'.format('\t'.join(info_fields)))
+    for key in ena_info:
+        vals = []
+        for field in info_fields:
+            vals.append(ena_info[key][field])
+        info_fh.write('{0}\n'.format('\t'.join(vals)))
+    info_fh.close()
+        
+    # Print Runs
+    runs_fh = open(args.runs_output, 'w')
+    runs_fh.write('{0}\n'.format('\t'.join(run_fields)))
+    for i in ena_runs:
+        vals = []
+        for field in run_fields:
+            vals.append(str(i[field]))
+        runs_fh.write('{0}\n'.format('\t'.join(vals)))
+    runs_fh.close()
