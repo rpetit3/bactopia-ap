@@ -174,7 +174,7 @@ if __name__ == '__main__':
         
     # Print Runs
     run_fields = [
-        'experiment_accession', 'is_paired', 'run_accession',  'run_alias', 
+        'run_accession', 'experiment_accession', 'is_paired', 'run_alias', 
         'read_count', 'base_count', 'mean_read_length', 'coverage', 
         'first_public', 'fastq_bytes', 'fastq_md5', 'fastq_aspera', 
         'fastq_ftp'
