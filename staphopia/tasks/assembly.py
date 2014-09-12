@@ -164,16 +164,20 @@ def newbler(fastq, output_file):
     
 def makeblastdb(input_file, output_file, config):
     '''
-    Make a BLST database of the new assembly
+    Make a BLAST database of the new assembly
     '''
-    scaffolds = input_file.replace('completed', 'scaffolds.fasta')
+    temp_file = input_file + '.temp'
+    gunzip = shared.run_command(['gunzip', '-c', input_file], stdout=temp_file)
+
     output_prefix = output_file.replace('completed', 'assembly')
     makeblastdb = shared.run_command(
-        [config['makeblastdb'], '-in', scaffolds, '-dbtype', 'nucl', 
-         '-out', output_prefix],
+        [config['makeblastdb'], '-in', temp_file, '-dbtype', 
+         'nucl', '-out', output_prefix],
         stdout=output_prefix+'.out',
         stderr=output_prefix+'.err'
     )
+    
+    rm = shared.run_command(['rm', temp_file])
     
     if shared.try_to_complete_task(output_prefix+'.nin', output_file):
         return True

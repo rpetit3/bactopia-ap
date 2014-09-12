@@ -5,7 +5,7 @@ from staphopia.tasks import sccmec
 from staphopia.config import *
 
 parser = cmdline.get_argparse(description='WHAT DOES THIS PIPELINE DO?')
-parser.add_argument("-f", "--fastq", dest="fastq", help="Input FASTQ file", 
+parser.add_argument("-i", "--input_file", dest="input_file", help="Input file", 
                     required=True)
 parser.add_argument("--blastdb", dest="blastdb", required=True,
                     help="BLAST database to query genes against.")
@@ -40,14 +40,16 @@ def blast_primers(blastdb, output_file):
 
 @mkdir('sccmec/cassettes')  
 @follows(blast_primers)
-@transform(options.fastq, regex(r"(.*)"), r"sccmec/cassettes/completed.sai")
+@transform(options.input_file, regex(r"(.*)"), 
+           r"sccmec/cassettes/completed.sai")
 def bwa_aln(input_file, output_file):
-    results = sccmec.bwa_aln(options.fastq, output_file, config)
+    results = sccmec.bwa_aln(options.input_file, output_file, config)
   
 @follows(bwa_aln)
 @transform(bwa_aln, regex(r"(.*).sai"), r"\1.sam")  
 def bwa_samse(input_file, output_file):
-    results = sccmec.bwa_samse(input_file, options.fastq, output_file, config)
+    results = sccmec.bwa_samse(input_file, options.input_file, 
+                               output_file, config)
     
 @follows(bwa_samse)
 @transform(bwa_samse, regex(r"(.*).sam"), r"\1.bam")  

@@ -6,12 +6,18 @@ from staphopia.tasks import snp
 from staphopia.config import *
 
 parser = cmdline.get_argparse(description='WHAT DOES THIS PIPELINE DO?')
-parser.add_argument("-f", "--fastq", dest="fastq", help="Input FASTQ file", 
+parser.add_argument("-i", "--input_file", dest="input_file", help="Input file", 
                     required=True)
 parser.add_argument('-p', '--processors', metavar="INT", type=int, default=1,
                   help='Number of processors to use. (Default 1)')
 parser.add_argument('--tag', help='Prefix for final VCF. (Default variants)',
                     dest='tag', default='variants')
+parser.add_argument('--sample_id', metavar="INT", type=int, default=0,
+                    help='Optional: Sample id of input. (Default 0)')
+parser.add_argument('--production', action='store_true', default=False, 
+                    help='Use production server settings', )
+parser.add_argument('--debug', action='store_true', default=False, 
+                    help='Run the pipeline do not save results to database', )
 options = parser.parse_args()
 
 config = {
@@ -33,18 +39,18 @@ config = {
 # Pipeline --------------------------------------------------------------------
 @mkdir('snp/completed')   
 @mkdir('snp/gatk')
-@transform(options.fastq, regex(r"(.*)"), r"snp/completed/variants.sai")
+@transform(options.input_file, regex(r"(.*)"), r"snp/completed/variants.sai")
 def bwa_aln(input_file, output_file):
     output_sai = output_file.replace('completed', 'gatk')
-    results = snp.bwa_aln(options.fastq, output_sai, output_file, config)
+    results = snp.bwa_aln(options.input_file, output_sai, output_file, config)
   
 @follows(bwa_aln)
 @transform(bwa_aln, regex(r"(.*).sai"), r"\1.sam")  
 def bwa_samse(input_file, output_file):
     input_sai = input_file.replace('completed', 'gatk')
     output_sam = output_file.replace('completed', 'gatk')
-    results = snp.bwa_samse(input_sai, options.fastq, output_sam, output_file, 
-                            config)
+    results = snp.bwa_samse(input_sai, options.input_file, output_sam, 
+                            output_file, config)
 
 @follows(bwa_samse)
 @transform(bwa_samse, regex(r"(.*).sam"), r"\1.bam")  
@@ -123,7 +129,8 @@ def unified_genotyper(input_file, output_file):
 def variant_filtration(input_file, output_file):
     input_vcf = input_file.replace('completed', 'gatk')
     output_vcf = output_file.replace('completed', 'gatk')
-    results = snp.variant_filtration(input_vcf, output_vcf, output_file, config)
+    results = snp.variant_filtration(input_vcf, output_vcf, output_file,
+                                     config)
     
 @follows(variant_filtration)
 @transform(variant_filtration, regex(r"(.*).vcf"), r"\1_annotated.vcf")

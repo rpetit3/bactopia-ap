@@ -1,13 +1,21 @@
 TOP_DIR := $(shell pwd)
 THIRD_PARTY := $(TOP_DIR)/src/third-party
+THIRD_PARTY_PYTHON := $(TOP_DIR)/src/third-party/python
 THIRD_PARTY_BIN := $(TOP_DIR)/bin/third-party
 AWS_S3 := https://s3.amazonaws.com/analysis-pipeline/src
 
 all: fastq assembly mlst snp jellyfish config ;
 
 config: ;
-	echo "PATH = '$(TOP_DIR)/bin'" > staphopia/config.py
+	echo "# PATH" > staphopia/config.py
+	echo "PATH = '$(TOP_DIR)/bin'" >> staphopia/config.py
+	echo "PIPELINE_PATH = '$(TOP_DIR)/bin/pipelines'" >> staphopia/config.py
 	echo "THIRD_PARTY_PATH = '$(THIRD_PARTY_BIN)'" >> staphopia/config.py
+	echo "# PYTHONPATH" >> staphopia/config.py
+	echo "BIOPYTHON = '$(THIRD_PARTY_PYTHON)/biopython'" >> staphopia/config.py
+	echo "PYVCF = '$(THIRD_PARTY_PYTHON)/pyvcf'" >> staphopia/config.py
+	echo "VCFANNOTATOR = '$(THIRD_PARTY_PYTHON)/vcf-annotator'" >> staphopia/config.py
+	echo "# Everything Else" >> staphopia/config.py
 	echo "BASE_DIR = '$(TOP_DIR)'" >> staphopia/config.py
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#

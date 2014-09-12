@@ -11,6 +11,8 @@ def run_command(cmd, stdout=False, stderr=False):
     Execute a single command and return STDOUT and STDERR. If stdout or stderr 
     are given, output will be written to given file name. 
     '''
+    cmd = filter(None, cmd)
+    print ' '.join(cmd)
     stdout = open(stdout, 'w') if stdout else subprocess.PIPE
     stderr = open(stderr, 'w') if stderr else subprocess.PIPE
     p = subprocess.Popen(cmd, stdout=stdout, stderr=stderr)
@@ -22,6 +24,10 @@ def pipe_command(cmd_1, cmd_2, stdout=False, stderr=False):
     Pipe two commands and return STDOUT and STDERR.  If stdout or stderr are 
     given, output will be written to given file name.
     '''
+    cmd_1 = filter(None, cmd_1)
+    cmd_2 = filter(None, cmd_2)
+    print '{0}|{1}'.format(' '.join(cmd_1), ' '.join(cmd_2))
+    
     stdout = open(stdout, 'w') if stdout else subprocess.PIPE
     stderr = open(stderr, 'w') if stderr else subprocess.PIPE
     p1 = subprocess.Popen(cmd_1, stdout=subprocess.PIPE)
