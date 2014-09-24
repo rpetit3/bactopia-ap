@@ -4,7 +4,7 @@ THIRD_PARTY_PYTHON := $(TOP_DIR)/src/third-party/python
 THIRD_PARTY_BIN := $(TOP_DIR)/bin/third-party
 AWS_S3 := https://s3.amazonaws.com/analysis-pipeline/src
 
-all: fastq assembly mlst snp jellyfish config ;
+all: aspera fastq assembly mlst snp jellyfish config ;
 
 config: ;
 	echo "# PATH" > staphopia/config.py
@@ -18,6 +18,16 @@ config: ;
 	echo "# Everything Else" >> staphopia/config.py
 	echo "BASE_DIR = '$(TOP_DIR)'" >> staphopia/config.py
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#                                                                             #
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~# 
+aspera: ;  
+	wget -P $(THIRD_PARTY) $(AWS_S3)/aspera-connect-3.5.1.92523-linux-64.sh
+	sh $(THIRD_PARTY)/aspera-connect-3.5.1.92523-linux-64.sh $(THIRD_PARTY)/aspera
+	ln -s $(THIRD_PARTY)/aspera/bin/ascp $(THIRD_PARTY_BIN)/ascp
+	ln -s $(THIRD_PARTY)/aspera/etc/asperaweb_id_dsa.openssh $(THIRD_PARTY_BIN)/asperaweb_id_dsa.openssh
+	ln -s $(THIRD_PARTY)/aspera/etc/asperaweb_id_dsa.putty $(THIRD_PARTY_BIN)/asperaweb_id_dsa.putty
+    
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#  

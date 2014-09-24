@@ -6,13 +6,14 @@
 import os
 import subprocess
 
-def run_command(cmd, stdout=False, stderr=False):
+def run_command(cmd, stdout=False, stderr=False, verbose=True):
     '''
     Execute a single command and return STDOUT and STDERR. If stdout or stderr 
     are given, output will be written to given file name. 
     '''
     cmd = filter(None, cmd)
-    print ' '.join(cmd)
+    if verbose:
+        print ' '.join(cmd)
     stdout = open(stdout, 'w') if stdout else subprocess.PIPE
     stderr = open(stderr, 'w') if stderr else subprocess.PIPE
     p = subprocess.Popen(cmd, stdout=stdout, stderr=stderr)
