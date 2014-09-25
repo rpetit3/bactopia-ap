@@ -10,7 +10,7 @@ if __name__ == '__main__':
     from staphopia.config import *
 
     parser = ap.ArgumentParser(
-        prog='process_ena', 
+        prog='download_ena', 
         conflict_handler='resolve', 
         description=(''))
     group1 = parser.add_argument_group('Options', '')
@@ -52,14 +52,7 @@ if __name__ == '__main__':
         'ascp':THIRD_PARTY_PATH+'/ascp',
         'ssh_key':THIRD_PARTY_PATH+'/asperaweb_id_dsa.openssh',
         'fastq_interleave':PATH+'/fastq_interleave',
-        'create_job_script':PIPELINE_PATH+'/create_job_script',
-        'submit_job':PIPELINE_PATH+'/submit_job',
         'manage':'/home/rpetit/staphopia/staphopia.com/manage.py',
-        'limit':str(args.limit) if args.limit else '',
-        'technology':args.technology if args.technology else '',
-        'coverage':str(args.coverage) if args.coverage else '',
-        'min_read_length':str(args.min_read_length) if args.min_read_length else '',
-        'max_read_length':str(args.max_read_length) if args.max_read_length else '',
     }
 
     ena_obj = ena.ENA(config)

@@ -55,7 +55,7 @@ if __name__ == '__main__':
     
     # Job Constants -----------------------------------------------------------
     IS_PAIRED = '--paired' if args.paired else ''
-    SAMPLE_ID = '--sample_id '+args.sample_id if args.sample_id else ''
+    SAMPLE_ID = '--sample_id '+str(args.sample_id) if args.sample_id else ''
     SAMPLE_TAG =  '--sample_tag '+args.sample_tag if args.sample_tag else ''
     PRODUCTION = '--production' if args.production else ''
     DEBUG = '--debug' if args.debug else ''

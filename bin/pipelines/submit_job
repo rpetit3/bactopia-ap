@@ -35,7 +35,8 @@ config = {
 }
 
 IS_PAIRED = '--paired' if config['is_paired'] else ''
-SAMPLE_ID = '--sample_id '+args.sample_id if args.sample_id else ''
+SAMPLE_FLAG = '--sample_id' if args.sample_id else ''
+SAMPLE_ID = str(args.sample_id) if args.sample_id else ''
 PRODUCTION = '--production' if args.production else ''
 DEBUG = '--debug' if args.debug else ''
 
@@ -48,7 +49,7 @@ ASSEMBLY = args.input_file.replace('.fastq.gz', '.scaffolds.fasta.gz')
 def run_fastq_cleanup():
     out, err = shared.run_command(
         [config['run_fastq_cleanup'], '-i', args.input_file, '-p', 
-         config['n_cpu'], IS_PAIRED, SAMPLE_ID, PRODUCTION, DEBUG],
+         config['n_cpu'], IS_PAIRED, SAMPLE_FLAG, SAMPLE_ID, PRODUCTION, DEBUG],
         stdout='logs/run_fastq_cleanup.stdout',
         stderr='logs/run_fastq_cleanup.stderr',
     )
@@ -57,7 +58,7 @@ def run_fastq_cleanup():
 def run_illumina_assembly():
     out, err = shared.run_command(
         [config['run_illumina_assembly'], '-i', CLEAN_FASTQ, '-p', 
-         config['n_cpu'], IS_PAIRED, SAMPLE_ID, PRODUCTION, DEBUG],
+         config['n_cpu'], IS_PAIRED, SAMPLE_FLAG, SAMPLE_ID, PRODUCTION, DEBUG],
         stdout='logs/run_assembly.stdout',
         stderr='logs/run_assembly.stderr',
     )
@@ -66,7 +67,7 @@ def run_illumina_assembly():
 def run_kmer_analysis():
     out, err = shared.run_command(
         [config['run_kmer_analysis'], '-i', CLEAN_FASTQ, '-p', config['n_cpu'], 
-         SAMPLE_ID, PRODUCTION, DEBUG],
+         SAMPLE_FLAG, SAMPLE_ID, PRODUCTION, DEBUG],
         stdout='logs/run_kmer_analysis.stdout',
         stderr='logs/run_kmer_analysis.stderr',
     )
@@ -75,7 +76,7 @@ def run_kmer_analysis():
 def run_snp():
     out, err = shared.run_command(
         [config['run_snp'], '-i', CLEAN_FASTQ, '-p', config['n_cpu'], 
-         '--tag', args.sample_tag, SAMPLE_ID, PRODUCTION, DEBUG],
+         '--tag', args.sample_tag, SAMPLE_FLAG, SAMPLE_ID, PRODUCTION, DEBUG],
         stdout='logs/run_snp.stdout',
         stderr='logs/run_snp.stderr',
     )
@@ -84,7 +85,7 @@ def run_snp():
 def run_mlst():
     out, err = shared.run_command(
         [config['run_mlst'], '-i', CLEAN_FASTQ, '-a', ASSEMBLY, '-p', 
-         config['n_cpu'], SAMPLE_ID, PRODUCTION, DEBUG],
+         config['n_cpu'], SAMPLE_FLAG, SAMPLE_ID, PRODUCTION, DEBUG],
         stdout='logs/run_mlst.stdout',
         stderr='logs/run_mlst.stderr',
     )

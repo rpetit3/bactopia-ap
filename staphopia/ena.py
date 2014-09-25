@@ -48,7 +48,7 @@ class ENA(object):
         '''
         stdout, stderr = shared.run_command(
             self.build_command(args), 
-            verbose=True
+            verbose=False
         )
         self.enainfo = json.loads(stdout)
     
@@ -92,4 +92,61 @@ class ENA(object):
             rm = shared.run_command(rm_cmd, verbose=False)
         else:
             mv = shared.run_command(['mv', runs[0], output], verbose=False)
+            
+    '''
+    '''
+    def is_paired(self, experiment):
+        '''
+        '''
+        stdout, stderr = shared.run_command(
+            ['python', self.config['manage'], 'ena_is_paired', '--settings', 
+             self.config['settings'], '--experiment', experiment], 
+            verbose=False
+        )
+        return True if int(stdout) == 1 else False
         
+    def ena_to_sample(self, experiment, is_paired):
+        '''
+        '''
+        is_paired = '--is_paired' if is_paired else ''
+        stdout, stderr = shared.run_command(
+            ['python', self.config['manage'], 'ena_to_sample', '--settings', 
+             self.config['settings'], '--experiment', experiment, is_paired], 
+            verbose=False
+        )
+        
+        try:
+            return json.loads(stdout)
+        except ValueError, e:
+            print stdout, stderr
+            return False
+    
+    def move_experiment(self, input, output, outdir):
+        outdir = '{0}/logs'.format(outdir)
+        if not os.path.isdir(outdir):
+            mkdir = shared.run_command(['mkdir', '-p', outdir], verbose=False)
+            
+        mv = shared.run_command(['mv', input, output], verbose=False)
+        
+        return os.path.exists(output)
+        
+    def create_job_script(self, output, input, outdir, is_paired, sample_info):
+        '''
+        '''
+        is_paired = '--paired' if is_paired else ''
+        production = '--production' if self.config['production'] else ''
+        debug = '--debug' if self.config['debug'] else ''
+        stdout, stderr = shared.run_command(
+            [self.config['create_job_script'], '--input', input, '--working_dir', 
+             outdir, is_paired, '--sample_id', str(sample_info['sample_id']),
+             '--sample_tag', sample_info['sample_tag'], production, debug, 
+             '--processors', self.config['n_cpu']], 
+            stdout=output,
+            verbose=False
+        )
+        return os.path.exists(output)
+        
+    def submit_job(self, script):
+        '''
+        '''
+        stdout, stderr = shared.run_command(['qsub', script], verbose=False)
