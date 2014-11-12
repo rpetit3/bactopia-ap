@@ -1,48 +1,47 @@
-#! /usr/bin/env python 
-'''
-    get_ena_info
-    
-    Retrieve WGS project information from the ENA database.  This script does 
-    not download sequence data, only associated meta-data and download links.
-    
-    By default Aspera Connect download links are being retrieved, its a free 
-    service and saves alot of time, so why not use it?
-'''
+#! /usr/bin/env python
+"""
+Retrieve S. aureus WGS project information from the ENA database.
+
+This script does not download sequence data, only associated meta-data and
+download links. By default Aspera Connect download links are retrieved, its a
+free service and saves alot of time, so why not use it?
+
+Example Usage: get_ena_info --study_output ena_studies.txt
+"""
 if __name__ == '__main__':
     import sys
-    import os
     import urllib2
     import argparse as ap
-    
-    parser = ap.ArgumentParser(prog='get_ena_info.py', 
-                               conflict_handler='resolve', 
+
+    parser = ap.ArgumentParser(prog='get_ena_info.py',
+                               conflict_handler='resolve',
                                description='Pull project info from ENA')
-                               
+
     group1 = parser.add_argument_group('Options', '')
-    group1.add_argument('--study_output', metavar='STRING', 
+    group1.add_argument('--study_output', metavar='STRING',
                         default='./study.txt',
                         help=('File to output Study info to. '
                               '(Default: study.txt)'))
     group1.add_argument('--exp_output', metavar='STRING', default='./exps.txt',
                         help=('File to output Experiement info to. '
                               '(Default: exps.txt)'))
-    group1.add_argument('--runs_output', metavar='STRING', default='./runs.txt',
-                        help='File to output ENA runs to. (Default: runs.txt)')    
-    group1.add_argument('--missing', metavar='STRING', 
+    group1.add_argument('--runs_output', metavar='STRING',
+                        default='./runs.txt',
+                        help='File to output ENA runs to. (Default: runs.txt)')
+    group1.add_argument('--missing', metavar='STRING',
                         default='./missing_fastq.txt',
                         help=('File to output ENA runs missing FASTQ links. '
-                              '(Default: missing_fastq.txt)'))   
-    group1.add_argument('--genome_size', metavar='INT', type=int, 
-                        help='Estimate sequencing coverage. (Default: 2878897)', 
+                              '(Default: missing_fastq.txt)'))
+    group1.add_argument('--genome_size', metavar='INT', type=int,
+                        help='Estimated genome size. (Default: 2878897)',
                         default=2878897)
 
     group2 = parser.add_argument_group('Optional', '')
-    group2.add_argument('-h', '--help', action='help', help='Show help message')
-    group2.add_argument('--version', action='version', version='%(prog)s v0.1', 
+    group2.add_argument('-h', '--help', action='help', help='Help message')
+    group2.add_argument('--version', action='version', version='%(prog)s v0.1',
                         help='Show program\'s version number and exit')
-                        
-    args = parser.parse_args()  
-        
+    args = parser.parse_args()
+
     # ENA browser info: http://www.ebi.ac.uk/ena/about/browser
     address = 'http://www.ebi.ac.uk/ena/data/warehouse/search'
     query = ['"tax_tree(1280)', 'AND', 'library_source=GENOMIC', 'AND',
@@ -54,26 +53,27 @@ if __name__ == '__main__':
     result = 'result=read_run'
     display = 'display=report'
     limit = 'limit=1000000'
-    fields = ['study_accession', 'sample_accession', 'experiment_accession', 
-              'run_accession', 'submission_accession', 'tax_id', 
-              'scientific_name', 'instrument_platform', 'instrument_model', 
-              'library_layout', 'library_strategy', 'library_selection', 
-              'read_count', 'base_count', 'center_name', 'first_public', 
-              'fastq_bytes', 'fastq_md5', 'fastq_aspera', 'fastq_ftp', 
-              'run_alias', 'study_title', 'secondary_study_accession', 
-              'secondary_sample_accession', 'experiment_title', 'study_alias', 
+    fields = ['study_accession', 'sample_accession', 'experiment_accession',
+              'run_accession', 'submission_accession', 'tax_id',
+              'scientific_name', 'instrument_platform', 'instrument_model',
+              'library_layout', 'library_strategy', 'library_selection',
+              'read_count', 'base_count', 'center_name', 'first_public',
+              'fastq_bytes', 'fastq_md5', 'fastq_aspera', 'fastq_ftp',
+              'run_alias', 'study_title', 'secondary_study_accession',
+              'secondary_sample_accession', 'experiment_title', 'study_alias',
               'experiment_alias']
-             
-    url = '{0}?query={1}&{2}&{3}&{4}&fields={5}'.format(address, query, result, 
-                                                        display, limit, ','.join(fields))
-                  
+
+    url = '{0}?query={1}&{2}&{3}&{4}&fields={5}'.format(
+        address, query, result, display, limit, ','.join(fields)
+    )
+
     f = urllib2.urlopen(url)
     data = f.readlines()
     f.close()
     if len(data) <= 1:
         print 'ERROR nothing returned from ENA'
         sys.exit()
-    
+
     ena_studies = {}
     ena_exps = {}
     ena_runs = []
@@ -89,52 +89,62 @@ if __name__ == '__main__':
                 mean_read_length = 0
                 coverage = 0
                 try:
-                    mean_read_length = float(cols['base_count']) / float(cols['read_count'])
+                    mean_read_length = (
+                        float(cols['base_count']) / float(cols['read_count'])
+                    )
                     coverage = float(cols['base_count']) / args.genome_size
                 except:
                     continue
-                    
+
                 if cols['study_accession'] not in ena_studies:
                     ena_studies[cols['study_accession']] = {
-                        'study_accession':cols['study_accession'], 
-                        'secondary_study_accession':cols['secondary_study_accession'],
-                        'study_title':' '.join(cols['study_title'].split()),
-                        'study_alias':cols['study_alias'],
+                        'study_accession': cols['study_accession'],
+                        'secondary_study_accession': (
+                            cols['secondary_study_accession']
+                        ),
+                        'study_title': ' '.join(cols['study_title'].split()),
+                        'study_alias': cols['study_alias'],
                     }
-                
+
                 if cols['experiment_accession'] not in ena_exps:
                     ena_exps[cols['experiment_accession']] = {
-                        'experiment_accession':cols['experiment_accession'],
-                        'experiment_title':' '.join(cols['experiment_title'].split()),
-                        'experiment_alias':cols['experiment_alias'],
-                        'study_accession':cols['study_accession'], 
-                        'sample_accession':cols['sample_accession'], 
-                        'secondary_sample_accession':cols['secondary_sample_accession'],
-                        'submission_accession':cols['submission_accession'], 
-                        'tax_id':cols['tax_id'], 
-                        'scientific_name':cols['scientific_name'], 
-                        'instrument_platform':cols['instrument_platform'], 
-                        'instrument_model':cols['instrument_model'],
-                        'library_layout':cols['library_layout'], 
-                        'library_strategy':cols['library_strategy'], 
-                        'library_selection':cols['library_selection'],
-                        'center_name':cols['center_name'],
+                        'experiment_accession': cols['experiment_accession'],
+                        'experiment_title': (
+                            ' '.join(cols['experiment_title'].split())
+                        ),
+                        'experiment_alias': cols['experiment_alias'],
+                        'study_accession': cols['study_accession'],
+                        'sample_accession': cols['sample_accession'],
+                        'secondary_sample_accession': (
+                            cols['secondary_sample_accession']
+                        ),
+                        'submission_accession': cols['submission_accession'],
+                        'tax_id': cols['tax_id'],
+                        'scientific_name': cols['scientific_name'],
+                        'instrument_platform': cols['instrument_platform'],
+                        'instrument_model': cols['instrument_model'],
+                        'library_layout': cols['library_layout'],
+                        'library_strategy': cols['library_strategy'],
+                        'library_selection': cols['library_selection'],
+                        'center_name': cols['center_name'],
                     }
-                    
+
                 ena_runs.append({
-                    'experiment_accession':cols['experiment_accession'],
-                    'is_paired':'1' if cols['library_layout'] == 'PAIRED' else '0',
-                    'run_accession':cols['run_accession'],
-                    'run_alias':cols['run_alias'],
-                    'read_count':cols['read_count'], 
-                    'base_count':cols['base_count'],
-                    'mean_read_length':'{0:.2f}'.format(mean_read_length),
-                    'coverage':'{0:.2f}'.format(coverage),
-                    'first_public':cols['first_public'],
-                    'fastq_bytes':cols['fastq_bytes'], 
-                    'fastq_md5':cols['fastq_md5'], 
-                    'fastq_aspera':cols['fastq_aspera'], 
-                    'fastq_ftp':cols['fastq_ftp'],
+                    'experiment_accession': cols['experiment_accession'],
+                    'is_paired': (
+                        '1' if cols['library_layout'] == 'PAIRED' else '0'
+                    ),
+                    'run_accession': cols['run_accession'],
+                    'run_alias': cols['run_alias'],
+                    'read_count': cols['read_count'],
+                    'base_count': cols['base_count'],
+                    'mean_read_length': '{0:.2f}'.format(mean_read_length),
+                    'coverage': '{0:.2f}'.format(coverage),
+                    'first_public': cols['first_public'],
+                    'fastq_bytes': cols['fastq_bytes'],
+                    'fastq_md5': cols['fastq_md5'],
+                    'fastq_aspera': cols['fastq_aspera'],
+                    'fastq_ftp': cols['fastq_ftp'],
                 })
 
             else:
@@ -142,9 +152,9 @@ if __name__ == '__main__':
     missing_fh.close()
 
     # Print Studies
-    study_fields = ['study_accession', 'secondary_study_accession', 
+    study_fields = ['study_accession', 'secondary_study_accession',
                     'study_title', 'study_alias']
-                    
+
     study_fh = open(args.study_output, 'w')
     study_fh.write('{0}\n'.format('\t'.join(study_fields)))
     for key in ena_studies:
@@ -153,16 +163,16 @@ if __name__ == '__main__':
             vals.append(ena_studies[key][field])
         study_fh.write('{0}\n'.format('\t'.join(vals)))
     study_fh.close()
-    
+
     # Print Experiments
     exp_fields = [
-        'experiment_accession', 'experiment_title', 'experiment_alias', 
-        'study_accession', 'sample_accession', 'secondary_sample_accession', 
-        'submission_accession', 'tax_id', 'scientific_name', 
-        'instrument_platform', 'instrument_model', 'library_layout', 
+        'experiment_accession', 'experiment_title', 'experiment_alias',
+        'study_accession', 'sample_accession', 'secondary_sample_accession',
+        'submission_accession', 'tax_id', 'scientific_name',
+        'instrument_platform', 'instrument_model', 'library_layout',
         'library_strategy', 'library_selection', 'center_name'
     ]
-    
+
     exp_fh = open(args.exp_output, 'w')
     exp_fh.write('{0}\n'.format('\t'.join(exp_fields)))
     for key in ena_exps:
@@ -171,15 +181,15 @@ if __name__ == '__main__':
             vals.append(ena_exps[key][field])
         exp_fh.write('{0}\n'.format('\t'.join(vals)))
     exp_fh.close()
-        
+
     # Print Runs
     run_fields = [
-        'run_accession', 'experiment_accession', 'is_paired', 'run_alias', 
-        'read_count', 'base_count', 'mean_read_length', 'coverage', 
-        'first_public', 'fastq_bytes', 'fastq_md5', 'fastq_aspera', 
+        'run_accession', 'experiment_accession', 'is_paired', 'run_alias',
+        'read_count', 'base_count', 'mean_read_length', 'coverage',
+        'first_public', 'fastq_bytes', 'fastq_md5', 'fastq_aspera',
         'fastq_ftp'
     ]
-    
+
     runs_fh = open(args.runs_output, 'w')
     runs_fh.write('{0}\n'.format('\t'.join(run_fields)))
     for i in ena_runs:
