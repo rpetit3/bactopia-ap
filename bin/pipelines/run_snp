@@ -1,157 +1,193 @@
 #! /usr/bin/env python
+""" Call SNPs and InDels from the input FASTQ. """
 from os.path import dirname
 from ruffus import *
 
 from staphopia.tasks import snp
-from staphopia.config import *
+from staphopia.config import BASE_DIR, THIRD_PARTY_PATH
 
 parser = cmdline.get_argparse(description='WHAT DOES THIS PIPELINE DO?')
-parser.add_argument("-i", "--input_file", dest="input_file", help="Input file", 
+parser.add_argument("-i", "--input_file", dest="input_file", help="Input file",
                     required=True)
 parser.add_argument('-p', '--processors', metavar="INT", type=int, default=1,
-                  help='Number of processors to use. (Default 1)')
+                    help='Number of processors to use. (Default 1)')
 parser.add_argument('--tag', help='Prefix for final VCF. (Default variants)',
                     dest='tag', default='variants')
 parser.add_argument('--sample_id', metavar="INT", type=int, default=0,
                     help='Optional: Sample id of input. (Default 0)')
-parser.add_argument('--production', action='store_true', default=False, 
+parser.add_argument('--production', action='store_true', default=False,
                     help='Use production server settings', )
-parser.add_argument('--debug', action='store_true', default=False, 
+parser.add_argument('--debug', action='store_true', default=False,
                     help='Run the pipeline do not save results to database', )
 options = parser.parse_args()
 
 config = {
-    'n_cpu':str(options.processors),
-    'reference':BASE_DIR+'/tool-data/snp/n315.fasta',
-    'ref_genbank':BASE_DIR+'/tool-data/snp/n315.gb',
-    'java':THIRD_PARTY_PATH+'/java',
-    'bwa':THIRD_PARTY_PATH+'/bwa',
-    'samtools':THIRD_PARTY_PATH+'/samtools-1.0',
-    'sam_format_converter':THIRD_PARTY_PATH+'/SamFormatConverter.jar',
-    'add_or_replace_read_groups':THIRD_PARTY_PATH+'/AddOrReplaceReadGroups.jar',
-    'build_bam_index':THIRD_PARTY_PATH+'/BuildBamIndex.jar',
-    'sort_sam':THIRD_PARTY_PATH+'/SortSam.jar',
-    'create_sequence_dictionary':THIRD_PARTY_PATH+'/CreateSequenceDictionary.jar',
-    'gatk':THIRD_PARTY_PATH+'/GenomeAnalysisTK.jar',
-    'vcf_annotator':THIRD_PARTY_PATH+'/vcf-annotator'
+    'n_cpu': str(options.processors),
+    'reference': BASE_DIR + '/tool-data/snp/n315.fasta',
+    'ref_genbank': BASE_DIR + '/tool-data/snp/n315.gb',
+    'java': THIRD_PARTY_PATH + '/java',
+    'bwa': THIRD_PARTY_PATH + '/bwa',
+    'samtools': THIRD_PARTY_PATH + '/samtools-1.0',
+    'sam_format_converter': THIRD_PARTY_PATH + '/SamFormatConverter.jar',
+    'add_or_replace_read_groups': '{0}/AddOrReplaceReadGroups.jar'.format(
+        THIRD_PARTY_PATH
+    ),
+    'build_bam_index': THIRD_PARTY_PATH + '/BuildBamIndex.jar',
+    'sort_sam': THIRD_PARTY_PATH + '/SortSam.jar',
+    'create_sequence_dictionary': '{0}/CreateSequenceDictionary.jar'.format(
+        THIRD_PARTY_PATH
+    ),
+    'gatk': THIRD_PARTY_PATH + '/GenomeAnalysisTK.jar',
+    'vcf_annotator': THIRD_PARTY_PATH + '/vcf-annotator'
 }
 
 # Pipeline --------------------------------------------------------------------
-@mkdir('snp/completed')   
+
+
+@mkdir('snp/completed')
 @mkdir('snp/gatk')
 @transform(options.input_file, regex(r"(.*)"), r"snp/completed/variants.sai")
 def bwa_aln(input_file, output_file):
+    """ Align reads using BWA. """
     output_sai = output_file.replace('completed', 'gatk')
-    results = snp.bwa_aln(options.input_file, output_sai, output_file, config)
-  
+    snp.bwa_aln(options.input_file, output_sai, output_file, config)
+
+
 @follows(bwa_aln)
-@transform(bwa_aln, regex(r"(.*).sai"), r"\1.sam")  
+@transform(bwa_aln, regex(r"(.*).sai"), r"\1.sam")
 def bwa_samse(input_file, output_file):
+    """ Align as single-end reads. """
     input_sai = input_file.replace('completed', 'gatk')
     output_sam = output_file.replace('completed', 'gatk')
-    results = snp.bwa_samse(input_sai, options.input_file, output_sam, 
-                            output_file, config)
+    snp.bwa_samse(input_sai, options.input_file, output_sam, output_file,
+                  config)
+
 
 @follows(bwa_samse)
-@transform(bwa_samse, regex(r"(.*).sam"), r"\1.bam")  
+@transform(bwa_samse, regex(r"(.*).sam"), r"\1.bam")
 def sam_to_bam(input_file, output_file):
+    """ Convert SAM to BAM. """
     input_sam = input_file.replace('completed', 'gatk')
     output_bam = output_file.replace('completed', 'gatk')
-    results = snp.sam_to_bam(input_sam, output_bam, output_file, config)
-    
+    snp.sam_to_bam(input_sam, output_bam, output_file, config)
+
+
 @follows(sam_to_bam)
-@transform(sam_to_bam, regex(r"(.*).bam"), r"\1_s.bam")  
+@transform(sam_to_bam, regex(r"(.*).bam"), r"\1_s.bam")
 def add_or_replace_read_groups(input_file, output_file):
+    """ Filter out reads. """
     input_bam = input_file.replace('completed', 'gatk')
     output_bam = output_file.replace('completed', 'gatk')
-    results = snp.add_or_replace_read_groups(input_bam, output_bam, 
-                                             output_file, config)
+    snp.add_or_replace_read_groups(input_bam, output_bam, output_file, config)
+
 
 @follows(add_or_replace_read_groups)
-@transform(add_or_replace_read_groups, regex(r"(.*).bam"), r"\1.index") 
+@transform(add_or_replace_read_groups, regex(r"(.*).bam"), r"\1.index")
 def build_s_bam_index(input_file, output_file):
+    """ Build BAM index. """
     input_bam = input_file.replace('completed', 'gatk')
-    results = snp.build_bam_index(input_bam, output_file, config)
-  
+    snp.build_bam_index(input_bam, output_file, config)
+
+
 @follows(build_s_bam_index)
-@transform(add_or_replace_read_groups, regex(r"(.*).bam"), r"\1.intervals") 
+@transform(add_or_replace_read_groups, regex(r"(.*).bam"), r"\1.intervals")
 def realigner_target_creator(input_file, output_file):
+    """ Check Tauqeer's protocol. """
     input_bam = input_file.replace('completed', 'gatk')
     output_intervals = output_file.replace('completed', 'gatk')
-    results = snp.realigner_target_creator(input_bam, output_intervals, 
-                                           output_file, config)
-  
+    snp.realigner_target_creator(input_bam, output_intervals, output_file,
+                                 config)
+
+
 @follows(realigner_target_creator)
-@transform(add_or_replace_read_groups, regex(r"(.*)_s.bam"), r"\1_c.bam", 
-                                                             r"\1_s.intervals") 
+@transform(add_or_replace_read_groups, regex(r"(.*)_s.bam"), r"\1_c.bam",
+                                                             r"\1_s.intervals")
 def indel_realigner(input_file, output_file, intervals):
+    """ Check Tauqeer's protocol. """
     input_bam = input_file.replace('completed', 'gatk')
     output_bam = output_file.replace('completed', 'gatk')
     input_intervals = intervals.replace('completed', 'gatk')
-    results = snp.indel_realigner(input_bam, input_intervals, output_bam, 
-                                  output_file, config)
+    snp.indel_realigner(input_bam, input_intervals, output_bam, output_file,
+                        config)
+
 
 @follows(indel_realigner)
 @transform(indel_realigner, regex(r"(.*).bam"), r"\1s.bam")
 def sort_sam(input_file, output_file):
+    """ Sort the SAM file """
     input_bam = input_file.replace('completed', 'gatk')
     output_bam = output_file.replace('completed', 'gatk')
-    results = snp.sort_sam(input_bam, output_bam, output_file, config)
-  
+    snp.sort_sam(input_bam, output_bam, output_file, config)
+
+
 @follows(sort_sam)
 @transform(indel_realigner, regex(r"(.*).bam"), r"\1.index")
 def build_cs_bam_index(input_file, output_file):
+    """ Build another BAM index """
     input_bam = input_file.replace('completed', 'gatk')
-    results = snp.build_bam_index(input_bam, output_file, config)
-    
+    snp.build_bam_index(input_bam, output_file, config)
+
+
 @follows(build_cs_bam_index)
 @transform(indel_realigner, regex(r"(.*).bam"), r"\1m.bam")
 def samtools_view(input_file, output_file):
+    """ Check Tauqeer's protocol. """
     input_bam = input_file.replace('completed', 'gatk')
     output_bam = output_file.replace('completed', 'gatk')
-    results = snp.samtools_view(input_bam, output_bam, output_file, config)
+    snp.samtools_view(input_bam, output_bam, output_file, config)
+
 
 @follows(samtools_view)
 @transform(samtools_view, regex(r"(.*).bam"), r"\1.index")
 def build_csm_bam_index(input_file, output_file):
+    """ Build BAM index """
     input_bam = input_file.replace('completed', 'gatk')
-    results = snp.build_bam_index(input_bam, output_file, config)
-    
+    snp.build_bam_index(input_bam, output_file, config)
+
+
 @follows(build_csm_bam_index)
 @transform(samtools_view, regex(r"(.*).bam"), r"\1.vcf")
 def unified_genotyper(input_file, output_file):
+    """ Check Tauqeer's protocol. """
     input_bam = input_file.replace('completed', 'gatk')
     output_vcf = output_file.replace('completed', 'gatk')
-    results = snp.unified_genotyper(input_bam, output_vcf, output_file, config)
-    
+    snp.unified_genotyper(input_bam, output_vcf, output_file, config)
+
+
 @follows(unified_genotyper)
 @transform(unified_genotyper, regex(r"(.*).vcf"), r"\1c.vcf")
 def variant_filtration(input_file, output_file):
+    """ Check Tauqeer's protocol. """
     input_vcf = input_file.replace('completed', 'gatk')
     output_vcf = output_file.replace('completed', 'gatk')
-    results = snp.variant_filtration(input_vcf, output_vcf, output_file,
-                                     config)
-    
+    snp.variant_filtration(input_vcf, output_vcf, output_file, config)
+
+
 @follows(variant_filtration)
 @transform(variant_filtration, regex(r"(.*).vcf"), r"\1_annotated.vcf")
 def vcf_annotator(input_file, output_file):
+    """ Annotate the variants. """
     input_vcf = input_file.replace('completed', 'gatk')
     output_vcf = output_file.replace('completed', 'gatk')
-    results = snp.vcf_annotator(input_vcf, output_vcf, output_file, config)
-     
+    snp.vcf_annotator(input_vcf, output_vcf, output_file, config)
+
+
 @follows(vcf_annotator)
 @transform(vcf_annotator, regex(r"(.*).vcf"), r"\1.vcf.gz")
 def move_final_vcf(input_file, output_file):
+    """ Move the final annotated VCF to the root of the project. """
     input_vcf = input_file.replace('completed', 'gatk')
     output_vcf = '{0}.variants.vcf.gz'.format(options.tag)
-    results = snp.move_final_vcf(input_vcf, output_vcf, output_file)
-    
+    snp.move_final_vcf(input_vcf, output_vcf, output_file)
+
+
 @follows(move_final_vcf)
 @transform(move_final_vcf, regex(r"(.*).vcf.gz"), r"\1.cleanup")
 def cleanup(input_file, output_file):
+    """ Remove all the intermediate files. """
     base_dir = dirname(input_file.replace('completed', 'gatk'))
     tar_gz = '{0}/gatk/gatk.tar.gz'.format(dirname(base_dir))
-    results = snp.cleanup(base_dir, tar_gz, output_file)
- 
+    snp.cleanup(base_dir, tar_gz, output_file)
+
 # -----------------------------------------------------------------------------
-pipeline_run(exceptions_terminate_immediately = True, verbose=5)
+pipeline_run(exceptions_terminate_immediately=True, verbose=5)

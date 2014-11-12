@@ -1,23 +1,23 @@
 #! /usr/bin/python
-'''
-    Author: Robert A Petit III
-    
-    usage: create_job_script [--input STRING] [--working_dir STRING] [--paired]
-                             [--sample_id INT] [--sample_tag STRING] [--debug]
-                             [--processors INT] [--production] [-h] [--version]
+"""
+Create a Staphopia job script.
 
-    Ex: create_job_script --input /path/to/reads.fastq.gz --paired
-'''
+usage: create_job_script [--input STRING] [--working_dir STRING] [--paired]
+                         [--sample_id INT] [--sample_tag STRING] [--debug]
+                         [--processors INT] [--production] [-h] [--version]
+
+Example Usage: create_job_script --input /path/to/reads.fastq.gz --paired
+"""
+
 if __name__ == '__main__':
     import sys
-    import os
-    import argparse as ap    
-    
+    import argparse as ap
+
     from staphopia.config import *
-    
+
     parser = ap.ArgumentParser(
-        prog='create_job_script', 
-        conflict_handler='resolve', 
+        prog='create_job_script',
+        conflict_handler='resolve',
         description=('Create a SGE usable script to submit a FASTQ file '
                      'through the pipeline. Print to STDOUT.'))
     group1 = parser.add_argument_group('Options', '')
@@ -27,41 +27,37 @@ if __name__ == '__main__':
                         help='Working directory to execute script from.')
     group1.add_argument('--processors', metavar="INT", type=int, default=1,
                         help='Number of processors to use.')
-                        
     group1.add_argument('--sample_id', metavar="INT", type=int, default=0,
                         help='Optional: Sample ID of the input')
     group1.add_argument('--sample_tag', metavar="STR", type=str, default=False,
                         help='Optional: Sample tag of the input')
-              
-    group1.add_argument('--paired', action='store_true', default=False, 
+    group1.add_argument('--paired', action='store_true', default=False,
                         help='Input is interleaved paired end reads.')
-    group1.add_argument('--production', action='store_true', default=False, 
+    group1.add_argument('--production', action='store_true', default=False,
                         help='Use production settings.')
-    group1.add_argument('--debug', action='store_true', default=False, 
+    group1.add_argument('--debug', action='store_true', default=False,
                         help='Use debug settigns.')
-                        
     group3 = parser.add_argument_group('Help', '')
-    group3.add_argument('-h', '--help', action='help', 
+    group3.add_argument('-h', '--help', action='help',
                         help='Show this help message and exit')
-    group3.add_argument('--version', action='version', version='%(prog)s v0.1', 
+    group3.add_argument('--version', action='version', version='%(prog)s v0.1',
                         help='Show program\'s version number and exit')
-   
-    if len(sys.argv)==1:
+
+    if len(sys.argv) == 1:
         parser.print_usage()
         sys.exit(1)
 
-    args = parser.parse_args() 
-    
-    
+    args = parser.parse_args()
+
     # Job Constants -----------------------------------------------------------
     IS_PAIRED = '--paired' if args.paired else ''
-    SAMPLE_ID = '--sample_id '+str(args.sample_id) if args.sample_id else ''
-    SAMPLE_TAG =  '--sample_tag '+args.sample_tag if args.sample_tag else ''
+    SAMPLE_ID = '--sample_id ' + str(args.sample_id) if args.sample_id else ''
+    SAMPLE_TAG = '--sample_tag ' + args.sample_tag if args.sample_tag else ''
     PRODUCTION = '--production' if args.production else ''
     DEBUG = '--debug' if args.debug else ''
-    
+
     JOB_SCRIPT = '\n'.join([
-        '#! /bin/bash', 
+        '#! /bin/bash',
         '#$ -wd {0}'.format(args.working_dir),
         '#$ -V',
         '#$ -N j{0}'.format(args.sample_id),
@@ -84,18 +80,17 @@ if __name__ == '__main__':
         '',
         '# Command',
         '',
-        '{0}/submit_job -i {1} -p {2} {3} {4} {5} {6} {7}'.format( 
-            PIPELINE_PATH, 
-            args.input, 
-            args.processors, 
-            IS_PAIRED, 
+        '{0}/submit_job -i {1} -p {2} {3} {4} {5} {6} {7}'.format(
+            PIPELINE_PATH,
+            args.input,
+            args.processors,
+            IS_PAIRED,
             SAMPLE_ID,
-            SAMPLE_TAG, 
+            SAMPLE_TAG,
             PRODUCTION,
             DEBUG
         ),
         '',
     ])
-    
-    print JOB_SCRIPT
 
+    print JOB_SCRIPT
