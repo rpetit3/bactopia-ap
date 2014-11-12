@@ -31,6 +31,8 @@ config = {
     'run_mlst':PIPELINE_PATH+'/run_mlst',
     'run_snp':PIPELINE_PATH+'/run_snp',
     'run_kmer_analysis':PIPELINE_PATH+'/run_kmer_analysis',
+    'run_resistance':PIPELINE_PATH+'/run_resistance',
+    'run_virulence':PIPELINE_PATH+'/run_virulence',
     'manage':'/home/rpetit/staphopia/staphopia.com/manage.py',
 }
 
@@ -39,7 +41,7 @@ SAMPLE_FLAG = '--sample_id' if args.sample_id else ''
 SAMPLE_ID = str(args.sample_id) if args.sample_id else ''
 PRODUCTION = '--production' if args.production else ''
 DEBUG = '--debug' if args.debug else ''
-
+BLASTDB = "assembly/blastdb/assembly"
 CLEAN_FASTQ = args.input_file.replace('.fastq.gz', '.cleanup.fastq.gz')
 ASSEMBLY = args.input_file.replace('.fastq.gz', '.scaffolds.fasta.gz')
 #------------------------------------------------------------------------------
@@ -88,6 +90,22 @@ def run_mlst():
          config['n_cpu'], SAMPLE_FLAG, SAMPLE_ID, PRODUCTION, DEBUG],
         stdout='logs/run_mlst.stdout',
         stderr='logs/run_mlst.stderr',
+    )
+    
+@follows(run_mlst)
+def run_resistance():
+    out, err = shared.run_command(
+        [config['run_resistance'], '--blastdb', BLASTDB, '-p', config['n_cpu']],
+        stdout='logs/run_resistance.stdout',
+        stderr='logs/run_resistance.stderr',
+    )
+    
+@follows(run_resistance)
+def run_virulence():
+    out, err = shared.run_command(
+        [config['run_virulence'], '--blastdb', BLASTDB, '-p', config['n_cpu']],
+        stdout='logs/run_virulence.stdout',
+        stderr='logs/run_virulence.stderr',
     )
 #------------------------------------------------------------------------------
 pipeline_run(exceptions_terminate_immediately = True, verbose=5)

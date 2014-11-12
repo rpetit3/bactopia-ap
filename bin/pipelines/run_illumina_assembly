@@ -56,8 +56,6 @@ def velvet(input_files, output_dir):
 def spades(input_file, output_file):
     results = assembly.spades(input_file, output_file, config)
 
-
-    
 @follows(spades)
 @transform(options.input_file, regex(r"(.*).cleanup.fastq.gz"),
            r"\1.contigs.fasta.gz", r"\1.scaffolds.fasta.gz")
