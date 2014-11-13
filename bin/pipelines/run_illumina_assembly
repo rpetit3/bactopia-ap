@@ -5,7 +5,7 @@ from ruffus import *
 from staphopia.tasks import assembly
 
 parser = cmdline.get_argparse(description='Assemble Illumina reads')
-parser.add_argument("-i", "--input_file", dest="input_file", help="Input file",
+parser.add_argument("-f", "--fastq", dest="fastq", help="Input FASTQ file",
                     required=True)
 parser.add_argument('--paired', action='store_true', default=False,
                     help='Input is interleaved paired end reads.', )
@@ -19,7 +19,7 @@ VERSION = "0.1"
 
 
 @mkdir('assembly')
-@transform(options.input_file, regex(r"(.*)"), r"assembly/kmergenie.dat")
+@transform(options.fastq, regex(r"(.*)"), r"assembly/kmergenie.dat")
 def kmergenie(input_file, output_file):
     """ Predict optimal kmer for Velvet assembly. """
     assembly.kmergenie(input_file, output_file, config)
@@ -34,7 +34,7 @@ def sort_kmergenie(input_file, output_file):
 
 @follows(sort_kmergenie)
 @mkdir('assembly/velvet/logs')
-@merge([options.input_file, sort_kmergenie], 'assembly/velvet/completed')
+@merge([options.fastq, sort_kmergenie], 'assembly/velvet/completed')
 def velvet(input_files, output_dir):
     """ Assemble using Velvet. """
     assembly.velvet(input_files, output_dir, config)
@@ -42,14 +42,14 @@ def velvet(input_files, output_dir):
 
 @follows(velvet)
 @mkdir('assembly/spades')
-@transform(options.input_file, regex(r"(.*)"), r"assembly/spades/completed")
+@transform(options.fastq, regex(r"(.*)"), r"assembly/spades/completed")
 def spades(input_file, output_file):
     """ Assemble using Spades. """
     assembly.spades(input_file, output_file, config)
 
 
 @follows(spades)
-@transform(options.input_file, regex(r"(.*).cleanup.fastq.gz"),
+@transform(options.fastq, regex(r"(.*).cleanup.fastq.gz"),
            r"\1.contigs.fasta.gz", r"\1.scaffolds.fasta.gz")
 def move_assembly(input_file, contigs, scaffolds):
     """ Copy the Spades assembly to the project root. """
@@ -59,7 +59,7 @@ def move_assembly(input_file, contigs, scaffolds):
 
 @follows(move_assembly)
 @mkdir('assembly/blastdb')
-@transform(options.input_file, regex(r"(.*).cleanup.fastq.gz"),
+@transform(options.fastq, regex(r"(.*).cleanup.fastq.gz"),
            r"assembly/blastdb/completed", r"\1.scaffolds.fasta.gz")
 def makeblastdb(input_file, output_file, scaffolds):
     """ Make a blast database of the Spades assembly"""
@@ -67,7 +67,7 @@ def makeblastdb(input_file, output_file, scaffolds):
 
 
 @follows(makeblastdb)
-@transform(options.input_file, regex(r"(.*).cleanup.fastq.gz"),
+@transform(options.fastq, regex(r"(.*).cleanup.fastq.gz"),
            r"\1.assembly.stats")
 def assembly_stats(input_file, output_file):
     """ Calculate assembly statistics. """

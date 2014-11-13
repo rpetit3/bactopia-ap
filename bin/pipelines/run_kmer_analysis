@@ -5,7 +5,7 @@ from ruffus import *
 from staphopia.tasks import kmer
 
 parser = cmdline.get_argparse(description='Count kmers in a FASTQ file.')
-parser.add_argument("-f", "--fastq", dest="fastq", help="Input file",
+parser.add_argument("-f", "--fastq", dest="fastq", help="Input FASTQ file",
                     required=True)
 parser.add_argument('-p', '--processors', metavar="INT", type=int, default=1,
                     help='Number of processors to use. (Default 1)')
