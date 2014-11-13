@@ -4,7 +4,6 @@ bin/fastq_validator
 
 staphopia/*.pyc
 staphopia/tasks/*pyc
-staphopia/config.py
 
 .DS_Store
 ._.DS_Store

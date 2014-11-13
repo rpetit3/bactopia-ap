@@ -1,48 +1,36 @@
-'''
-    Author: Robert A Petit III
-    
-    These tasks include all FASTQ related steps.
-'''
-from staphopia.tasks import shared 
+#! /usr/bin/env python
+""" Ruffus wrappers for FASTQ related tasks. """
+from staphopia.tasks import shared
+from staphopia.config import BIN
 
-def validator(fastq, config):
-    '''
-    Ensure the given file is proper FASTQ format
-    '''
+
+def validator(fastq):
+    """ Test validity of FASTQ file. """
     stdout, stderr = shared.run_command(
-        [config['fastq_validator'], '--file', fastq, '--quiet', 
-         '--seqLimit', '50000', '--disableSeqIDCheck']    
+        [BIN['fastq_validator'], '--file', fastq, '--quiet',
+         '--seqLimit', '50000', '--disableSeqIDCheck']
     )
 
     if stdout.split('\t')[0] != '0':
         raise Exception("Invalid FASTQ format.")
-        
-def stats(fastq, output_file, config):
-    '''
-    Generate read statistics of the given FASTQ file
-    '''
+
+
+def stats(fastq, output_file):
+    """ Generate read statistics of the given FASTQ file. """
     fastq_stats = shared.pipe_command(
         ['zcat', fastq],
-        [config['fastq_stats']],
+        [BIN['fastq_stats']],
         stdout=output_file
     )
+    return fastq_stats
 
-     
-def cleanup(fastq, stats_file, output_file, config):
-    '''
-    Based of the read statistics remove low quality reads and reduce coverage
-    '''
+
+def cleanup(fastq, stats_file, output_file):
+    """ Read stats_file, and remove low quality reads and reduce coverage. """
     fastq_cleanup = shared.pipe_commands(
         ['zcat', fastq],
-        [config['fastq_cleanup'], '--stats', stats_file],
+        [BIN['fastq_cleanup'], '--stats', stats_file],
         ['gzip', '-'],
         stdout=output_file
     )
-    
-def save(sample_id, table, input, version, output, config, is_production):
-    '''
-    
-    '''
-    save = shared.save(
-        config, sample_id, table, input, version, output, is_production
-    )
+    return fastq_cleanup

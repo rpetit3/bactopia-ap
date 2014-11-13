@@ -1,77 +1,35 @@
 #! /usr/bin/env python
+""" Clean up an input FASTQ file. """
 from ruffus import *
-
 from staphopia.tasks import fastq
-from staphopia.config import *
-
 
 parser = cmdline.get_argparse(description='Cleanup FASTQ files')
-parser.add_argument("-f", "--fastq", dest="fastq", help="Input FASTQ file",
-                    required=True)
-parser.add_argument('--paired', action='store_true', default=False,
-                    help='Input is interleaved paired end reads.', )
-parser.add_argument('-p', '--processors', metavar="INT", type=int, default=1,
-                    help='Number of processors to use. (Default 1)')
-parser.add_argument('--sample_id', metavar="INT", type=int, default=0,
-                    help='Optional: Sample id of input. (Default 0)')
-parser.add_argument('--production', action='store_true', default=False,
-                    help='Use production server settings', )
-parser.add_argument('--debug', action='store_true', default=False,
-                    help='Run the pipeline do not save results to database', )
+parser.add_argument("-f", "--fastq", dest="fastq", required=True,
+                    help="Compressed FASTQ file (*.tar.gz)",)
 options = parser.parse_args()
-
-VERSION = '0.1'
-config = {
-    'is_paired': options.paired,
-    'n_cpu': str(options.processors),
-    'fastq_cleanup': PATH+'/fastq_cleanup',
-    'fastq_stats': PATH+'/fastq_stats',
-    'fastq_validator': THIRD_PARTY_PATH+'/fastq_validator',
-    'manage': '/home/rpetit/staphopia/staphopia.com/manage.py',
-}
 
 # Pipeline --------------------------------------------------------------------
 
 
-def validator():
-    results = fastq.validator(options.fastq, config)
-
-
-@follows(validator)
 @transform(options.fastq, regex(r"(.*).gz"), r"\1.stats")
-def raw_stats(fastq, output_file):
-    results = fastq.stats(fastq, output_file, config)
+def raw_stats(input_file, output_file):
+    """ Calculate sequence stats of the input FASTQ. """
+    fastq.stats(input_file, output_file)
 
 
 @follows(raw_stats)
-@transform(raw_stats, regex(r"(.*).stats"), r"\1.db")
-def save_raw_stats(fastq, output_file):
-    if options.sample_id and not options.debug:
-        save = fastq.save(options.sample_id, 'fastq_original', fastq,
-                          VERSION, output_file, config,
-                          is_production=options.production)
-
-
-@follows(save_raw_stats)
 @transform(options.fastq, regex(r"(.*).fastq.gz"),
            r"\1.cleanup.fastq.gz", r"\1.fastq.stats")
-def cleanup(fastq, output_file, stats_file):
-    results = fastq.cleanup(fastq, stats_file, output_file, config)
+def cleanup(input_file, output_file, stats_file):
+    """ Clean up FASTQ based on statistics. """
+    fastq.cleanup(input_file, stats_file, output_file)
 
 
 @follows(cleanup)
 @transform(cleanup, regex(r"(.*).gz"), r"\1.stats", r"\1.db")
-def cleanup_stats(fastq, output_file, db_file):
-    results = fastq.stats(fastq, output_file, config)
-
-
-@follows(cleanup_stats)
-@transform(cleanup_stats, regex(r"(.*).stats"), r"\1.db")
-def save_cleanup_stats(fastq, output_file):
-    if options.sample_id and not options.debug:
-        save = fastq.save(options.sample_id, 'fastq_clean', fastq,
-                          VERSION, output_file, config,
-                          is_production=options.production)
+def cleanup_stats(input_file, output_file, db_file):
+    """ Calculate sequence stats of the cleaned up FASTQ. """
+    fastq.stats(input_file, output_file)
 
 
 # -----------------------------------------------------------------------------
