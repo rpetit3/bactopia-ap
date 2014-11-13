@@ -18,7 +18,16 @@ VCFANNOTATOR = BASE_DIR + '/src/third-party/python/vcf-annotator'
 
 # Programs
 BIN = {
+    # FASTQ related
     'fastq_cleanup': PATH + '/fastq_cleanup',
     'fastq_stats': PATH + '/fastq_stats',
     'fastq_validator': THIRD_PARTY_PATH + '/fastq_validator',
+
+    # Assembly related
+    'kmergenie': THIRD_PARTY_PATH + '/kmergenie',
+    'velvetg': THIRD_PARTY_PATH + '/velvetg',
+    'velveth': THIRD_PARTY_PATH + '/velveth',
+    'spades': THIRD_PARTY_PATH + '/spades.py',
+    'makeblastdb': THIRD_PARTY_PATH + '/makeblastdb',
+    'assemblathon_stats': THIRD_PARTY_PATH + '/assemblathon_stats.pl',
 }

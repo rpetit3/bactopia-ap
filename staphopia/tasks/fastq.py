@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 """ Ruffus wrappers for FASTQ related tasks. """
-from staphopia.tasks import shared
 from staphopia.config import BIN
+from staphopia.tasks import shared
 
 
 def validator(fastq):
