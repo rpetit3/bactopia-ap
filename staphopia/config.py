@@ -30,4 +30,7 @@ BIN = {
     'spades': THIRD_PARTY_PATH + '/spades.py',
     'makeblastdb': THIRD_PARTY_PATH + '/makeblastdb',
     'assemblathon_stats': THIRD_PARTY_PATH + '/assemblathon_stats.pl',
+
+    # K-mer related
+    'jellyfish': THIRD_PARTY_PATH + '/jellyfish',
 }
