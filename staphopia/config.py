@@ -41,6 +41,20 @@ BIN = {
     'samtools': THIRD_PARTY_PATH + '/samtools-1.0',
     'genomeCoverageBed': THIRD_PARTY_PATH + '/genomeCoverageBed',
 
+    # SNP/InDel related
+    'java': THIRD_PARTY_PATH + '/java',
+    'sam_format_converter': THIRD_PARTY_PATH + '/SamFormatConverter.jar',
+    'add_or_replace_read_groups': '{0}/AddOrReplaceReadGroups.jar'.format(
+        THIRD_PARTY_PATH
+    ),
+    'build_bam_index': THIRD_PARTY_PATH + '/BuildBamIndex.jar',
+    'sort_sam': THIRD_PARTY_PATH + '/SortSam.jar',
+    'create_sequence_dictionary': '{0}/CreateSequenceDictionary.jar'.format(
+        THIRD_PARTY_PATH
+    ),
+    'gatk': THIRD_PARTY_PATH + '/GenomeAnalysisTK.jar',
+    'vcf_annotator': THIRD_PARTY_PATH + '/vcf-annotator',
+
     # K-mer related
     'jellyfish': THIRD_PARTY_PATH + '/jellyfish',
 }
@@ -55,4 +69,9 @@ SCCMEC = {
     'primers': BASE_DIR + '/tool-data/sccmec_primers.fasta',
     'proteins': BASE_DIR + '/tool-data/sccmec_proteins.fasta',
     'cassettes': BASE_DIR + '/tool-data/sccmec/sccmec_cassettes',
+}
+
+SNP = {
+    'reference': BASE_DIR + '/tool-data/snp/n315.fasta',
+    'ref_genbank': BASE_DIR + '/tool-data/snp/n315.gb',
 }
