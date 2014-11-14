@@ -35,6 +35,12 @@ BIN = {
     'srst2': THIRD_PARTY_PATH + '/srst2.py',
     'blastn': THIRD_PARTY_PATH + '/blastn',
 
+    # SCCmec related
+    'tblastn': THIRD_PARTY_PATH + '/tblastn',
+    'bwa': THIRD_PARTY_PATH + '/bwa',
+    'samtools': THIRD_PARTY_PATH + '/samtools-1.0',
+    'genomeCoverageBed': THIRD_PARTY_PATH + '/genomeCoverageBed',
+
     # K-mer related
     'jellyfish': THIRD_PARTY_PATH + '/jellyfish',
 }
@@ -43,4 +49,10 @@ MLST = {
     'mlst_db': BASE_DIR + '/tool-data/mlst/Staphylococcus_aureus.fasta',
     'mlst_definitions': BASE_DIR + '/tool-data/mlst/saureus.txt',
     'mlst_blastdb': BASE_DIR + '/tool-data/mlst/blastdb',
+}
+
+SCCMEC = {
+    'primers': BASE_DIR + '/tool-data/sccmec_primers.fasta',
+    'proteins': BASE_DIR + '/tool-data/sccmec_proteins.fasta',
+    'cassettes': BASE_DIR + '/tool-data/sccmec/sccmec_cassettes',
 }

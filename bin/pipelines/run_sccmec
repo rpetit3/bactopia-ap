@@ -1,70 +1,70 @@
 #! /usr/bin/env python
+""" Predict SCCmec presence of a sample. """
 from ruffus import *
 
 from staphopia.tasks import sccmec
-from staphopia.config import *
 
-parser = cmdline.get_argparse(description='WHAT DOES THIS PIPELINE DO?')
-parser.add_argument("-i", "--input_file", dest="input_file", help="Input file", 
+parser = cmdline.get_argparse(description='Predict SCCmec presence.')
+parser.add_argument("-f", "--fastq", dest="fastq", help="Input FASTQ file",
                     required=True)
 parser.add_argument("--blastdb", dest="blastdb", required=True,
                     help="BLAST database to query genes against.")
 parser.add_argument('-p', '--processors', metavar="INT", type=int, default=1,
-                  help='Number of processors to use. (Default 1)')
+                    help='Number of processors to use. (Default 1)')
 options = parser.parse_args()
-
-config = {
-    'n_cpu':str(options.processors),
-    'primers':BASE_DIR+'/tool-data/sccmec_primers.fasta',
-    'proteins':BASE_DIR+'/tool-data/sccmec_proteins.fasta',
-    'cassettes':BASE_DIR+'/tool-data/sccmec/sccmec_cassettes',
-    'blastn':THIRD_PARTY_PATH+'/blastn',
-    'tblastn':THIRD_PARTY_PATH+'/tblastn',
-    'bwa':THIRD_PARTY_PATH+'/bwa',
-    'samtools':THIRD_PARTY_PATH+'/samtools-1.0',
-    'genomeCoverageBed':THIRD_PARTY_PATH+'/genomeCoverageBed',
-}
-
 blastdb_exists = options.blastdb + ".out"
 
 # Pipeline --------------------------------------------------------------------
-@mkdir('sccmec')   
+
+
+@mkdir('sccmec')
 @transform(blastdb_exists, regex(r"(.*)"), r"sccmec/completed.proteins")
 def blast_genes(blastdb, output_file):
-    results = sccmec.blast_genes(options.blastdb, output_file, config)
+    """ Blast SCCmec related genes against given blast database. """
+    sccmec.blast_genes(options.blastdb, output_file, options.processors)
+
 
 @follows(blast_genes)
 @transform(blastdb_exists, regex(r"(.*)"), r"sccmec/completed.primers")
 def blast_primers(blastdb, output_file):
-    results = sccmec.blast_primers(options.blastdb, output_file, config)
+    """ Blast SCCmec related primers against given blast database. """
+    sccmec.blast_primers(options.blastdb, output_file)
 
-@mkdir('sccmec/cassettes')  
+
+@mkdir('sccmec/cassettes')
 @follows(blast_primers)
-@transform(options.input_file, regex(r"(.*)"), 
-           r"sccmec/cassettes/completed.sai")
+@transform(options.fastq, regex(r"(.*)"), r"sccmec/cassettes/completed.sai")
 def bwa_aln(input_file, output_file):
-    results = sccmec.bwa_aln(options.input_file, output_file, config)
-  
+    """ Align reads against SCCmec cassettes. """
+    sccmec.bwa_aln(options.fastq, output_file, options.processors)
+
+
 @follows(bwa_aln)
-@transform(bwa_aln, regex(r"(.*).sai"), r"\1.sam")  
+@transform(bwa_aln, regex(r"(.*).sai"), r"\1.sam")
 def bwa_samse(input_file, output_file):
-    results = sccmec.bwa_samse(input_file, options.input_file, 
-                               output_file, config)
-    
+    """ Align reads against SCCmec cassettes. """
+    sccmec.bwa_samse(input_file, options.fastq, output_file)
+
+
 @follows(bwa_samse)
-@transform(bwa_samse, regex(r"(.*).sam"), r"\1.bam")  
+@transform(bwa_samse, regex(r"(.*).sam"), r"\1.bam")
 def sam_to_bam(input_file, output_file):
-    results = sccmec.sam_to_bam(input_file, output_file, config)
-    
+    """ Convert SAM  to BAM. """
+    sccmec.sam_to_bam(input_file, output_file)
+
+
 @follows(sam_to_bam)
-@transform(sam_to_bam, regex(r"(.*).bam"), r"\1.coverage")  
+@transform(sam_to_bam, regex(r"(.*).bam"), r"\1.coverage")
 def genome_coverage_bed(input_file, output_file):
-    results = sccmec.genome_coverage_bed(input_file, output_file, config)
-  
+    """ Calculate coverage of the alinged reads. """
+    sccmec.genome_coverage_bed(input_file, output_file)
+
+
 @follows(genome_coverage_bed)
-@transform(genome_coverage_bed, regex(r"(.*).coverage"), r"\1.cleanup")  
+@transform(genome_coverage_bed, regex(r"(.*).coverage"), r"\1.cleanup")
 def cleanup_mapping(input_file, output_file):
-    results = sccmec.cleanup_mapping(output_file)
-  
+    """ Clean up all the intermediate files. """
+    sccmec.cleanup_mapping(output_file)
+
 # -----------------------------------------------------------------------------
-pipeline_run(exceptions_terminate_immediately = True, verbose=5)
+pipeline_run(exceptions_terminate_immediately=True, verbose=5)
