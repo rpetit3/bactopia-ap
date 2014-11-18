@@ -169,7 +169,7 @@ vcfannotator: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 jellyfish: ;
 	wget -P $(THIRD_PARTY) $(AWS_S3)/jellyfish-2.1.4.tar.gz
-	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/jellyfish-2.1.4.tar.gz && mv $(THIRD_PARTY)/jellyfish-2.1.3/ $(THIRD_PARTY)/jellyfish/
+	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/jellyfish-2.1.4.tar.gz && mv $(THIRD_PARTY)/jellyfish-2.1.4/ $(THIRD_PARTY)/jellyfish/
 	cd $(THIRD_PARTY)/jellyfish/ && ./configure && cd $(TOP_DIR)
 	make -C $(THIRD_PARTY)/jellyfish
 	ln -s $(THIRD_PARTY)/jellyfish/bin/jellyfish $(THIRD_PARTY_BIN)/jellyfish
