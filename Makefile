@@ -7,7 +7,7 @@ AWS_S3 := https://s3.amazonaws.com/analysis-pipeline/src
 all: aspera fastq assembly mlst snp jellyfish config ;
 
 config: ;
-	sed -i 's/^BASE_DIR.*/BASE_DIR = "$(TOP_DIR)"/' staphopia/config.py
+	sed -i 's#^BASE_DIR.*#BASE_DIR = "$(TOP_DIR)"#' staphopia/config.py
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
