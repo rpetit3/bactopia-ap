@@ -21,7 +21,7 @@ blastdb_exists = options.blastdb + ".out"
 @transform(blastdb_exists, regex(r"(.*)"), r"sccmec/completed.proteins")
 def blast_genes(blastdb, output_file):
     """ Blast SCCmec related genes against given blast database. """
-    sccmec.blast_genes(options.blastdb, output_file, options.processors)
+    sccmec.blast_genes(options.blastdb, output_file, str(options.processors))
 
 
 @follows(blast_genes)
@@ -36,7 +36,7 @@ def blast_primers(blastdb, output_file):
 @transform(options.fastq, regex(r"(.*)"), r"sccmec/cassettes/completed.sai")
 def bwa_aln(input_file, output_file):
     """ Align reads against SCCmec cassettes. """
-    sccmec.bwa_aln(options.fastq, output_file, options.processors)
+    sccmec.bwa_aln(options.fastq, output_file, str(options.processors))
 
 
 @follows(bwa_aln)
