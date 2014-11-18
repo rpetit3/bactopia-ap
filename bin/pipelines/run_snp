@@ -24,7 +24,7 @@ def bwa_aln(input_file, output_file):
     """ Align reads using BWA. """
     output_sai = output_file.replace('completed', 'gatk')
     snp.bwa_aln(options.fastq, output_sai, output_file,
-                options.processors)
+                str(options.processors))
 
 
 @follows(bwa_aln)
