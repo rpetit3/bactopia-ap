@@ -18,7 +18,7 @@ VERSION = '0.1'
 @transform(options.fastq, regex(r"(.*).cleanup.fastq.gz"), r"\1.jf")
 def count(input_file, output_file):
     """ Count kmers using Jellyfish. """
-    kmer.jellyfish_count(input_file, output_file, options.processors)
+    kmer.jellyfish_count(input_file, output_file, str(options.processors))
 
 
 @follows(count)
