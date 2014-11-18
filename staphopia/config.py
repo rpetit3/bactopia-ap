@@ -57,6 +57,14 @@ BIN = {
 
     # K-mer related
     'jellyfish': THIRD_PARTY_PATH + '/jellyfish',
+
+    # Pipelines
+    'run_fastq_cleanup': PIPELINE_PATH + '/run_fastq_cleanup',
+    'run_illumina_assembly': PIPELINE_PATH + '/run_illumina_assembly',
+    'run_mlst': PIPELINE_PATH + '/run_mlst',
+    'run_sccmec': PIPELINE_PATH + '/run_sccmec',
+    'run_snp': PIPELINE_PATH + '/run_snp',
+    'run_kmer_analysis': PIPELINE_PATH + '/run_kmer_analysis',
 }
 
 MLST = {
