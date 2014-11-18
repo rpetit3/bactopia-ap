@@ -13,23 +13,14 @@ parser.add_argument('-p', '--processors', metavar="INT", type=int, default=1,
                     help='Number of processors to use. (Default 1)')
 options = parser.parse_args()
 
-config = {
-    'n_cpu': str(options.processors),
-    'mlst_db': BASE_DIR + '/tool-data/mlst/Staphylococcus_aureus.fasta',
-    'mlst_definitions': BASE_DIR + '/tool-data/mlst/saureus.txt',
-    'mlst_blastdb': BASE_DIR + '/tool-data/mlst/blastdb',
-    'srst2': THIRD_PARTY_PATH + '/srst2.py',
-    'blastn': THIRD_PARTY_PATH + '/blastn',
-}
-
 # Pipeline --------------------------------------------------------------------
 
 
 @mkdir('mlst/srst2')
-@transform(options.input_file, regex(r"(.*)"), r"mlst/srst2/completed")
+@transform(options.fastq, regex(r"(.*)"), r"mlst/srst2/completed")
 def srst2(input_file, output_file):
     """ Use SRST2 to predict sequence type. """
-    mlst.srst2(input_file, output_file, config)
+    mlst.srst2(input_file, output_file, str(options.processors))
 
 
 @follows(srst2)
@@ -37,7 +28,7 @@ def srst2(input_file, output_file):
 @transform(options.assembly, regex(r"(.*)"), r"mlst/blastn/completed")
 def blast_alleles(input_file, output_file):
     """ Blast alleles against the assembly. """
-    mlst.blast_alleles(input_file, output_file, config)
+    mlst.blast_alleles(input_file, output_file, str(options.processors))
 
 # -----------------------------------------------------------------------------
 pipeline_run(exceptions_terminate_immediately=True, verbose=5)

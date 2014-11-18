@@ -7,7 +7,7 @@ from staphopia.tasks import shared
 def srst2(input_file, output_file, num_cpu):
     """ Predict MLST using SRST. """
     output_prefix = output_file.replace('completed', 'srst2')
-    n_cpu = '-p {0}'.format(num_cpu)
+    n_cpu = '"-p {0}"'.format(num_cpu)
     shared.run_command(
         [BIN['srst2'], '--input_se', input_file, '--mlst_db',
          MLST['mlst_db'], '--mlst_definitions', MLST['mlst_definitions'],
@@ -29,6 +29,9 @@ def srst2(input_file, output_file, num_cpu):
 
 def blast_alleles(input_file, output_file, num_cpu):
     """ Blast assembled contigs against MLST blast database. """
+    # Decompress contigs
+    shared.run_command(['gunzip', input_file])
+    input_file = input_file.replace(".gz", "")
     outfmt = "6 sseqid bitscore slen length gaps mismatch pident evalue"
     alleles = ['arcc', 'aroe', 'glpf', 'gmk_', 'pta_', 'tpi_', 'yqil']
     results = []
@@ -46,7 +49,7 @@ def blast_alleles(input_file, output_file, num_cpu):
     fh = open(blastn_results, 'w')
     fh.write('\n'.join(results))
     fh.close()
-
+    shared.run_command(['gzip', '--fast', input_file])
     if shared.try_to_complete_task(blastn_results, output_file):
         return True
     else:
