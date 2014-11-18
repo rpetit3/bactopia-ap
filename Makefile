@@ -66,9 +66,10 @@ assemblathon2_analysis: ;
 	sed -i 's=^use strict;=use lib "$(THIRD_PARTY)/assemblathon2-analysis";\nuse strict;=' $(THIRD_PARTY)/assemblathon2-analysis/assemblathon_stats.pl
 	wget -P $(THIRD_PARTY) $(AWS_S3)/JSON-2.90.tar.gz
 	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/JSON-2.90.tar.gz && mv $(THIRD_PARTY)/JSON-2.90 $(THIRD_PARTY)/JSON
-	cd $(THIRD_PARTY)/JSON && perl Makefile.PL PREFIX=$(THIRD_PARTY)/assemblathon2-analysis && cd $(TOP_DIR)
+	cd $(THIRD_PARTY)/JSON && perl Makefile.PL PREFIX=$(THIRD_PARTY)/JSON && cd $(TOP_DIR)
 	make -C $(THIRD_PARTY)/JSON
 	make -C $(THIRD_PARTY)/JSON install
+	ln -s $(THIRD_PARTY)/JSON/lib/JSON.pm $(THIRD_PARTY)/assemblathon2-analysis/JSON.pm
 	ln -s $(THIRD_PARTY)/assemblathon2-analysis/assemblathon_stats.pl $(THIRD_PARTY_BIN)/assemblathon_stats.pl
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#

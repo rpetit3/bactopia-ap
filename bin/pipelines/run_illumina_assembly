@@ -22,7 +22,7 @@ VERSION = "0.1"
 @transform(options.fastq, regex(r"(.*)"), r"assembly/kmergenie.dat")
 def kmergenie(input_file, output_file):
     """ Predict optimal kmer for Velvet assembly. """
-    assembly.kmergenie(input_file, output_file, config)
+    assembly.kmergenie(input_file, output_file, str(options.processors))
 
 
 @follows(kmergenie)
@@ -37,7 +37,7 @@ def sort_kmergenie(input_file, output_file):
 @merge([options.fastq, sort_kmergenie], 'assembly/velvet/completed')
 def velvet(input_files, output_dir):
     """ Assemble using Velvet. """
-    assembly.velvet(input_files, output_dir, config)
+    assembly.velvet(input_files, output_dir, options.paired)
 
 
 @follows(velvet)
@@ -45,7 +45,7 @@ def velvet(input_files, output_dir):
 @transform(options.fastq, regex(r"(.*)"), r"assembly/spades/completed")
 def spades(input_file, output_file):
     """ Assemble using Spades. """
-    assembly.spades(input_file, output_file, config)
+    assembly.spades(input_file, output_file, str(options.processors))
 
 
 @follows(spades)
@@ -62,8 +62,8 @@ def move_assembly(input_file, contigs, scaffolds):
 @transform(options.fastq, regex(r"(.*).cleanup.fastq.gz"),
            r"assembly/blastdb/completed", r"\1.scaffolds.fasta.gz")
 def makeblastdb(input_file, output_file, scaffolds):
-    """ Make a blast database of the Spades assembly"""
-    assembly.makeblastdb(scaffolds, output_file, config)
+    """ Make a blast database of the Spades assembly. """
+    assembly.makeblastdb(scaffolds, output_file)
 
 
 @follows(makeblastdb)
@@ -73,11 +73,11 @@ def assembly_stats(input_file, output_file):
     """ Calculate assembly statistics. """
     contigs = input_file.replace('cleanup.fastq.gz', 'contigs.fasta.gz')
     scaffolds = input_file.replace('cleanup.fastq.gz', 'scaffolds.fasta.gz')
-    assembly.assembly_stats(contigs, output_file, config)
-    assembly.assembly_stats(scaffolds, output_file, config)
+    assembly.assembly_stats(contigs, output_file)
+    assembly.assembly_stats(scaffolds, output_file)
 
 
-@follows(save_scaffold_stats)
+@follows(assembly_stats)
 @transform(velvet, regex(r"(.*)"), r"\1.cleanup")
 def cleanup_velvet(input_file, output_file):
     """ Clean up Velvet output. """
