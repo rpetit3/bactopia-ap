@@ -27,6 +27,7 @@ fastq: fastq_validator fastq_stats fastq_interleave ;
 fastq_validator: ;
 	git clone git@github.com:staphopia/fastQValidator.git $(THIRD_PARTY)/fastQValidator
 	git clone git@github.com:staphopia/libStatGen.git $(THIRD_PARTY)/libStatGen
+	make -C $(THIRD_PARTY)/libStatGen
 	make -C $(THIRD_PARTY)/fastQValidator
 	ln -s $(THIRD_PARTY)/fastQValidator/bin/fastQValidator $(THIRD_PARTY_BIN)/fastq_validator
 
@@ -181,7 +182,7 @@ jellyfish: ;
 clean: ;
 	rm -rf $(THIRD_PARTY)/*
 	rm -rf $(THIRD_PARTY_BIN)/*
-	rm staphopia/config.py
-	rm bin/fastq_interleave
-	rm bin/fastq_stats
+	rm -f bin/fastq_interleave
+	rm -f bin/fastq_stats
+	sed -i 's#^BASE_DIR.*#BASE_DIR = CHANGE_ME#' staphopia/config.py
 
