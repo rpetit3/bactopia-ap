@@ -1,17 +1,21 @@
 #! /usr/bin/python
-'''
-    Author: Robert A. Petit III
+"""
+CleanUpFASTQ, a class for the clean up of FASTQ files.
 
-    [TODO: Elaborate on description]
-'''
+Disclaimer: This has only been tested on Illumina reads.
+"""
 import random
 import re
 import numpy as np
 
+
 class CleanUpFASTQ(object):
+
+    """ Class for the clean up of FASTQ files. """
 
     def __init__(self, subsample, paired_reads, read_length_cutoff,
                  min_mean_quality, min_read_length):
+        """ Initialize class variables. """
         self.VERSION = "0.5"
         self.fastq = []
         self.subsample = subsample
@@ -25,15 +29,16 @@ class CleanUpFASTQ(object):
         self.__phredunk = 0
 
     def __mean_quality(self, qual):
-        """Create a count of the quality score"""
+        """ Create a count of the quality score. """
         qual_stats = np.array([ord(j) for j in qual])
         return np.mean(qual_stats) - 33
 
     def __test_read(self, index):
+        """ Test if the read passes quality filters. """
         head = self.fastq[index]
-        seq = self.fastq[index+1]
+        seq = self.fastq[index + 1]
         length = 0
-        qual = self.fastq[index+3]
+        qual = self.fastq[index + 3]
 
         if (not re.search('N', seq) and len(seq) >= self.min_read_length):
             if (self.read_length_cutoff and length > self.read_length_cutoff):
@@ -41,12 +46,17 @@ class CleanUpFASTQ(object):
                 qual = qual[:self.read_length_cutoff]
 
             if (self.__mean_quality(qual) >= self.min_mean_quality):
-                self.__temp_read.append('{0}\n{1}\n+\n{2}'.format(head,seq,qual))
+                self.__temp_read.append('{0}\n{1}\n+\n{2}'.format(
+                    head,
+                    seq,
+                    qual
+                ))
                 length = len(seq)
 
         return length
 
     def generate_order(self, total_read_count):
+        """ Generate a random (seeded) order of reads to be selected. """
         if self.paired_reads and total_read_count % 2 == 0:
             total_read_count = total_read_count / 2
 
@@ -56,6 +66,7 @@ class CleanUpFASTQ(object):
             random.shuffle(self.__read_order)
 
     def clean_up_fastq(self, ):
+        """ Test each read, if good print it else move next read. """
         basepair_count = 0
 
         for i in xrange(len(self.__read_order)):
