@@ -54,8 +54,8 @@ if __name__ == '__main__':
         '#$ -N j{0}'.format(args.sample_tag),
         '#$ -S /bin/bash',
         '#$ -pe orte {0}'.format(args.processors),
-        '#$ -o {0}/logs/submit_job.stdout'.format(args.working_dir),
-        '#$ -e {0}/logs/submit_job.stderr'.format(args.working_dir),
+        '#$ -o {0}/submit_job.stdout'.format(args.working_dir),
+        '#$ -e {0}/submit_job.stderr'.format(args.working_dir),
         '',
         '# Environment Variables',
         'export PATH={0}:{1}:{2}:$PATH'.format(
