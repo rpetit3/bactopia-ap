@@ -31,6 +31,8 @@ if __name__ == '__main__':
                         help='Optional: Sample tag of the input')
     group1.add_argument('--paired', action='store_true', default=False,
                         help='Input is interleaved paired end reads.')
+    group1.add_argument('--log_times', action='store_true', default=False,
+                        help='Write task run times to file (Default: STDERR).')
     group3 = parser.add_argument_group('Help', '')
     group3.add_argument('-h', '--help', action='help',
                         help='Show this help message and exit')
@@ -46,6 +48,7 @@ if __name__ == '__main__':
     # Job Constants -----------------------------------------------------------
     IS_PAIRED = '--paired' if args.paired else ''
     SAMPLE_TAG = '--sample_tag ' + args.sample_tag if args.sample_tag else ''
+    LOG_TIMES = '--log_times' if args.log_times else ''
 
     JOB_SCRIPT = '\n'.join([
         '#! /bin/bash',
@@ -71,12 +74,13 @@ if __name__ == '__main__':
         '',
         '# Command',
         '',
-        '{0}/submit_job -i {1} -p {2} {3} {4}'.format(
+        '{0}/submit_job -i {1} -p {2} {3} {4} {5}'.format(
             PIPELINE_PATH,
             args.input,
             args.processors,
             IS_PAIRED,
             SAMPLE_TAG,
+            LOG_TIMES
         ),
         '',
     ])
