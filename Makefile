@@ -1,3 +1,4 @@
+.PHONY: all test clean
 TOP_DIR := $(shell pwd)
 THIRD_PARTY := $(TOP_DIR)/src/third-party
 THIRD_PARTY_PYTHON := $(TOP_DIR)/src/third-party/python
