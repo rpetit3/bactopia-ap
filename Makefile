@@ -3,8 +3,9 @@ THIRD_PARTY := $(TOP_DIR)/src/third-party
 THIRD_PARTY_PYTHON := $(TOP_DIR)/src/third-party/python
 THIRD_PARTY_BIN := $(TOP_DIR)/bin/third-party
 AWS_S3 := https://s3.amazonaws.com/analysis-pipeline/src
+TEST_DATA := https://s3.amazonaws.com/analysis-pipeline/test-data
 
-all: config python aspera fastq assembly mlst snp jellyfish;
+all: config python aspera fastq assembly mlst snp jellyfish test;
 
 config: ;
 	sed -i 's#^BASE_DIR.*#BASE_DIR = "$(TOP_DIR)"#' staphopia/config.py
@@ -175,11 +176,21 @@ jellyfish: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+test: ;
+	wget -P $(TOP_DIR)/test-data $(TEST_DATA)/test_genome.fastq.gz
+	mkdir $(TOP_DIR)/test/test-pipeline
+	ln -s $(TOP_DIR)/test-data/test_genome.fastq.gz $(TOP_DIR)/test/test-pipeline/test_genome.fastq.gz
+	python $(TOP_DIR)/bin/pipelines/create_job_script --input $(TOP_DIR)/test/test-pipeline/test_genome.fastq.gz --working_dir $(TOP_DIR)/test/test-pipeline --processors 23  --sample_tag tester --log_times > $(TOP_DIR)/test/test-pipeline/job_script.sh
+	sh $(TOP_DIR)/test/test-pipeline/job_script.sh
 
-# vcf-annotator, pyvcf biopython
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#                                                                             #
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 clean: ;
 	rm -rf $(THIRD_PARTY)/*
 	rm -rf $(THIRD_PARTY_BIN)/*
+	rm -rf $(TOP_DIR)/test-data/test_genome.fastq.gz
+	rm -rf $(TOP_DIR)/test-data/test_genome.fastq.gz
 	rm -f bin/fastq_interleave
 	rm -f bin/fastq_stats
 	sed -i 's#^BASE_DIR.*#BASE_DIR = CHANGE_ME#' staphopia/config.py
