@@ -4,7 +4,7 @@ Static variables used throughout the analysis pipeline.
 
 Please note, the Makefile should update BASE_DIR, but if not you will need to.
 """
-BASE_DIR = "/home/rpetit/staphopia/analysis-pipeline"
+BASE_DIR = CHANGE_ME
 
 # PATH
 PATH = BASE_DIR + '/bin'
