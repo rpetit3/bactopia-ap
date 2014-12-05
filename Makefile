@@ -160,6 +160,7 @@ gatk: ;
 
 vcfannotator: ;
 	git clone git@github.com:rpetit3/vcf-annotator.git $(THIRD_PARTY)/python/vcf-annotator
+	ln -s $(THIRD_PARTY)/python/vcf-annotator/bin/vcf-annotator $(THIRD_PARTY_BIN)/vcf-annotator
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #

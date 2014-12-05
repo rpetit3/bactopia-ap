@@ -12,8 +12,7 @@ PIPELINE_PATH = PATH + '/pipelines'
 THIRD_PARTY_PATH = PATH + '/third-party'
 
 # PYTHONPATH
-BIOPYTHON = BASE_DIR + '/src/third-party/python/biopython'
-PYVCF = BASE_DIR + '/src/third-party/python/pyvcf'
+PYTHON_REQS = BASE_DIR + '/src/third-party/python'
 VCFANNOTATOR = BASE_DIR + '/src/third-party/python/vcf-annotator'
 
 # Programs
