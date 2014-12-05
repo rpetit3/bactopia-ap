@@ -1,0 +1,4 @@
+biopython==1.64
+PyVCF==0.6.7
+ruffus==2.5
+
