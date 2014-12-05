@@ -64,8 +64,8 @@ if __name__ == '__main__':
         'export PATH={0}:{1}:{2}:$PATH'.format(
             PATH, PIPELINE_PATH, THIRD_PARTY_PATH
         ),
-        'export PYTHONPATH={0}:{1}:$PYTHONPATH'.format(
-            PYTHON_REQS, VCFANNOTATOR
+        'export PYTHONPATH={0}:{1}:{2}:$PYTHONPATH'.format(
+            BASE_DIR, PYTHON_REQS, VCFANNOTATOR
         ),
         'export OMP_NUM_THREADS={0}'.format(
             (1 if args.processors - 1 == 0 else args.processors - 1)
