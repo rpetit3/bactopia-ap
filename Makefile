@@ -189,7 +189,7 @@ test: ;
 clean: ;
 	rm -rf $(THIRD_PARTY)/*
 	rm -rf $(THIRD_PARTY_BIN)/*
-	rm -rf $(TOP_DIR)/test-data/test_genome.fastq.gz
+	rm -rf $(TOP_DIR)/test/test-pipeline
 	rm -rf $(TOP_DIR)/test-data/test_genome.fastq.gz
 	rm -f bin/fastq_interleave
 	rm -f bin/fastq_stats
