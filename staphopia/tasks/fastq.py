@@ -8,11 +8,14 @@ def validator(fastq):
     """ Test validity of FASTQ file. """
     stdout, stderr = shared.run_command(
         [BIN['fastq_validator'], '--file', fastq, '--quiet',
-         '--seqLimit', '50000', '--disableSeqIDCheck']
+         '--seqLimit', '50000', '--disableSeqIDCheck'],
+        verbose=False
     )
 
     if stdout.split('\t')[0] != '0':
-        raise Exception("Invalid FASTQ format.")
+        return "invalid"
+    else:
+        return "valid"
 
 
 def stats(fastq, output_file):

@@ -1,8 +1,11 @@
 #! /usr/bin/env python
 """ Determine sequence type of the input sample. """
+import sys
+
 from ruffus import *
 
-from staphopia.tasks import mlst
+from staphopia.helpers.time_job import time_job
+from staphopia.tasks import mlst, shared
 
 parser = cmdline.get_argparse(description='Determine MLST for sample.')
 parser.add_argument("-f", "--fastq", dest="fastq", help="Input FASTQ file",
@@ -11,33 +14,35 @@ parser.add_argument("-a", "--assembly", dest="assembly", required=True,
                     help="Input assembly file")
 parser.add_argument('-p', '--processors', metavar="INT", type=int, default=1,
                     help='Number of processors to use. (Default 1)')
+parser.add_argument('--log_times', action='store_true', default=False,
+                    help='Write task run times to file (Default: STDERR).', )
 options = parser.parse_args()
 
-config = {
-    'n_cpu': str(options.processors),
-    'mlst_db': BASE_DIR + '/tool-data/mlst/Staphylococcus_aureus.fasta',
-    'mlst_definitions': BASE_DIR + '/tool-data/mlst/saureus.txt',
-    'mlst_blastdb': BASE_DIR + '/tool-data/mlst/blastdb',
-    'srst2': THIRD_PARTY_PATH + '/srst2.py',
-    'blastn': THIRD_PARTY_PATH + '/blastn',
-}
-
+TIME_LOG = 'logs/predict_mlst.time' if options.log_times else sys.stderr
 # Pipeline --------------------------------------------------------------------
 
 
+@active_if(options.log_times)
+def create_dir():
+    """ Make logs directory if required. """
+    out, err = shared.run_command(['mkdir', 'logs'])
+
+
 @mkdir('mlst/srst2')
-@transform(options.input_file, regex(r"(.*)"), r"mlst/srst2/completed")
+@transform(options.fastq, regex(r"(.*)"), r"mlst/srst2/completed")
+@time_job(TIME_LOG, new_stream=True)
 def srst2(input_file, output_file):
     """ Use SRST2 to predict sequence type. """
-    mlst.srst2(input_file, output_file, config)
+    mlst.srst2(input_file, output_file, str(options.processors))
 
 
 @follows(srst2)
 @mkdir('mlst/blastn')
 @transform(options.assembly, regex(r"(.*)"), r"mlst/blastn/completed")
+@time_job(TIME_LOG)
 def blast_alleles(input_file, output_file):
     """ Blast alleles against the assembly. """
-    mlst.blast_alleles(input_file, output_file, config)
+    mlst.blast_alleles(input_file, output_file, str(options.processors))
 
 # -----------------------------------------------------------------------------
 pipeline_run(exceptions_terminate_immediately=True, verbose=5)

@@ -3,8 +3,8 @@
 Create a Staphopia job script.
 
 usage: create_job_script [--input STRING] [--working_dir STRING] [--paired]
-                         [--sample_id INT] [--sample_tag STRING] [--debug]
-                         [--processors INT] [--production] [-h] [--version]
+                         [--sample_tag STRING] [--processors INT] [-h]
+                         [--version]
 
 Example Usage: create_job_script --input /path/to/reads.fastq.gz --paired
 """
@@ -27,16 +27,12 @@ if __name__ == '__main__':
                         help='Working directory to execute script from.')
     group1.add_argument('--processors', metavar="INT", type=int, default=1,
                         help='Number of processors to use.')
-    group1.add_argument('--sample_id', metavar="INT", type=int, default=0,
-                        help='Optional: Sample ID of the input')
     group1.add_argument('--sample_tag', metavar="STR", type=str, default=False,
                         help='Optional: Sample tag of the input')
     group1.add_argument('--paired', action='store_true', default=False,
                         help='Input is interleaved paired end reads.')
-    group1.add_argument('--production', action='store_true', default=False,
-                        help='Use production settings.')
-    group1.add_argument('--debug', action='store_true', default=False,
-                        help='Use debug settigns.')
+    group1.add_argument('--log_times', action='store_true', default=False,
+                        help='Write task run times to file (Default: STDERR).')
     group3 = parser.add_argument_group('Help', '')
     group3.add_argument('-h', '--help', action='help',
                         help='Show this help message and exit')
@@ -51,20 +47,18 @@ if __name__ == '__main__':
 
     # Job Constants -----------------------------------------------------------
     IS_PAIRED = '--paired' if args.paired else ''
-    SAMPLE_ID = '--sample_id ' + str(args.sample_id) if args.sample_id else ''
     SAMPLE_TAG = '--sample_tag ' + args.sample_tag if args.sample_tag else ''
-    PRODUCTION = '--production' if args.production else ''
-    DEBUG = '--debug' if args.debug else ''
+    LOG_TIMES = '--log_times' if args.log_times else ''
 
     JOB_SCRIPT = '\n'.join([
         '#! /bin/bash',
         '#$ -wd {0}'.format(args.working_dir),
         '#$ -V',
-        '#$ -N j{0}'.format(args.sample_id),
+        '#$ -N j{0}'.format(args.sample_tag),
         '#$ -S /bin/bash',
         '#$ -pe orte {0}'.format(args.processors),
-        '#$ -o {0}/logs/submit_job.stdout'.format(args.working_dir),
-        '#$ -e {0}/logs/submit_job.stderr'.format(args.working_dir),
+        '#$ -o {0}/submit_job.stdout'.format(args.working_dir),
+        '#$ -e {0}/submit_job.stderr'.format(args.working_dir),
         '',
         '# Environment Variables',
         'export PATH={0}:{1}:{2}:$PATH'.format(
@@ -80,15 +74,13 @@ if __name__ == '__main__':
         '',
         '# Command',
         '',
-        '{0}/submit_job -i {1} -p {2} {3} {4} {5} {6} {7}'.format(
+        '{0}/submit_job -i {1} -p {2} {3} {4} {5}'.format(
             PIPELINE_PATH,
             args.input,
             args.processors,
             IS_PAIRED,
-            SAMPLE_ID,
             SAMPLE_TAG,
-            PRODUCTION,
-            DEBUG
+            LOG_TIMES
         ),
         '',
     ])

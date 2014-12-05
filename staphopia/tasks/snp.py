@@ -159,7 +159,7 @@ def variant_filtration(input_vcf, output_vcf, output_file):
 def vcf_annotator(input_vcf, output_vcf, output_file):
     """ Annotate called SNPs/InDel. """
     shared.run_command(
-        [SNP['vcf_annotator'], '--gb', SNP['ref_genbank'], '--vcf', input_vcf],
+        [BIN['vcf_annotator'], '--gb', SNP['ref_genbank'], '--vcf', input_vcf],
         stdout=output_vcf
     )
 

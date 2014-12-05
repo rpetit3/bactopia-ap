@@ -1,8 +1,11 @@
 #! /usr/bin/env python
 """ Start Staphopia pipeline. """
+import sys
+
 from ruffus import *
 
-from staphopia.config import PIPELINE_PATH
+from staphopia.config import BIN
+from staphopia.helpers.time_job import time_job
 from staphopia.tasks import shared
 
 parser = cmdline.get_argparse(description='Submit a ruffus pipeline')
@@ -14,96 +17,92 @@ parser.add_argument('-p', '--processors', metavar="INT", type=int, default=1,
                     help='Number of processors to use. (Default 1)')
 parser.add_argument('--sample_tag', dest='sample_tag', default='sample_tag',
                     help='Optional: Sample tag of input. (Default sample_tag)')
-parser.add_argument('--sample_id', metavar="INT", type=int, default=0,
-                    help='Optional: Sample id of input. (Default 0)')
-parser.add_argument('--production', action='store_true', default=False,
-                    help='Use production server settings', )
-parser.add_argument('--debug', action='store_true', default=False,
-                    help='Run the pipeline do not save results to database', )
+parser.add_argument('--log_times', action='store_true', default=False,
+                    help='Write task run times to file (Default: STDERR).', )
 args = parser.parse_args()
 
 
 # Configuration ---------------------------------------------------------------
-config = {
-    'is_paired': args.paired,
-    'n_cpu': str(args.processors),
-    'run_fastq_cleanup': PIPELINE_PATH + '/run_fastq_cleanup',
-    'run_illumina_assembly': PIPELINE_PATH + '/run_illumina_assembly',
-    'run_mlst': PIPELINE_PATH + '/run_mlst',
-    'run_snp': PIPELINE_PATH + '/run_snp',
-    'run_kmer_analysis': PIPELINE_PATH + '/run_kmer_analysis',
-    'run_resistance': PIPELINE_PATH + '/run_resistance',
-    'run_virulence': PIPELINE_PATH + '/run_virulence',
-    'manage': '/home/rpetit/staphopia/staphopia.com/manage.py',
-}
-
-IS_PAIRED = '--paired' if config['is_paired'] else ''
-SAMPLE_FLAG = '--sample_id' if args.sample_id else ''
-SAMPLE_ID = str(args.sample_id) if args.sample_id else ''
-PRODUCTION = '--production' if args.production else ''
-DEBUG = '--debug' if args.debug else ''
+IS_PAIRED = '--paired' if args.paired else ''
 BLASTDB = "assembly/blastdb/assembly"
 CLEAN_FASTQ = args.input_file.replace('.fastq.gz', '.cleanup.fastq.gz')
 ASSEMBLY = args.input_file.replace('.fastq.gz', '.scaffolds.fasta.gz')
+
+TIME_LOG = 'logs/submit_job.time' if args.log_times else sys.stderr
+LOG_TIMES = '--log_times' if args.log_times else ''
 #------------------------------------------------------------------------------
 
 # Pipeline --------------------------------------------------------------------
 
 
 @mkdir('logs')
-def run_fastq_cleanup():
+@time_job(TIME_LOG, new_stream=True)
+def fastq_cleanup():
     """ Clean up FASTQ file. """
     out, err = shared.run_command(
-        [config['run_fastq_cleanup'], '-i', args.input_file, '-p',
-         config['n_cpu'], IS_PAIRED, SAMPLE_FLAG, SAMPLE_ID, PRODUCTION,
-         DEBUG],
-        stdout='logs/run_fastq_cleanup.stdout',
-        stderr='logs/run_fastq_cleanup.stderr',
+        [BIN['fastq_cleanup_pipeline'], '-f', args.input_file, LOG_TIMES],
+        stdout='logs/fastq_cleanup.stdout',
+        stderr='logs/fastq_cleanup.stderr',
     )
 
 
-@follows(run_fastq_cleanup)
-def run_illumina_assembly():
+@follows(fastq_cleanup)
+@time_job(TIME_LOG)
+def illumina_assembly():
     """ Run Illumina specific assembly. """
     out, err = shared.run_command(
-        [config['run_illumina_assembly'], '-i', CLEAN_FASTQ, '-p',
-         config['n_cpu'], IS_PAIRED, SAMPLE_FLAG, SAMPLE_ID, PRODUCTION,
-         DEBUG],
-        stdout='logs/run_assembly.stdout',
-        stderr='logs/run_assembly.stderr',
+        [BIN['illumina_assembly'], '-f', CLEAN_FASTQ, '-p',
+         str(args.processors), LOG_TIMES],
+        stdout='logs/illumina_assembly.stdout',
+        stderr='logs/illumina_assembly.stderr',
     )
 
 
-@follows(run_illumina_assembly)
-def run_kmer_analysis():
+@follows(illumina_assembly)
+@time_job(TIME_LOG)
+def kmer_analysis():
     """ Count some kmers. """
     out, err = shared.run_command(
-        [config['run_kmer_analysis'], '-i', CLEAN_FASTQ, '-p', config['n_cpu'],
-         SAMPLE_FLAG, SAMPLE_ID, PRODUCTION, DEBUG],
-        stdout='logs/run_kmer_analysis.stdout',
-        stderr='logs/run_kmer_analysis.stderr',
+        [BIN['kmer_analysis'], '-f', CLEAN_FASTQ, '-p',
+         str(args.processors), LOG_TIMES],
+        stdout='logs/kmer_analysis.stdout',
+        stderr='logs/kmer_analysis.stderr',
     )
 
 
-@follows(run_kmer_analysis)
-def run_snp():
+@follows(kmer_analysis)
+@time_job(TIME_LOG)
+def call_variants():
     """ Call variants. """
     out, err = shared.run_command(
-        [config['run_snp'], '-i', CLEAN_FASTQ, '-p', config['n_cpu'],
-         '--tag', args.sample_tag, SAMPLE_FLAG, SAMPLE_ID, PRODUCTION, DEBUG],
-        stdout='logs/run_snp.stdout',
-        stderr='logs/run_snp.stderr',
+        [BIN['call_variants'], '-f', CLEAN_FASTQ, '-p', str(args.processors),
+         '--tag', args.sample_tag, LOG_TIMES],
+        stdout='logs/call_variants.stdout',
+        stderr='logs/call_variants.stderr',
     )
 
 
-@follows(run_snp)
-def run_mlst():
+@follows(call_variants)
+@time_job(TIME_LOG)
+def predict_mlst():
     """ Determine sequence type. """
     out, err = shared.run_command(
-        [config['run_mlst'], '-i', CLEAN_FASTQ, '-a', ASSEMBLY, '-p',
-         config['n_cpu'], SAMPLE_FLAG, SAMPLE_ID, PRODUCTION, DEBUG],
-        stdout='logs/run_mlst.stdout',
-        stderr='logs/run_mlst.stderr',
+        [BIN['predict_mlst'], '-f', CLEAN_FASTQ, '-a', ASSEMBLY, '-p',
+         str(args.processors), LOG_TIMES],
+        stdout='logs/predict_mlst.stdout',
+        stderr='logs/predict_mlst.stderr',
+    )
+
+
+@follows(predict_mlst)
+@time_job(TIME_LOG)
+def predict_sccmec():
+    """ Determine SCCmec type. """
+    out, err = shared.run_command(
+        [BIN['predict_sccmec'], '-f', CLEAN_FASTQ, '--blastdb', BLASTDB, '-p',
+         str(args.processors), LOG_TIMES],
+        stdout='logs/predict_sccmec.stdout',
+        stderr='logs/predict_sccmec.stderr',
     )
 
 #------------------------------------------------------------------------------

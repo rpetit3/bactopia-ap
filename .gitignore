@@ -8,3 +8,5 @@ staphopia/tasks/*pyc
 .DS_Store
 ._.DS_Store
 bin/pipelines/._run_fastq_cleanup
+
+.ruffus_history.sqlite

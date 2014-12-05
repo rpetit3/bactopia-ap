@@ -4,7 +4,7 @@ Static variables used throughout the analysis pipeline.
 
 Please note, the Makefile should update BASE_DIR, but if not you will need to.
 """
-BASE_DIR = CHANGE_ME
+BASE_DIR = "/home/rpetit/staphopia/analysis-pipeline"
 
 # PATH
 PATH = BASE_DIR + '/bin'
@@ -57,6 +57,14 @@ BIN = {
 
     # K-mer related
     'jellyfish': THIRD_PARTY_PATH + '/jellyfish',
+
+    # Pipelines
+    'fastq_cleanup_pipeline': PIPELINE_PATH + '/fastq_cleanup',
+    'illumina_assembly': PIPELINE_PATH + '/illumina_assembly',
+    'predict_mlst': PIPELINE_PATH + '/predict_mlst',
+    'predict_sccmec': PIPELINE_PATH + '/predict_sccmec',
+    'call_variants': PIPELINE_PATH + '/call_variants',
+    'kmer_analysis': PIPELINE_PATH + '/kmer_analysis',
 }
 
 MLST = {
