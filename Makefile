@@ -182,7 +182,7 @@ test: ;
 	mkdir $(TOP_DIR)/test/test-pipeline
 	ln -s $(TOP_DIR)/test-data/test_genome.fastq.gz $(TOP_DIR)/test/test-pipeline/test_genome.fastq.gz
 	python $(TOP_DIR)/bin/pipelines/create_job_script --input $(TOP_DIR)/test/test-pipeline/test_genome.fastq.gz --working_dir $(TOP_DIR)/test/test-pipeline --processors 23  --sample_tag tester --log_times > $(TOP_DIR)/test/test-pipeline/job_script.sh
-	sh $(TOP_DIR)/test/test-pipeline/job_script.sh
+	cd $(TOP_DIR)/test/test-pipeline && sh $(TOP_DIR)/test/test-pipeline/job_script.sh
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
