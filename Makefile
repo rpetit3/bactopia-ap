@@ -4,10 +4,16 @@ THIRD_PARTY_PYTHON := $(TOP_DIR)/src/third-party/python
 THIRD_PARTY_BIN := $(TOP_DIR)/bin/third-party
 AWS_S3 := https://s3.amazonaws.com/analysis-pipeline/src
 
-all: config aspera fastq assembly mlst snp jellyfish;
+all: config python aspera fastq assembly mlst snp jellyfish;
 
 config: ;
 	sed -i 's#^BASE_DIR.*#BASE_DIR = "$(TOP_DIR)"#' staphopia/config.py
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#                                                                             #
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+python: ;
+	pip install --target $(THIRD_PARTY)/python -r $(TOP_DIR)/requirements.txt
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
@@ -154,16 +160,6 @@ gatk: ;
 
 vcfannotator: ;
 	git clone git@github.com:rpetit3/vcf-annotator.git $(THIRD_PARTY)/python/vcf-annotator
-	sed -i 's=    import sys=    import sys\n    sys.path.append("$(THIRD_PARTY)/python/vcf-annotator")\n=' $(THIRD_PARTY)/python/vcf-annotator/bin/vcf-annotator
-	# BioPython
-	wget -P $(THIRD_PARTY) $(AWS_S3)/biopython-1.64.tar.gz
-	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/biopython-1.64.tar.gz && mv $(THIRD_PARTY)/biopython-1.64/ $(THIRD_PARTY)/python/biopython/
-	ln -s $(THIRD_PARTY)/python/biopython/Bio $(THIRD_PARTY)/python/vcf-annotator/Bio
-	# PyVCF
-	wget -P $(THIRD_PARTY) $(AWS_S3)/PyVCF-0.6.7.tar.gz
-	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/PyVCF-0.6.7.tar.gz && mv $(THIRD_PARTY)/PyVCF-0.6.7/ $(THIRD_PARTY)/python/pyvcf/
-	ln -s $(THIRD_PARTY)/python/pyvcf/vcf $(THIRD_PARTY)/python/vcf-annotator/vcf
-	ln -s $(THIRD_PARTY)/python/vcf-annotator/bin/vcf-annotator $(THIRD_PARTY_BIN)/vcf-annotator
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
