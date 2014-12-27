@@ -20,9 +20,11 @@ class ENA(object):
             ['md5sum', file],
             verbose=False
         )
-
-        md5sum, filename = stdout.split()
-        return md5sum
+        if stdout:
+            md5sum, filename = stdout.split()
+            return md5sum
+        else:
+            return None
 
     def copy_file(self, file_1, file_2):
         stdout, stderr = shared.run_command(
