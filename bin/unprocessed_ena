@@ -68,9 +68,6 @@ if __name__ == '__main__':
     ena_obj.get_unprocessed_ena(args)
     total = len(ena_obj.enainfo)
     n = 1
-    outdir = '{0}/'.format(args.output)
-    s3 = '{0}/'.format(args.s3)
-    logdir = '{0}/'.format(args.log_dir)
     for experiment_accession in ena_obj.enainfo:
         print 'Working on {0} ({1} of {2})...'.format(
             experiment_accession,
@@ -79,5 +76,6 @@ if __name__ == '__main__':
         )
         n += 1
         print "\tCreating job script..."
-        qsub = ena_obj.queue_download(experiment_accession, outdir, s3, logdir)
+        qsub = ena_obj.queue_download(experiment_accession, args.output,
+                                      args.s3, args.logdir)
         print "\t{0}".format(qsub)
