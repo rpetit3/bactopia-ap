@@ -14,6 +14,8 @@ if __name__ == '__main__':
     group1 = parser.add_argument_group('Options', '')
     group1.add_argument('--output', metavar="STRING", type=str, default='./',
                         help=('Directory to output downloads to.'))
+    group1.add_argument('--s3', metavar="STRING", type=str, default='./s3',
+                        help=('Directory to move downloads to.'))
     group1.add_argument('--limit', metavar="INT", type=int, default=0,
                         help='Limit the number of experiments to submit.')
     group1.add_argument('--technology', metavar="STRING", type=str,
@@ -59,10 +61,18 @@ if __name__ == '__main__':
 
     ena_obj = ena.ENA(config)
     ena_obj.get_unprocessed_ena(args)
+    total = len(ena_obj.enainfo)
+    n = 1
+    outdir = '{0}/'.format(args.output)
+    s3 = '{0}/'.format(args.s3)
     for experiment_accession in ena_obj.enainfo:
-        print 'Working on {0}...'.format(experiment_accession)
+        print 'Working on {0} ({1} of {2})...'.format(
+            experiment_accession,
+            n,
+            total
+        )
         merge_runs = []
-        outdir = '{0}/'.format(args.output)
+
         for run_accession in ena_obj.enainfo[experiment_accession]:
             print '\tWorking on {0}...'.format(run_accession)
             run = ena_obj.enainfo[experiment_accession][run_accession]
@@ -90,3 +100,17 @@ if __name__ == '__main__':
         ena_obj.merge_runs(merge_runs, '{0}{1}.fastq.gz'.format(
             outdir, experiment_accession
         ))
+        print '\tMoving to S3 bucket...'
+        ebs_fastq = '{0}{1}.fastq.gz'.format(outdir, experiment_accession)
+        s3_fastq = '{0}{1}.fastq.gz'.format(s3, experiment_accession)
+        ebs_md5 = ena_obj.get_md5sum(ebs_fastq)
+        s3_md5 = None
+        ebs_fastq
+        while (ebs_md5 != s3_md5):
+            ena_obj.copy_file(ebs_fastq, s3_fastq)
+            s3_md5 = ena_obj.get_md5sum(s3_fastq)
+            print 'MD5sum --- EBS:{0}\tS3{1}'.format(ebs_md5, s3_md5)
+        print "Succesfully copied to S3"
+        print "Remove from EBS volume"
+        ena_obj.remove_file(ebs_fastq)
+        n += 1
