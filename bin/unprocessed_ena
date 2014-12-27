@@ -15,6 +15,8 @@ if __name__ == '__main__':
                         help=('Directory to output downloads to.'))
     group1.add_argument('--s3', metavar="STRING", type=str, default='./s3',
                         help=('Directory to move downloads to.'))
+    group1.add_argument('--log_dir', metavar="STRING", type=str, default='./',
+                        help=('Directory to log files to.'))
     group1.add_argument('--limit', metavar="INT", type=int, default=100000,
                         help='Limit the number of experiments to submit.')
     group1.add_argument('--technology', metavar="STRING", type=str,
@@ -67,6 +69,7 @@ if __name__ == '__main__':
     n = 1
     outdir = '{0}/'.format(args.output)
     s3 = '{0}/'.format(args.s3)
+    logdir = '{0}/'.format(args.log_dir)
     for experiment_accession in ena_obj.enainfo:
         print 'Working on {0} ({1} of {2})...'.format(
             experiment_accession,
@@ -75,5 +78,5 @@ if __name__ == '__main__':
         )
         n += 1
         print "\tCreating job script..."
-        qsub = ena_obj.queue_download(experiment_accession, outdir, s3)
+        qsub = ena_obj.queue_download(experiment_accession, outdir, s3, logdir)
         print "\t{0}".format(qsub)

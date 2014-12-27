@@ -78,10 +78,12 @@ class ENA(object):
         )
         self.enainfo = json.loads(stdout)
 
-    def queue_download(self, experiment, ebs_dir, s3_dir):
+    def queue_download(self, experiment, ebs_dir, s3_dir, log_dir):
         """ . """
-        mkdir = shared.run_command(['mkdir', '-p', ebs_dir + '/logs'],
-                                   verbose=False)
+
+        if not os.path.exists(log_dir):
+            mkdir = shared.run_command(['mkdir', '-p', log_dir], verbose=False)
+
         JOB_SCRIPT = '\n'.join([
             '#! /bin/bash',
             '#$ -wd {0}'.format(ebs_dir),
@@ -89,8 +91,8 @@ class ENA(object):
             '#$ -N j{0}'.format(experiment),
             '#$ -S /bin/bash',
             '#$ -pe orte 1',
-            '#$ -o {0}/logs/{1}.stdout'.format(ebs_dir, experiment),
-            '#$ -e {0}/logs/{1}.stderr'.format(ebs_dir, experiment),
+            '#$ -o {0}{1}.stdout'.format(log_dir, experiment),
+            '#$ -e {0}{1}.stderr'.format(log_dir, experiment),
             '',
             '# Command',
             '',
