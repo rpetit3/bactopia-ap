@@ -77,5 +77,5 @@ if __name__ == '__main__':
         n += 1
         print "\tCreating job script..."
         qsub = ena_obj.queue_download(experiment_accession, args.output,
-                                      args.s3, args.logdir)
+                                      args.s3, args.log_dir)
         print "\t{0}".format(qsub)
