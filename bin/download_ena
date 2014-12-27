@@ -118,6 +118,8 @@ if __name__ == '__main__':
             ena_obj.copy_file(ebs_fastq, s3_fastq)
             s3_md5 = ena_obj.get_md5sum(s3_fastq)
             print '\t\tMD5sum --- EBS={0}\tS3={1}'.format(ebs_md5, s3_md5)
+            if ebs_md5 != s3_md5:
+                print '\t\tMD5 checksums do not match, copying again...'
         print "\tSuccesfully copied to S3"
         print "\tRemove from EBS volume"
         ena_obj.remove_file(ebs_fastq)
