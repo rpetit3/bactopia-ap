@@ -40,7 +40,7 @@ class ENA(object):
 
     def build_command(self, args):
         cmd = ['python', self.config['manage'], 'unprocessed_ena',
-                '--settings', self.config['settings']]
+               '--settings', self.config['settings']]
             # Build command
 
         if args.limit:
@@ -63,6 +63,10 @@ class ENA(object):
             cmd.append('--max_read_length')
             cmd.append(str(args.max_read_length))
 
+        if args.experiment:
+            cmd.append('--experiment')
+            cmd.append(args.experiment)
+
         return cmd
 
     def get_unprocessed_ena(self, args):
@@ -73,6 +77,37 @@ class ENA(object):
             verbose=False
         )
         self.enainfo = json.loads(stdout)
+
+    def queue_download(self, experiment, ebs_dir, s3_dir):
+        """ . """
+        mkdir = shared.run_command(['mkdir', ebs_dir + '/logs'], verbose=False)
+        JOB_SCRIPT = '\n'.join([
+            '#! /bin/bash',
+            '#$ -wd {0}'.format(ebs_dir),
+            '#$ -V',
+            '#$ -N j{0}'.format(experiment),
+            '#$ -S /bin/bash',
+            '#$ -pe orte {0}'.format(args.processors),
+            '#$ -o {0}/logs/{1}.stdout'.format(ebs_dir, experiment),
+            '#$ -e {0}/logs/{1}.stderr'.format(ebs_dir, experiment),
+            '',
+            '# Command',
+            '',
+            'python {0} --experiment {1} --output {2} --s3 {3}'.format(
+                self.config['download_ena'],
+                experiment,
+                ebs_dir,
+                s3_dir,
+            ),
+            '',
+        ])
+        script = '{0}/logs/{1}.sh'.format(ebs_dir, experiment),
+        fh = open(script, "w")
+        fh.write(JOB_SCRIPT)
+        fh.close()
+
+        stdout, stderr = shared.run_command(['qsub', script], verbose=False)
+        return stdout
 
     def download_fastq(self, fasp, outdir, fastq):
         '''

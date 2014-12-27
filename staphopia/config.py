@@ -66,6 +66,7 @@ BIN = {
     'kmer_analysis': PIPELINE_PATH + '/kmer_analysis',
 
     # Staphopia related
+    'download_ena': PATH + '/download_ena'
     'ascp': THIRD_PARTY_PATH + '/ascp',
     'aspera_key': THIRD_PARTY_PATH + '/asperaweb_id_dsa.openssh',
     'fastq_interleave': PATH + '/fastq_interleave',
