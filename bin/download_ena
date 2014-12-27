@@ -80,10 +80,6 @@ if __name__ == '__main__':
         ebs_fastq = '{0}{1}.fastq.gz'.format(outdir, experiment_accession)
         s3_fastq = '{0}{1}.fastq.gz'.format(s3, experiment_accession)
 
-        if os.path.exists(s3_fastq):
-            print '\t{0} exists, skipping...'.format(s3_fastq)
-            continue
-
         for run_accession in ena_obj.enainfo[experiment_accession]:
             print '\tWorking on {0}...'.format(run_accession)
             run = ena_obj.enainfo[experiment_accession][run_accession]
