@@ -64,6 +64,12 @@ BIN = {
     'predict_sccmec': PIPELINE_PATH + '/predict_sccmec',
     'call_variants': PIPELINE_PATH + '/call_variants',
     'kmer_analysis': PIPELINE_PATH + '/kmer_analysis',
+
+    # Staphopia related
+    'ascp': THIRD_PARTY_PATH + '/ascp',
+    'aspera_key': THIRD_PARTY_PATH + '/asperaweb_id_dsa.openssh',
+    'fastq_interleave': PATH + '/fastq_interleave',
+    'manage': '/home/staphopia/staphopia.com/manage.py',
 }
 
 MLST = {

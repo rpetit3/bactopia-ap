@@ -5,7 +5,7 @@ if __name__ == '__main__':
     import sys
     import argparse as ap
     from staphopia import ena
-    from staphopia.config import PATH, THIRD_PARTY_PATH
+    from staphopia.config import BIN
 
     parser = ap.ArgumentParser(
         prog='download_ena',
@@ -51,10 +51,10 @@ if __name__ == '__main__':
         'settings': 'staphopia.settings.{0}'.format(
             'prod' if args.production else 'dev'
         ),
-        'ascp': THIRD_PARTY_PATH + '/ascp',
-        'ssh_key': THIRD_PARTY_PATH + '/asperaweb_id_dsa.openssh',
-        'fastq_interleave': PATH + '/fastq_interleave',
-        'manage': '/home/rpetit/staphopia/staphopia.com/manage.py',
+        'ascp': BIN['ascp'],
+        'ssh_key': BIN['aspera_key'],
+        'fastq_interleave': BIN['fastq_interleave'],
+        'manage': BIN['manage'],
     }
 
     ena_obj = ena.ENA(config)
