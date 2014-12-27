@@ -80,7 +80,8 @@ class ENA(object):
 
     def queue_download(self, experiment, ebs_dir, s3_dir):
         """ . """
-        mkdir = shared.run_command(['mkdir', ebs_dir + '/logs'], verbose=False)
+        mkdir = shared.run_command(['mkdir', '-p', ebs_dir + '/logs'],
+                                   verbose=False)
         JOB_SCRIPT = '\n'.join([
             '#! /bin/bash',
             '#$ -wd {0}'.format(ebs_dir),
