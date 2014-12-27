@@ -29,6 +29,8 @@ if __name__ == '__main__':
     group1.add_argument('--max_read_length', metavar="INT", type=int,
                         help='Filter results by maximum read length.',
                         default=0)
+    group1.add_argument('--experiment', metavar="STRING", type=str,
+                        help=('Download single experiment.'))
     group1.add_argument('-p', '--processors', metavar="INT", type=int,
                         help='Number of processors to use. (Default 1)',
                         default=1)
