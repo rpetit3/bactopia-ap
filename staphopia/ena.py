@@ -87,7 +87,7 @@ class ENA(object):
             '#$ -V',
             '#$ -N j{0}'.format(experiment),
             '#$ -S /bin/bash',
-            '#$ -pe orte {0}'.format(args.processors),
+            '#$ -pe orte 1',
             '#$ -o {0}/logs/{1}.stdout'.format(ebs_dir, experiment),
             '#$ -e {0}/logs/{1}.stderr'.format(ebs_dir, experiment),
             '',
