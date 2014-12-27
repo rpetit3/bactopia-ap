@@ -59,6 +59,7 @@ if __name__ == '__main__':
         'ssh_key': BIN['aspera_key'],
         'fastq_interleave': BIN['fastq_interleave'],
         'manage': BIN['manage'],
+        's3upload': BIN['s3upload'],
     }
 
     ena_obj = ena.ENA(config)
@@ -78,7 +79,6 @@ if __name__ == '__main__':
 
         # FASTQ file names
         ebs_fastq = '{0}{1}.fastq.gz'.format(outdir, experiment_accession)
-        s3_fastq = '{0}{1}.fastq.gz'.format(s3, experiment_accession)
 
         for run_accession in ena_obj.enainfo[experiment_accession]:
             print '\tWorking on {0}...'.format(run_accession)
@@ -111,10 +111,8 @@ if __name__ == '__main__':
 
         ebs_md5 = ena_obj.get_md5sum(ebs_fastq)
         s3_md5 = None
-        ebs_fastq
         while (ebs_md5 != s3_md5):
-            ena_obj.copy_file(ebs_fastq, s3_fastq)
-            s3_md5 = ena_obj.get_md5sum(s3_fastq)
+            s3_md5 = ena_obj.s3upload(ebs_fastq)
             print '\t\tMD5sum --- EBS={0}\tS3={1}'.format(ebs_md5, s3_md5)
             if ebs_md5 != s3_md5:
                 print '\t\tMD5 checksums do not match, copying again...'

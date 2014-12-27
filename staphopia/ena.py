@@ -26,11 +26,13 @@ class ENA(object):
         else:
             return None
 
-    def copy_file(self, file_1, file_2):
+    def s3upload(self, input_file):
         stdout, stderr = shared.run_command(
-            ['cp', file_1, file_2],
+            ['python', self.config['s3upload'], '-f', input_file, '-b',
+             'staphopia', '-p', 'ena_queue'],
             verbose=False
         )
+        return stdout
 
     def remove_file(self, file):
         stdout, stderr = shared.run_command(

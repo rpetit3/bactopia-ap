@@ -61,6 +61,7 @@ if __name__ == '__main__':
         'fastq_interleave': BIN['fastq_interleave'],
         'manage': BIN['manage'],
         'download_ena': BIN['download_ena'],
+        's3upload': BIN['s3upload'],
     }
 
     ena_obj = ena.ENA(config)
