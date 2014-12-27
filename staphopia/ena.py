@@ -106,7 +106,7 @@ class ENA(object):
             ),
             '',
         ])
-        script = '{0}{1}.sh'.format(log_dir, experiment)
+        script = '{0}/{1}.sh'.format(log_dir, experiment)
         fh = open(script, "w")
         fh.write(JOB_SCRIPT)
         fh.close()
