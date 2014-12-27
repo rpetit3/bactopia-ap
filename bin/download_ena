@@ -71,6 +71,7 @@ if __name__ == '__main__':
             n,
             total
         )
+        n += 1
         merge_runs = []
 
         # FASTQ file names
@@ -120,4 +121,3 @@ if __name__ == '__main__':
         print "Succesfully copied to S3"
         print "Remove from EBS volume"
         ena_obj.remove_file(ebs_fastq)
-        n += 1
