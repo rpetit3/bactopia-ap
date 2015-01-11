@@ -124,7 +124,7 @@ if __name__ == '__main__':
         ),
         '',
         '# Remove Directory',
-        'python {0} --directory {1} --bucket {2} --bucket_path {3}/{4}'
+        'python {0} --directory {1} --bucket {2} --bucket_path {3}/{4} '
         '--delete-local'.format(
             BIN['compare-directory'],
             args.working_dir,
