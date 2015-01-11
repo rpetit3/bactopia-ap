@@ -59,6 +59,7 @@ if __name__ == '__main__':
         '#$ -N j{0}'.format(args.sample_tag),
         '#$ -S /bin/bash',
         '#$ -pe orte {0}'.format(args.processors),
+        '#$ -l h rt=01:30:00'
         '',
         '# Create Working Directory if it does not exist',
         'WORKING_DIR={0}'.format(args.working_dir),
@@ -125,7 +126,7 @@ if __name__ == '__main__':
         '',
         '# Remove Directory',
         'python {0} --directory {1} --bucket {2} --bucket_path {3}/{4} '
-        '--delete-local'.format(
+        '--delete_local'.format(
             BIN['compare-directory'],
             args.working_dir,
             args.s3_bucket,

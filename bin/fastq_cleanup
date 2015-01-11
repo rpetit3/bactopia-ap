@@ -80,6 +80,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Read JSON output of fastq_stats
+    stats = None
     if args.stats:
         with open(args.stats, 'r') as f:
             stats = json.loads(f.readline().rstrip())
@@ -94,6 +95,14 @@ if __name__ == '__main__':
     fq = fastq.CleanUpFASTQ(subsample, args.paired_reads,
                             args.read_length_cutoff, args.min_mean_quality,
                             args.min_read_length)
-    fq.fastq = [line.rstrip() for line in sys.stdin.readlines()]
+
+    # If large fastq reduce to random subset of 750x coverage
+    if stats['coverage'] > 750:
+        fraction = (2814816.0 * 750) / stats['total_bp']
+        fq.read_large_fastq(sys.stdin, fraction)
+        args.total_read_count = len(fq.fastq) / 4
+    else:
+        fq.fastq = [line.rstrip() for line in sys.stdin.readlines()]
+
     fq.generate_order(args.total_read_count)
     fq.clean_up_fastq()

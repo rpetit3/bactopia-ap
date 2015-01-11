@@ -28,6 +28,29 @@ class CleanUpFASTQ(object):
         self.__phred33 = 0
         self.__phredunk = 0
 
+    def read_large_fastq(self, file, fraction):
+        """ Reduce a large (2 GB+) file to a subset before cleanup. """
+        while 1:
+            head = file.readline().rstrip()
+            if not head:
+                break
+
+            seq = file.readline().rstrip()
+            plus = file.readline().rstrip()
+            qual = file.readline().rstrip()
+
+            if random.random() <= fraction:
+                self.fastq.append(head)
+                self.fastq.append(seq)
+                self.fastq.append(plus)
+                self.fastq.append(qual)
+
+                if self.paired_reads:
+                    self.fastq.append(file.readline().rstrip())
+                    self.fastq.append(file.readline().rstrip())
+                    self.fastq.append(file.readline().rstrip())
+                    self.fastq.append(file.readline().rstrip())
+
     def __mean_quality(self, qual):
         """ Create a count of the quality score. """
         qual_stats = np.array([ord(j) for j in qual])
@@ -59,7 +82,7 @@ class CleanUpFASTQ(object):
         """ Generate a random (seeded) order of reads to be selected. """
         if self.paired_reads and total_read_count % 2 == 0:
             total_read_count = total_read_count / 2
-
+        print total_read_count
         self.__read_order = range(total_read_count)
         if self.subsample:
             random.seed(123456)
@@ -68,7 +91,6 @@ class CleanUpFASTQ(object):
     def clean_up_fastq(self, ):
         """ Test each read, if good print it else move next read. """
         basepair_count = 0
-
         for i in xrange(len(self.__read_order)):
             self.__temp_read[:] = []
             if self.paired_reads:
