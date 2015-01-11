@@ -59,7 +59,7 @@ if __name__ == '__main__':
         'ssh_key': BIN['aspera_key'],
         'fastq_interleave': BIN['fastq_interleave'],
         'manage': BIN['manage'],
-        's3upload': BIN['s3upload'],
+        's3upload': BIN['upload'],
     }
 
     ena_obj = ena.ENA(config)

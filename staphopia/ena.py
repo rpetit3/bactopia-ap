@@ -28,11 +28,11 @@ class ENA(object):
 
     def s3upload(self, input_file):
         stdout, stderr = shared.run_command(
-            ['python', self.config['s3upload'], '-f', input_file, '-b',
-             'staphopia', '-p', 'ena_queue'],
+            ['python', self.config['s3upload'], '--file', input_file,
+             '--bucket', 'staphopia', '--bucket_path', 'ena_queue'],
             verbose=False,
         )
-        
+
         return stdout.rstrip()
 
     def remove_file(self, file):
