@@ -75,6 +75,7 @@ BIN = {
     # s3tools related
     'bucket-contents': THIRD_PARTY_PATH + '/s3tools/bucket-contents',
     'cleanup': THIRD_PARTY_PATH + '/s3tools/cleanup',
+    'compare-directory': THIRD_PARTY_PATH + '/s3tools/compare-directory',
     'copy': THIRD_PARTY_PATH + '/s3tools/copy',
     'delete-contents': THIRD_PARTY_PATH + '/s3tools/delete-contents',
     'download': THIRD_PARTY_PATH + '/s3tools/download',

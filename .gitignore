@@ -3,7 +3,8 @@ bin/fastq_stats
 bin/fastq_validator
 
 staphopia/*.pyc
-staphopia/tasks/*pyc
+staphopia/helpers/*.pyc
+staphopia/tasks/*.pyc
 
 test/test-pipeline
 test-data/test_genome.fastq.gz
