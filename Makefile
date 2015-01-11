@@ -6,7 +6,7 @@ THIRD_PARTY_BIN := $(TOP_DIR)/bin/third-party
 AWS_S3 := https://s3.amazonaws.com/analysis-pipeline/src
 TEST_DATA := https://s3.amazonaws.com/analysis-pipeline/test-data
 
-all: config python aspera fastq assembly mlst snp jellyfish;
+all: config python s3tools aspera fastq assembly mlst snp jellyfish;
 
 config: ;
 	sed -i 's#^BASE_DIR.*#BASE_DIR = "$(TOP_DIR)"#' staphopia/config.py
@@ -16,6 +16,14 @@ config: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 python: ;
 	pip install --target $(THIRD_PARTY)/python -r $(TOP_DIR)/requirements.txt
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#                                                                             #
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+s3tools: ;
+	git clone git@github.com:staphopia/s3tools.git $(THIRD_PARTY)/s3tools
+	pip install --target $(THIRD_PARTY)/python -r $(THIRD_PARTY)/s3tools/requirements.txt
+	ln -s $(THIRD_PARTY)/s3tools/bin $(THIRD_PARTY_BIN)/s3tools
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #

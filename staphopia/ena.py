@@ -30,9 +30,10 @@ class ENA(object):
         stdout, stderr = shared.run_command(
             ['python', self.config['s3upload'], '-f', input_file, '-b',
              'staphopia', '-p', 'ena_queue'],
-            verbose=False
+            verbose=False,
         )
-        return stdout
+        
+        return stdout.rstrip()
 
     def remove_file(self, file):
         stdout, stderr = shared.run_command(

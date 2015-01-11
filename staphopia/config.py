@@ -70,8 +70,18 @@ BIN = {
     'ascp': THIRD_PARTY_PATH + '/ascp',
     'aspera_key': THIRD_PARTY_PATH + '/asperaweb_id_dsa.openssh',
     'fastq_interleave': PATH + '/fastq_interleave',
-    'manage': '/staphopia/ebs/staphopia.com/manage.py',
-    's3upload': '/staphopia/ebs/py-s3uploader.py',
+    'manage': '/home/staphopia/staphopia.com/manage.py',
+
+    # s3tools related
+    'bucket-contents': THIRD_PARTY_PATH + '/s3tools/bucket-contents',
+    'copy': THIRD_PARTY_PATH + '/s3tools/copy',
+    'delete-contents': THIRD_PARTY_PATH + '/s3tools/delete-contents',
+    'download': THIRD_PARTY_PATH + '/s3tools/download',
+    'download-directory': THIRD_PARTY_PATH + '/s3tools/download-directory',
+    'move': THIRD_PARTY_PATH + '/s3tools/move',
+    'multipart-upload': THIRD_PARTY_PATH + '/s3tools/multipart-upload',
+    'upload': THIRD_PARTY_PATH + '/s3tools/upload',
+    'upload-directory': THIRD_PARTY_PATH + '/s3tools/upload-directory',
 }
 
 MLST = {
