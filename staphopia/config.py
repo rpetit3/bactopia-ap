@@ -70,7 +70,7 @@ BIN = {
     'ascp': THIRD_PARTY_PATH + '/ascp',
     'aspera_key': THIRD_PARTY_PATH + '/asperaweb_id_dsa.openssh',
     'fastq_interleave': PATH + '/fastq_interleave',
-    'manage': '/home/staphopia/staphopia.com/manage.py',
+    'manage': '/staphopia/ebs/staphopia.com/manage.py',
 
     # s3tools related
     'bucket-contents': THIRD_PARTY_PATH + '/s3tools/bucket-contents',

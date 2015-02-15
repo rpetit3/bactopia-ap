@@ -14,6 +14,7 @@ class ENA(object):
 
     def __init__(self, config):
         self.config = config
+        self.LARGE_FILE = 2 * 10 ** 9
 
     def get_md5sum(self, file):
         stdout, stderr = shared.run_command(
@@ -27,13 +28,26 @@ class ENA(object):
             return None
 
     def s3upload(self, input_file):
-        stdout, stderr = shared.run_command(
-            ['python', self.config['s3upload'], '--file', input_file,
-             '--bucket', 'staphopia', '--bucket_path', 'ena_queue'],
-            verbose=False,
-        )
+        # Multipart Upload for file large than 2 GB
+        file_size = os.stat(input_file).st_size
 
-        return stdout.rstrip()
+        if file_size >= self.LARGE_FILE:
+            print "File larger than 2GB uploading in multiple parts."
+            stdout, stderr = shared.run_command(
+                ['python', self.config['s3multipartupload'], '--file',
+                 input_file, '--bucket', 'staphopia-samples',
+                 '--bucket_path', 'queue'],
+                verbose=False,
+            )
+            return 'multipart'
+        else:
+            stdout, stderr = shared.run_command(
+                ['python', self.config['s3upload'], '--file', input_file,
+                 '--bucket', 'staphopia-samples', '--bucket_path', 'queue',
+                 '--quiet'],
+                verbose=False,
+            )
+            return stdout.rstrip()
 
     def remove_file(self, file):
         stdout, stderr = shared.run_command(
@@ -44,7 +58,7 @@ class ENA(object):
     def build_command(self, args):
         cmd = ['python', self.config['manage'], 'unprocessed_ena',
                '--settings', self.config['settings']]
-            # Build command
+        # Build command
 
         if args.limit:
             cmd.append('--limit')
@@ -89,11 +103,12 @@ class ENA(object):
 
         JOB_SCRIPT = '\n'.join([
             '#! /bin/bash',
+            '#$ -l h_rt=01:30:00',
             '#$ -wd {0}'.format(ebs_dir),
             '#$ -V',
             '#$ -N j{0}'.format(experiment),
             '#$ -S /bin/bash',
-            '#$ -pe orte 1',
+            '#$ -pe orte 2',
             '#$ -o {0}/{1}.stdout'.format(log_dir, experiment),
             '#$ -e {0}/{1}.stderr'.format(log_dir, experiment),
             '',
@@ -127,6 +142,8 @@ class ENA(object):
                  self.config['ssh_key'], 'era-fasp@{0}'.format(fasp), outdir],
                 verbose=False
             )
+
+        return self.get_md5sum(fastq)
 
     def interleave_fastq(self, runs, output):
         fastq_interleave = check_call(

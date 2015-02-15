@@ -82,7 +82,6 @@ class CleanUpFASTQ(object):
         """ Generate a random (seeded) order of reads to be selected. """
         if self.paired_reads and total_read_count % 2 == 0:
             total_read_count = total_read_count / 2
-        print total_read_count
         self.__read_order = range(total_read_count)
         if self.subsample:
             random.seed(123456)

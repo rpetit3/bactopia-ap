@@ -60,6 +60,7 @@ if __name__ == '__main__':
         'fastq_interleave': BIN['fastq_interleave'],
         'manage': BIN['manage'],
         's3upload': BIN['upload'],
+        's3multipartupload': BIN['multipart-upload'],
     }
 
     ena_obj = ena.ENA(config)
@@ -79,22 +80,40 @@ if __name__ == '__main__':
 
         # FASTQ file names
         ebs_fastq = '{0}{1}.fastq.gz'.format(outdir, experiment_accession)
-        s3_fastq = '{0}{1}.fastq.gz'.format(s3, experiment_accession)
 
         for run_accession in ena_obj.enainfo[experiment_accession]:
             print '\tWorking on {0}...'.format(run_accession)
             run = ena_obj.enainfo[experiment_accession][run_accession]
             runs = []
-            for fasp in run['fastq_aspera'].split(';'):
-                if fasp:
-                    fastq = '{0}{1}'.format(
-                        outdir, format(os.path.basename(fasp))
-                    )
-                    print '\t\tDownloading {0}...'.format(fastq)
-                    runs.append(fastq)
-                    ena_obj.download_fastq(fasp, outdir, fastq)
+            for i in xrange(len(run['fastq_aspera'])):
+                if run['fastq_md5'][i]:
+                    fastq_md5 = run['fastq_md5'][i]
+                    dl_md5 = None
+                    fasp = run['fastq_aspera'][i]
+                    while (fastq_md5 != dl_md5):
+                        fastq = '{0}{1}'.format(
+                            outdir, format(os.path.basename(fasp))
+                        )
+                        print '\t\tDownloading {0}...'.format(fastq)
+                        dl_md5 = ena_obj.download_fastq(fasp, outdir, fastq)
+                        if dl_md5 == fastq_md5:
+                            print '\t\tMD5s match, {0}\t{1}'.format(
+                                fastq_md5, dl_md5
+                            )
+                            runs.append(fastq)
+                        else:
+                            print '\t\tMD5s do not match, {0}\t{1}'.format(
+                                fastq_md5, dl_md5
+                            )
 
-            if run['is_paired']:
+            if len(runs) != 2:
+                paired_run = []
+                for r in runs:
+                    if r.endswith("_1.fastq.gz") or r.endswith("_2.fastq.gz"):
+                        paired_run.append(r)
+                runs = paired_run
+
+            if run['is_paired'] and len(runs) == 2:
                 print '\t\tInterleave FASTQ {0}, {1}'.format(runs[0], runs[1])
                 interleaved = '{0}{1}.fastq.gz'.format(outdir, run_accession)
                 ena_obj.interleave_fastq(runs, interleaved)
@@ -102,22 +121,27 @@ if __name__ == '__main__':
             else:
                 for r in runs:
                     merge_runs.append(r)
+
         print '\tMerging runs into {0}{1}.fastq.gz'.format(
             outdir, experiment_accession
         )
         ena_obj.merge_runs(merge_runs, '{0}{1}.fastq.gz'.format(
             outdir, experiment_accession
         ))
-        print '\tMoving to S3 bucket...'
 
+        print '\tMoving to S3 bucket...'
         ebs_md5 = ena_obj.get_md5sum(ebs_fastq)
         s3_md5 = None
         while (ebs_md5 != s3_md5):
             s3_md5 = ena_obj.s3upload(ebs_fastq)
-            print '\t\tMD5sum --- EBS={0}\tS3={1}'.format(ebs_md5, s3_md5)
-            if ebs_md5 != s3_md5:
-                print '\t\tMD5 checksums do not match, copying again...'
-                ena_obj.remove_file(s3_fastq)
-        print "\tSuccesfully copied to S3"
-        print "\tRemove from EBS volume"
+            print '\t\tMD5s --- EBS={0}\tS3={1}'.format(ebs_md5, s3_md5)
+            if s3_md5 == 'multipart':
+                print '\t\tAssuming multipart upload was successful.'
+                s3_md5 = ebs_md5
+            elif ebs_md5 != s3_md5:
+                print '\t\tMD5s do not match, {0}, {1}, re-upload'.format(
+                    ebs_md5, s3_md5
+                )
+
+        print "\tSuccesfully copied to S3, removing from EBS volume"
         ena_obj.remove_file(ebs_fastq)

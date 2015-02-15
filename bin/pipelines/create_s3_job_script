@@ -59,7 +59,7 @@ if __name__ == '__main__':
         '#$ -N j{0}'.format(args.sample_tag),
         '#$ -S /bin/bash',
         '#$ -pe orte {0}'.format(args.processors),
-        '#$ -l h rt=01:30:00'
+        '#$ -l h_rt=01:30:00'
         '',
         '# Create Working Directory if it does not exist',
         'WORKING_DIR={0}'.format(args.working_dir),
@@ -86,13 +86,19 @@ if __name__ == '__main__':
         'export OMP_THREAD_LIMIT={0}'.format(args.processors),
         '',
         '# Download file from S3',
+        'while [ ! -f {0}/{1} ]'.format(
+            args.working_dir,
+            os.path.basename(args.s3_file)
+        ),
+        'do',
         'python {0} --file {1} --bucket {2} --directory {3}'.format(
             BIN['download'],
             args.s3_file,
             args.s3_file_bucket,
             args.working_dir
         ),
-        ''
+        'done',
+        '',
         '# Run file through pipeline',
         'python {0}/submit_job -i {1} -p {2} {3} {4} {5}'.format(
             PIPELINE_PATH,

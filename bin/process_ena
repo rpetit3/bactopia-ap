@@ -43,6 +43,7 @@ if __name__ == '__main__':
             stdout=job_script,
             verbose=False
         )
+
         if os.path.exists(job_script):
             qsub_out, qsub_err = shared.run_command(
                 ['qsub', job_script],
@@ -52,4 +53,5 @@ if __name__ == '__main__':
         else:
             print 'Error creating job script for {0}'.format(filename)
             print stderr
+
     fh.close()
