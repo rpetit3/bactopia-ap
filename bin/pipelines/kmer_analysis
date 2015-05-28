@@ -32,13 +32,5 @@ def count(input_file, output_file):
     """ Count kmers using Jellyfish. """
     kmer.jellyfish_count(input_file, output_file, str(options.processors))
 
-
-@follows(count)
-@transform(count, regex(r"(.*).jf"), r"\1.kmer_count.gz")
-@time_job(TIME_LOG)
-def dump(input_file, output_file):
-    """ Dump kmer counts into a text file. """
-    kmer.jellyfish_dump(input_file, output_file)
-
 # -----------------------------------------------------------------------------
 pipeline_run(exceptions_terminate_immediately=True, verbose=5)

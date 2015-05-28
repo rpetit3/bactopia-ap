@@ -54,7 +54,7 @@ if __name__ == '__main__':
     config = {
         'n_cpu': str(args.processors),
         'settings': 'staphopia.settings.{0}'.format(
-            'prod' if args.production else 'dev'
+            'prod' if args.production else 'local'
         ),
         'ascp': BIN['ascp'],
         'ssh_key': BIN['aspera_key'],
@@ -68,6 +68,7 @@ if __name__ == '__main__':
     ena_obj.get_unprocessed_ena(args)
     total = len(ena_obj.enainfo)
     n = 1
+
     for experiment_accession in ena_obj.enainfo:
         print 'Working on {0} ({1} of {2})...'.format(
             experiment_accession,

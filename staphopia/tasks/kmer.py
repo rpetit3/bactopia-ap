@@ -12,14 +12,3 @@ def jellyfish_count(fastq, output_file, num_cpu):
          '-t', num_cpu, '-o', output_file, '/dev/fd/0'],
     )
     return jellyfish
-
-
-def jellyfish_dump(input_file, output_file):
-    """ Dump k-mer counts to text file. """
-    jellyfish = shared.pipe_command(
-        [BIN['jellyfish'], 'dump', '-c', input_file],
-        ['gzip', '-'],
-        stdout=output_file
-    )
-    shared.run_command(['rm', input_file])
-    return jellyfish

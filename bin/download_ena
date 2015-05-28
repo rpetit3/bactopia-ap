@@ -53,7 +53,7 @@ if __name__ == '__main__':
     config = {
         'n_cpu': str(args.processors),
         'settings': 'staphopia.settings.{0}'.format(
-            'prod' if args.production else 'dev'
+            'prod' if args.production else 'local'
         ),
         'ascp': BIN['ascp'],
         'ssh_key': BIN['aspera_key'],
@@ -129,19 +129,20 @@ if __name__ == '__main__':
             outdir, experiment_accession
         ))
 
-        print '\tMoving to S3 bucket...'
-        ebs_md5 = ena_obj.get_md5sum(ebs_fastq)
-        s3_md5 = None
-        while (ebs_md5 != s3_md5):
-            s3_md5 = ena_obj.s3upload(ebs_fastq)
-            print '\t\tMD5s --- EBS={0}\tS3={1}'.format(ebs_md5, s3_md5)
-            if s3_md5 == 'multipart':
-                print '\t\tAssuming multipart upload was successful.'
-                s3_md5 = ebs_md5
-            elif ebs_md5 != s3_md5:
-                print '\t\tMD5s do not match, {0}, {1}, re-upload'.format(
-                    ebs_md5, s3_md5
-                )
+        if args.production:
+            print '\tMoving to S3 bucket...'
+            ebs_md5 = ena_obj.get_md5sum(ebs_fastq)
+            s3_md5 = None
+            while (ebs_md5 != s3_md5):
+                s3_md5 = ena_obj.s3upload(ebs_fastq)
+                print '\t\tMD5s --- EBS={0}\tS3={1}'.format(ebs_md5, s3_md5)
+                if s3_md5 == 'multipart':
+                    print '\t\tAssuming multipart upload was successful.'
+                    s3_md5 = ebs_md5
+                elif ebs_md5 != s3_md5:
+                    print '\t\tMD5s do not match, {0}, {1}, re-upload'.format(
+                        ebs_md5, s3_md5
+                    )
 
-        print "\tSuccesfully copied to S3, removing from EBS volume"
-        ena_obj.remove_file(ebs_fastq)
+            print "\tSuccesfully copied to S3, removing from EBS volume"
+            ena_obj.remove_file(ebs_fastq)

@@ -5,7 +5,10 @@
     [TODO: Elaborate on description]
 '''
 import os
-import json
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 from staphopia.tasks import shared
 from subprocess import check_call
@@ -89,10 +92,9 @@ class ENA(object):
     def get_unprocessed_ena(self, args):
         '''
         '''
-        stdout, stderr = shared.run_command(
-            self.build_command(args),
-            verbose=False
-        )
+        cmd = self.build_command(args)
+        stdout, stderr = shared.run_command(cmd, verbose=False)
+
         self.enainfo = json.loads(stdout)
 
     def queue_download(self, experiment, ebs_dir, s3_dir, log_dir):

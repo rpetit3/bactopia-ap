@@ -41,7 +41,7 @@ def blast_alleles(input_file, output_file, num_cpu):
         blastn = shared.run_command(
             [BIN['blastn'], '-db', blastdb, '-query', input_file,
              '-outfmt', outfmt, '-max_target_seqs', '1', '-num_threads',
-             num_cpu]
+             num_cpu, '-evalue', '10000']
         )
         results.append(blastn[0].split('\n')[0])
 

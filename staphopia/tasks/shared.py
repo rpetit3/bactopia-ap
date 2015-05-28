@@ -156,3 +156,15 @@ def remove(files):
     Delete a list of files
     '''
     rm = run_command(['rm', '-rf'] + files)
+
+
+def get_md5sum(file):
+    '''
+    Return the MD5SUM of an input file.
+    '''
+    stdout, stderr = run_command(['md5sum', file], verbose=False)
+    if stdout:
+        md5sum, filename = stdout.split()
+        return md5sum
+    else:
+        return None
