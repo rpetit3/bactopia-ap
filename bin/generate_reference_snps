@@ -1,0 +1,87 @@
+#! /usr/bin/env python
+"""
+
+"""
+if __name__ == '__main__':
+    import argparse as ap
+    from Bio import SeqIO
+
+    parser = ap.ArgumentParser(
+        prog='generate_reference_snps',
+        conflict_handler='resolve',
+        description=(''))
+    parser.add_argument('reference_fasta', metavar="FASTA", type=str,
+                        help=('Reference FASTA file to generate all possible '
+                              'SNPs for.'))
+
+    args = parser.parse_args()
+    # Open Reference FASTA
+    fa = open(args.reference_fasta, "rU")
+    seq = list(SeqIO.parse(fa, "fasta"))[0]
+
+    print("##fileformat=VCFv4.1")
+    print("##reference=file:///{0}".format(args.reference_fasta))
+    print('##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele count in '
+          'genotypes, for each ALT allele, in the same order as listed">')
+    print('##FORMAT=<ID=AD,Number=.,Type=Integer,Description="Allelic depths '
+          'for the ref and alt alleles in the order listed">')
+    print('##FILTER=<ID=LowQual,Description="Low quality">')
+    print("##contig=<ID={0},length={1}>".format(seq.id, len(seq)))
+    print("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tGATK")
+
+    bases = ['A', 'C', 'G', 'T']
+    for pos, ref_base in enumerate(seq):
+        for base in bases:
+            if base == ref_base:
+                continue
+            elif base == 'N':
+                print(
+                    "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}".format(
+                        seq.id,
+                        pos + 1,
+                        '.',
+                        ref_base,
+                        base,
+                        '0.00',
+                        'LowQual',
+                        'AC=1',
+                        'AD',
+                        '1'
+                    )
+                )
+            else:
+                continue
+                print(
+                    "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}".format(
+                        seq.id,
+                        pos + 1,
+                        '.',
+                        ref_base,
+                        base,
+                        '0.00',
+                        'LowQual',
+                        'AC=1',
+                        'AD',
+                        '1'
+                    )
+                )
+
+    """
+    ##fileformat=VCFv4.1
+    ##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele count in genotypes,
+    for each ALT allele, in the same order as listed">
+    ##reference=file:///staphopia/ebs/analysis-pipeline/tool-data/snp/n315.fasta
+    ##contig=<ID=gi|29165615|ref|NC_002745.2|,length=2814816>
+    #CHROM  POS ID  REF ALT QUAL    FILTER  INFO    FORMAT  GATK
+
+    CHROM   gi|29165615|ref|NC_002745.2|
+    POS     7
+    ID      .
+    REF     A
+    ALT     G
+    QUAL    27.77
+    FILTER  LowQual
+    INFO    AC=1;AF=0.5;AN=2;...;VariantType=SNP
+    FORMAT  GT:AD:DP:GQ:PL
+    GATK    0/1:5,2:7:56:56,0,176
+    """
