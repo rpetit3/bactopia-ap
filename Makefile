@@ -86,6 +86,7 @@ assemblathon2_analysis: ;
 	make -C $(THIRD_PARTY)/JSON
 	make -C $(THIRD_PARTY)/JSON install
 	ln -s $(THIRD_PARTY)/JSON/lib/JSON.pm $(THIRD_PARTY)/assemblathon2-analysis/JSON.pm
+	ln -s $(THIRD_PARTY)/JSON/lib/JSON $(THIRD_PARTY)/assemblathon2-analysis/JSON
 	ln -s $(THIRD_PARTY)/assemblathon2-analysis/assemblathon_stats.pl $(THIRD_PARTY_BIN)/assemblathon_stats.pl
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -181,6 +182,19 @@ jellyfish: ;
 	cd $(THIRD_PARTY)/jellyfish/ && ./configure && cd $(TOP_DIR)
 	make -C $(THIRD_PARTY)/jellyfish
 	ln -s $(THIRD_PARTY)/jellyfish/bin/jellyfish $(THIRD_PARTY_BIN)/jellyfish
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#                                                                             #
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+annotation: prokka barrnap ;
+
+prokka: ;
+	git clone git@github.com:tseemann/prokka.git $(THIRD_PARTY)/prokka
+	ln -s $(THIRD_PARTY)/prokka/bin $(TOP_DIR)/bin/prokka
+
+barrnap: ;
+	git clone git@github.com:tseemann/barrnap.git $(THIRD_PARTY)/barrnap
+	ln -s $(THIRD_PARTY)/barrnap/bin/barrnap $(TOP_DIR)/bin/barrnap
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #

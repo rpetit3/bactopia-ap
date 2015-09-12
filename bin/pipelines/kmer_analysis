@@ -26,19 +26,15 @@ def create_dir():
     out, err = shared.run_command(['mkdir', 'logs'])
 
 
-@transform(options.fastq, regex(r"(.*).cleanup.fastq.gz"), r"\1.jf")
+@transform(options.fastq, regex(r"(.*).cleanup.fastq.gz"), r"\1.kmer_count.gz")
 @time_job(TIME_LOG, new_stream=True)
-def count(input_file, output_file):
+def count_and_dump(input_file, output_file):
     """ Count kmers using Jellyfish. """
-    kmer.jellyfish_count(input_file, output_file, str(options.processors))
+    jelly_fish = output_file.replace('kmer_count.gz', 'jf')
+    kmer.jellyfish_count(input_file, jelly_fish, str(options.processors))
 
-
-@follows(count)
-@transform(count, regex(r"(.*).jf"), r"\1.kmer_count.gz")
-@time_job(TIME_LOG)
-def dump(input_file, output_file):
     """ Dump kmer counts into a text file. """
-    kmer.jellyfish_dump(input_file, output_file)
+    kmer.jellyfish_dump(jelly_fish, output_file)
 
 # -----------------------------------------------------------------------------
 pipeline_run(exceptions_terminate_immediately=True, verbose=5)
