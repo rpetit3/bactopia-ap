@@ -43,8 +43,16 @@ def blast_alleles(input_file, output_file, num_cpu):
              '-outfmt', outfmt, '-max_target_seqs', '1', '-num_threads',
              num_cpu, '-evalue', '10000']
         )
-        results.append(blastn[0].split('\n')[0])
-
+        top_hit = blastn[0].split('\n')[0]
+        
+        # Did not return a hit
+        if not top_hit:
+            top_hit = ['0'] * 9
+            top_hit[0] = allele + '-0'
+            top_hit = '\t'.join(top_hit)  
+        
+        results.append(top_hit)
+    print results
     blastn_results = output_file.replace('completed', 'blastn.txt')
     fh = open(blastn_results, 'w')
     fh.write('\n'.join(results))
