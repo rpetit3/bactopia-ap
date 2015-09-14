@@ -30,7 +30,7 @@ ASSEMBLY = args.input_file.replace('.fastq.gz', '.scaffolds.fasta.gz')
 
 TIME_LOG = 'logs/submit_job.time' if args.log_times else sys.stderr
 LOG_TIMES = '--log_times' if args.log_times else ''
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 # Pipeline --------------------------------------------------------------------
 
@@ -105,5 +105,17 @@ def predict_sccmec():
         stderr='logs/predict_sccmec.stderr',
     )
 
-#------------------------------------------------------------------------------
+
+@follows(predict_sccmec)
+@time_job(TIME_LOG)
+def annotation():
+    """ Determine SCCmec type. """
+    out, err = shared.run_command(
+        [BIN['annotation'], '-f', ASSEMBLY, '-t', args.sample_tag,
+         '-p', str(args.processors), LOG_TIMES],
+        stdout='logs/annotation.stdout',
+        stderr='logs/annotation.stderr',
+    )
+
+# -----------------------------------------------------------------------------
 pipeline_run(exceptions_terminate_immediately=True, verbose=5)

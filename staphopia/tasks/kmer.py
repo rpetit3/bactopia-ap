@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 """ Count k-mers within FASTQ file. """
 from staphopia.config import BIN
 from staphopia.tasks import shared

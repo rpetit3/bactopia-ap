@@ -30,7 +30,7 @@ def srst2(input_file, output_file, num_cpu):
 def blast_alleles(input_file, output_file, num_cpu):
     """ Blast assembled contigs against MLST blast database. """
     # Decompress contigs
-    shared.run_command(['gunzip', input_file])
+    shared.run_command(['gunzip', '-k', input_file])
     input_file = input_file.replace(".gz", "")
     outfmt = "6 sseqid bitscore slen length gaps mismatch pident evalue"
     alleles = ['arcc', 'aroe', 'glpf', 'gmk_', 'pta_', 'tpi_', 'yqil']
@@ -44,20 +44,20 @@ def blast_alleles(input_file, output_file, num_cpu):
              num_cpu, '-evalue', '10000']
         )
         top_hit = blastn[0].split('\n')[0]
-        
+
         # Did not return a hit
         if not top_hit:
             top_hit = ['0'] * 9
             top_hit[0] = allele + '-0'
-            top_hit = '\t'.join(top_hit)  
-        
+            top_hit = '\t'.join(top_hit)
+
         results.append(top_hit)
     print results
     blastn_results = output_file.replace('completed', 'blastn.txt')
     fh = open(blastn_results, 'w')
     fh.write('\n'.join(results))
     fh.close()
-    shared.run_command(['gzip', '--fast', input_file])
+    shared.run_command(['rm', input_file])
     if shared.try_to_complete_task(blastn_results, output_file):
         return True
     else:

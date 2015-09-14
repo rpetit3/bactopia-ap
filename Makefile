@@ -190,11 +190,15 @@ annotation: prokka barrnap ;
 
 prokka: ;
 	git clone git@github.com:tseemann/prokka.git $(THIRD_PARTY)/prokka
-	ln -s $(THIRD_PARTY)/prokka/bin $(TOP_DIR)/bin/prokka
+	ln -s $(THIRD_PARTY)/prokka/bin $(THIRD_PARTY_BIN)/prokka
+	ln -s $(TOP_DIR)/tool-data/annotation/staphylococcus-uniref90.prokka $(THIRD_PARTY)/prokka/db/genus/Staphylococcus-uniref90
+	rm $(THIRD_PARTY)/prokka/db/kingdom/Bacteria/sprot
+	ln -s $(TOP_DIR)/tool-data/annotation/bacteria-uniref90.prokka $(THIRD_PARTY)/prokka/db/kingdom/Bacteria/sprot
+	$(THIRD_PARTY_BIN)/prokka/prokka --setupdb
 
 barrnap: ;
 	git clone git@github.com:tseemann/barrnap.git $(THIRD_PARTY)/barrnap
-	ln -s $(THIRD_PARTY)/barrnap/bin/barrnap $(TOP_DIR)/bin/barrnap
+	ln -s $(THIRD_PARTY)/barrnap/bin/barrnap $(THIRD_PARTY_BIN)/barrnap
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #

@@ -10,6 +10,8 @@ BASE_DIR = "/home/rpetit/staphopia/analysis-pipeline"
 PATH = BASE_DIR + '/bin'
 PIPELINE_PATH = PATH + '/pipelines'
 THIRD_PARTY_PATH = PATH + '/third-party'
+PROKKA_PATH = BASE_DIR + '/src/third-party/prokka/binaries/linux'
+TOOL_DATA = BASE_DIR + '/tool-data'
 
 # PYTHONPATH
 PYTHON_REQS = BASE_DIR + '/src/third-party/python'
@@ -57,6 +59,9 @@ BIN = {
     # K-mer related
     'jellyfish': THIRD_PARTY_PATH + '/jellyfish',
 
+    # Annotation related
+    'prokka': THIRD_PARTY_PATH + '/prokka/prokka',
+
     # Pipelines
     'fastq_cleanup_pipeline': PIPELINE_PATH + '/fastq_cleanup',
     'illumina_assembly': PIPELINE_PATH + '/illumina_assembly',
@@ -64,6 +69,7 @@ BIN = {
     'predict_sccmec': PIPELINE_PATH + '/predict_sccmec',
     'call_variants': PIPELINE_PATH + '/call_variants',
     'kmer_analysis': PIPELINE_PATH + '/kmer_analysis',
+    'annotation': PIPELINE_PATH + '/annotation',
 
     # Staphopia related
     'download_ena': PATH + '/download_ena',
@@ -87,18 +93,23 @@ BIN = {
 }
 
 MLST = {
-    'mlst_db': BASE_DIR + '/tool-data/mlst/Staphylococcus_aureus.fasta',
-    'mlst_definitions': BASE_DIR + '/tool-data/mlst/saureus.txt',
-    'mlst_blastdb': BASE_DIR + '/tool-data/mlst/blastdb',
+    'mlst_db': TOOL_DATA + '/mlst/Staphylococcus_aureus.fasta',
+    'mlst_definitions': TOOL_DATA + '/mlst/saureus.txt',
+    'mlst_blastdb': TOOL_DATA + '/mlst/blastdb',
 }
 
 SCCMEC = {
-    'primers': BASE_DIR + '/tool-data/sccmec_primers.fasta',
-    'proteins': BASE_DIR + '/tool-data/sccmec_proteins.fasta',
-    'cassettes': BASE_DIR + '/tool-data/sccmec/sccmec_cassettes',
+    'primers': TOOL_DATA + '/sccmec_primers.fasta',
+    'proteins': TOOL_DATA + '/sccmec_proteins.fasta',
+    'cassettes': TOOL_DATA + '/sccmec/sccmec_cassettes',
 }
 
 SNP = {
-    'reference': BASE_DIR + '/tool-data/snp/n315.fasta',
-    'ref_genbank': BASE_DIR + '/tool-data/snp/n315.gb',
+    'reference': TOOL_DATA + '/snp/n315.fasta',
+    'ref_genbank': TOOL_DATA + '/snp/n315.gb',
+}
+
+ANNOTATION = {
+    'genus': 'Staphylococcus-uniref90',
+    'proteins': TOOL_DATA + '/annotation/sa-uniref90-reviewed.prokka'
 }

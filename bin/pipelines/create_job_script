@@ -61,8 +61,8 @@ if __name__ == '__main__':
         '#$ -e {0}/submit_job.stderr'.format(args.working_dir),
         '',
         '# Environment Variables',
-        'export PATH={0}:{1}:{2}:$PATH'.format(
-            PATH, PIPELINE_PATH, THIRD_PARTY_PATH
+        'export PATH={0}:{1}:{2}:{3}:$PATH'.format(
+            PATH, PIPELINE_PATH, THIRD_PARTY_PATH, PROKKA_PATH
         ),
         'export PYTHONPATH={0}:{1}:{2}:$PYTHONPATH'.format(
             BASE_DIR, PYTHON_REQS, VCFANNOTATOR
