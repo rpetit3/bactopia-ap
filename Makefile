@@ -6,7 +6,7 @@ THIRD_PARTY_BIN := $(TOP_DIR)/bin/third-party
 AWS_S3 := https://s3.amazonaws.com/analysis-pipeline/src
 TEST_DATA := https://s3.amazonaws.com/analysis-pipeline/test-data
 
-all: config python s3tools aspera fastq assembly mlst snp jellyfish;
+all: config python s3tools aspera fastq assembly mlst snp jellyfish sccmec;
 
 config: ;
 	sed -i 's#^BASE_DIR.*#BASE_DIR = "$(TOP_DIR)"#' staphopia/config.py
@@ -127,13 +127,38 @@ samtools_0118: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-snp: bwa samtools bedtools java picardtools gatk vcfannotator ;
+snp: bwa java picardtools gatk vcfannotator;
 
 bwa: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/bwa-0.7.10.tar.bz2
-	tar -C $(THIRD_PARTY) -xjvf $(THIRD_PARTY)/bwa-0.7.10.tar.bz2 && mv $(THIRD_PARTY)/bwa-0.7.10 $(THIRD_PARTY)/bwa
+	wget -O $(THIRD_PARTY)/bwa-0.7.12.tar.gz https://github.com/lh3/bwa/archive/0.7.12.tar.gz
+	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/bwa-0.7.12.tar.gz && mv $(THIRD_PARTY)/bwa-0.7.12 $(THIRD_PARTY)/bwa
 	make -C $(THIRD_PARTY)/bwa
 	ln -s $(THIRD_PARTY)/bwa/bwa $(THIRD_PARTY_BIN)/bwa
+
+java: ;
+	wget -O $(THIRD_PARTY)/jdk-8u60-linux-x64.tar.gz https://www.dropbox.com/s/g5y2o8x6ce685ud/jdk-8u60-linux-x64.tar.gz?dl=1
+	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/jdk-8u60-linux-x64.tar.gz && mv $(THIRD_PARTY)/jdk1.8.0_60 $(THIRD_PARTY)/jdk
+	ln -s $(THIRD_PARTY)/jdk/bin/java $(THIRD_PARTY_BIN)/java
+
+picardtools: ;
+	wget -P $(THIRD_PARTY) https://github.com/broadinstitute/picard/releases/download/1.140/picard-tools-1.140.zip
+	unzip $(THIRD_PARTY)/picard-tools-1.140.zip -d $(THIRD_PARTY)/ && mv $(THIRD_PARTY)/picard-tools-1.140 $(THIRD_PARTY)/picardtools
+	ln -s $(THIRD_PARTY)/picardtools/picard.jar $(THIRD_PARTY_BIN)/picard.jar
+
+gatk: ;
+	mkdir $(THIRD_PARTY)/gatk
+	wget -O $(THIRD_PARTY)/gatk/GenomeAnalysisTK-3.4-46.tar.bz2 https://www.dropbox.com/s/97qv9ybrr3kjgzk/GenomeAnalysisTK-3.4-46.tar.bz2?dl=1
+	tar -C $(THIRD_PARTY)/gatk/ -xjvf $(THIRD_PARTY)/gatk/GenomeAnalysisTK-3.4-46.tar.bz2
+	ln -s $(THIRD_PARTY)/gatk/GenomeAnalysisTK.jar $(THIRD_PARTY_BIN)/GenomeAnalysisTK.jar
+
+vcfannotator: ;
+	git clone git@github.com:rpetit3/vcf-annotator.git $(THIRD_PARTY)/python/vcf-annotator
+	ln -s $(THIRD_PARTY)/python/vcf-annotator/bin/vcf-annotator $(THIRD_PARTY_BIN)/vcf-annotator
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#                                                                             #
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+sccmec: samtools bedtools;
 
 samtools: ;
 	wget -P $(THIRD_PARTY) $(AWS_S3)/samtools-bcftools-htslib-1.0_x64-linux.tar.bz2
@@ -146,32 +171,6 @@ bedtools: ;
 	make -C $(THIRD_PARTY)/bedtools
 	ln -s $(THIRD_PARTY)/bedtools/bin/bedtools $(THIRD_PARTY_BIN)/bedtools
 	ln -s $(THIRD_PARTY)/bedtools/bin/genomeCoverageBed $(THIRD_PARTY_BIN)/genomeCoverageBed
-
-java: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/jdk-7u60-ea-bin-b15-linux-x64-16_apr_2014.tar.gz
-	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/jdk-7u60-ea-bin-b15-linux-x64-16_apr_2014.tar.gz && mv $(THIRD_PARTY)/jdk1.7.0_60 $(THIRD_PARTY)/jdk
-	ln -s $(THIRD_PARTY)/jdk/bin/java $(THIRD_PARTY_BIN)/java
-
-picardtools: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/picard-tools-1.119.zip
-	unzip $(THIRD_PARTY)/picard-tools-1.119.zip -d $(THIRD_PARTY)/ && mv $(THIRD_PARTY)/picard-tools-1.119 $(THIRD_PARTY)/picardtools
-	ln -s $(THIRD_PARTY)/picardtools/SamFormatConverter.jar $(THIRD_PARTY_BIN)/SamFormatConverter.jar
-	ln -s $(THIRD_PARTY)/picardtools/AddOrReplaceReadGroups.jar $(THIRD_PARTY_BIN)/AddOrReplaceReadGroups.jar
-	ln -s $(THIRD_PARTY)/picardtools/BuildBamIndex.jar $(THIRD_PARTY_BIN)/BuildBamIndex.jar
-	ln -s $(THIRD_PARTY)/picardtools/SortSam.jar $(THIRD_PARTY_BIN)/SortSam.jar
-	ln -s $(THIRD_PARTY)/picardtools/CreateSequenceDictionary.jar $(THIRD_PARTY_BIN)/CreateSequenceDictionary.jar
-
-gatk: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/GenomeAnalysisTK-3.2-2.tar.bz2
-	mkdir $(THIRD_PARTY)/gatk
-	tar -C $(THIRD_PARTY) -xjvf $(THIRD_PARTY)/GenomeAnalysisTK-3.2-2.tar.bz2
-	mv $(THIRD_PARTY)/GenomeAnalysisTK.jar  $(THIRD_PARTY)/gatk
-	mv $(THIRD_PARTY)/resources $(THIRD_PARTY)/gatk
-	ln -s $(THIRD_PARTY)/gatk/GenomeAnalysisTK.jar $(THIRD_PARTY_BIN)/GenomeAnalysisTK.jar
-
-vcfannotator: ;
-	git clone git@github.com:rpetit3/vcf-annotator.git $(THIRD_PARTY)/python/vcf-annotator
-	ln -s $(THIRD_PARTY)/python/vcf-annotator/bin/vcf-annotator $(THIRD_PARTY_BIN)/vcf-annotator
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #

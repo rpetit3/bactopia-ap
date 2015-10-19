@@ -38,19 +38,13 @@ BIN = {
 
     # SCCmec related
     'tblastn': THIRD_PARTY_PATH + '/tblastn',
-    'bwa': THIRD_PARTY_PATH + '/bwa',
     'samtools': THIRD_PARTY_PATH + '/samtools-1.0',
     'genomeCoverageBed': THIRD_PARTY_PATH + '/genomeCoverageBed',
 
     # SNP/InDel related
+    'bwa': THIRD_PARTY_PATH + '/bwa',
     'java': THIRD_PARTY_PATH + '/java',
-    'sam_format_converter': THIRD_PARTY_PATH + '/SamFormatConverter.jar',
-    'add_or_replace_read_groups': '{0}/AddOrReplaceReadGroups.jar'.format(
-        THIRD_PARTY_PATH
-    ),
-    'build_bam_index': THIRD_PARTY_PATH + '/BuildBamIndex.jar',
-    'sort_sam': THIRD_PARTY_PATH + '/SortSam.jar',
-    'create_sequence_dictionary': '{0}/CreateSequenceDictionary.jar'.format(
+    'picardtools': '{0}/picard.jar'.format(
         THIRD_PARTY_PATH
     ),
     'gatk': THIRD_PARTY_PATH + '/GenomeAnalysisTK.jar',

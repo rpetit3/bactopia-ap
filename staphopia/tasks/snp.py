@@ -4,185 +4,213 @@ from staphopia.config import BIN, SNP
 from staphopia.tasks import shared
 
 
-def bwa_aln(fastq, output_sai, output_file, num_cpu):
-    """ Align reads against reference genome (BWA part one). """
+def bwa_mem(fastq, output_sam, num_cpu, completed_file):
+    """ Align reads (mean length < 70bp) against reference genome. """
     shared.run_command(
-        [BIN['bwa'], 'aln', '-e', '10', '-f', output_sai, '-t', num_cpu,
-         SNP['reference'], fastq]
+        [BIN['bwa'], 'mem', '-M', '-t', num_cpu, SNP['reference'], fastq],
+        stdout=output_sam
     )
 
-    if shared.try_to_complete_task(output_sai, output_file):
+    if shared.try_to_complete_task(output_sam, completed_file):
         return True
     else:
-        raise Exception("bwa aln did not complete successfully.")
+        raise Exception("bwa mem did not complete successfully.")
 
 
-def bwa_samse(input_sai, fastq, output_sam, output_file):
-    """ Align reads against reference genome (BWA part two). """
-    shared.run_command(
-        [BIN['bwa'], 'samse', '-f', output_sam, SNP['reference'], input_sai,
-         fastq]
-    )
+def bwa_aln(fastq, sai, output_sam, num_cpu, completed_file):
+    """ Align reads (mean length < 70bp) against reference genome. """
+    shared.run_command([
+        BIN['bwa'], 'aln', '-f', sai, '-t', num_cpu, SNP['reference'], fastq
+    ])
 
-    if shared.try_to_complete_task(output_sam, output_file):
+    shared.run_command([
+        BIN['bwa'], 'samse', '-f', output_sam, SNP['reference'], sai, fastq
+    ])
+
+    if shared.try_to_complete_task(output_sam, completed_file):
         return True
     else:
-        raise Exception("bwa samse did not complete successfully.")
+        raise Exception("bwa aln/samse did not complete successfully.")
 
 
-def sam_to_bam(input_sam, output_bam, output_file):
-    """ Convert SAM to BAM. """
-    shared.run_command(
-        [BIN['java'], '-Xmx4g', '-jar', BIN['sam_format_converter'],
-         'INPUT=' + input_sam, 'VALIDATION_STRINGENCY=LENIENT',
-         'OUTPUT=' + output_bam]
-    )
+def add_or_replace_read_groups(input_sam, sorted_bam, completed_file):
+    """
+    Picard Tools - AddOrReplaceReadGroups.
 
-    if shared.try_to_complete_task(output_bam, output_file):
-        return True
-    else:
-        raise Exception("SamFormatConverter did not complete successfully.")
+    Places each read into a read group for GATK processing. Really only
+    informative if there are multiple samples.
+    """
+    shared.run_command([
+        BIN['java'], '-Xmx8g', '-jar', BIN['picardtools'],
+        'AddOrReplaceReadGroups',
+        'INPUT=' + input_sam,
+        'OUTPUT=' + sorted_bam,
+        'SORT_ORDER=coordinate',
+        'RGID=GATK',
+        'RGLB=GATK',
+        'RGPL=Illumina',
+        'RGSM=GATK',
+        'RGPU=GATK',
+        'VALIDATION_STRINGENCY=LENIENT'
+    ])
 
-
-def add_or_replace_read_groups(input_bam, output_bam, output_file):
-    """ See Tauqeer's protocol. """
-    shared.run_command(
-        [BIN['java'], '-Xmx4g', '-jar', BIN['add_or_replace_read_groups'],
-         'INPUT=' + input_bam, 'OUTPUT=' + output_bam, 'SORT_ORDER=coordinate',
-         'RGID=GATK', 'RGLB=GATK', 'RGPL=Illumina', 'RGSM=GATK', 'RGPU=GATK',
-         'VALIDATION_STRINGENCY=LENIENT']
-    )
-
-    if shared.try_to_complete_task(output_bam, output_file):
+    if shared.try_to_complete_task(sorted_bam, completed_file):
         return True
     else:
         raise Exception("AddOrReplaceReadGroups didn't complete successfully.")
 
 
-def build_bam_index(input_bam, output_file):
-    """ Build BAM index. """
-    shared.run_command(
-        [BIN['java'], '-Xmx4g', '-jar', BIN['build_bam_index'],
-         'INPUT=' + input_bam, 'VALIDATION_STRINGENCY=LENIENT']
-    )
+def mark_duplicates(sorted_bam, deduped_bam, completed_file):
+    """
+    GATK Best Practices - Mark Duplicates.
 
-    if shared.try_to_complete_task(input_bam, output_file):
+    Picard Tools - MarkDuplicates: Remove mark identical reads as duplicates
+    for GATK to ignore.
+    """
+    shared.run_command([
+        BIN['java'], '-Xmx8g', '-jar', BIN['picardtools'],
+        'MarkDuplicates',
+        'INPUT=' + sorted_bam,
+        'OUTPUT=' + deduped_bam,
+        'METRICS_FILE=' + deduped_bam + '_metrics',
+        'ASSUME_SORTED=true',
+        'REMOVE_DUPLICATES=false',
+        'VALIDATION_STRINGENCY=LENIENT'
+    ])
+
+    if shared.try_to_complete_task(deduped_bam, completed_file):
+        build_bam_index(deduped_bam)
         return True
     else:
-        raise Exception("BuildBamIndex did not complete successfully.")
+        raise Exception("MarkDuplicates didn't complete successfully.")
 
 
-def realigner_target_creator(input_bam, output_intervals, output_file):
-    """ See Tauqeer's protocol. """
-    shared.run_command(
-        [BIN['java'], '-Xmx4g', '-jar', BIN['gatk'], '-I', input_bam,
-         '-T', 'RealignerTargetCreator', '-R', SNP['reference'],
-         '-o', output_intervals]
-    )
+def build_bam_index(bam):
+    shared.run_command([
+        BIN['java'], '-Xmx8g', '-jar', BIN['picardtools'],
+        'BuildBamIndex',
+        'INPUT=' + bam,
+    ])
 
-    if shared.try_to_complete_task(output_intervals, output_file):
+
+def realigner_target_creator(deduped_bam, intervals, completed_file):
+    """
+    GATK Best Practices - Realign Indels.
+
+    GATK - RealignerTargetCreator: Create a list of InDel regions to be
+    realigned.
+    """
+    shared.run_command([
+        BIN['java'], '-Xmx8g', '-jar', BIN['gatk'],
+        '-T', 'RealignerTargetCreator',
+        '-R', SNP['reference'],
+        '-I', deduped_bam,
+        '-o', intervals
+    ])
+
+    if shared.try_to_complete_task(intervals, completed_file):
         return True
     else:
         raise Exception("RealignerTargetCreator didn't complete successfully.")
 
 
-def indel_realigner(input_bam, input_interval, output_bam, output_file):
-    """ See Tauqeer's protocol. """
-    shared.run_command(
-        [BIN['java'], '-Xmx4g', '-jar', BIN['gatk'], '-T',
-         'IndelRealigner', '-l', 'INFO', '-I', input_bam,
-         '-R', SNP['reference'], '-targetIntervals', input_interval,
-         '-o', output_bam]
-    )
+def indel_realigner(intervals, deduped_bam, realigned_bam, completed_file):
+    """
+    GATK Best Practices - Realign Indels.
 
-    if shared.try_to_complete_task(output_bam, output_file):
+    GATK - IndelRealigner: Realign InDel regions.
+    """
+    shared.run_command([
+        BIN['java'], '-Xmx8g', '-jar', BIN['gatk'],
+        '-T', 'IndelRealigner',
+        '-R', SNP['reference'],
+        '-I', deduped_bam,
+        '-o', realigned_bam,
+        '-targetIntervals', intervals
+    ])
+
+    if shared.try_to_complete_task(realigned_bam, completed_file):
         return True
     else:
         raise Exception("IndelRealigner did not complete successfully.")
 
 
-def sort_sam(input_bam, output_bam, output_file):
-    """ See Tauqeer's protocol. """
-    shared.run_command(
-        [BIN['java'], '-Xmx4g', '-jar', BIN['sort_sam'],
-         'INPUT=' + input_bam, 'SORT_ORDER=coordinate',
-         'OUTPUT=' + output_bam, 'VALIDATION_STRINGENCY=LENIENT']
-    )
+def haplotype_caller(realigned_bam, output_vcf, completed_file):
+    """
+    GATK Best Practices - Call Variants.
 
-    if shared.try_to_complete_task(output_bam, output_file):
+    GATK - HaplotypeCaller: Call variants (SNPs and InDels)
+    """
+    shared.run_command([
+        BIN['java'], '-Xmx8g', '-jar', BIN['gatk'],
+        '-T', 'HaplotypeCaller',
+        '-R', SNP['reference'],
+        '-I', realigned_bam,
+        '-o', output_vcf,
+        '-ploidy', '1',
+        '-stand_call_conf', '30.0',
+        '-stand_emit_conf', '10.0',
+        '-rf', 'BadCigar',
+    ])
+    if shared.try_to_complete_task(output_vcf, completed_file):
         return True
     else:
-        raise Exception("SortSam did not complete successfully.")
+        raise Exception("HaplotypeCaller did not complete successfully.")
 
 
-def samtools_view(input_bam, output_bam, output_file):
+def variant_filtration(input_vcf, filtered_vcf, completed_file):
     """ See Tauqeer's protocol. """
-    shared.run_command(
-        [BIN['samtools'], 'view', '-bhF', '4', '-o', output_bam, input_bam]
-    )
+    shared.run_command([
+        BIN['java'], '-Xmx8g', '-jar', BIN['gatk'],
+        '-T', 'VariantFiltration',
+        '-R', SNP['reference'],
+        '-V', input_vcf,
+        '-o', filtered_vcf,
+        '--clusterSize', '3',
+        '--clusterWindowSize', '10',
+        '--filterExpression', 'DP < 9 && AF < 0.7',
+        '--filterName', 'Fail',
+        '--filterExpression', 'DP > 9 && AF >= 0.95',
+        '--filterName', 'SuperPass',
+        '--filterExpression', 'GQ < 20',
+        '--filterName', 'LowGQ',
+    ])
 
-    if shared.try_to_complete_task(output_bam, output_file):
-        return True
-    else:
-        raise Exception("samtools view did not complete successfully.")
-
-
-def unified_genotyper(input_bam, output_vcf, output_file):
-    """ See Tauqeer's protocol. """
-    shared.run_command(
-        [BIN['java'], '-Xmx4g', '-jar', BIN['gatk'], '-T',
-         'UnifiedGenotyper', '-glm', 'BOTH', '-R', SNP['reference'],
-         '-dcov', '500', '-I', input_bam, '-o', output_vcf,
-         '-stand_call_conf', '30.0', '-stand_emit_conf', '10.0',
-         '-rf', 'BadCigar']
-    )
-    if shared.try_to_complete_task(output_vcf, output_file):
-        return True
-    else:
-        raise Exception("UnifiedGenotyper did not complete successfully.")
-
-
-def variant_filtration(input_vcf, output_vcf, output_file):
-    """ See Tauqeer's protocol. """
-    shared.run_command(
-        [BIN['java'], '-Xmx4g', '-jar', BIN['gatk'], '-T',
-         'VariantFiltration', '-R', SNP['reference'], '-filter',
-         '-cluster', '3', '-window', '10', '-V', input_vcf, '-o', output_vcf]
-    )
-
-    if shared.try_to_complete_task(output_vcf, output_file):
+    if shared.try_to_complete_task(filtered_vcf, completed_file):
         return True
     else:
         raise Exception("VariantFiltration did not complete successfully.")
 
 
-def vcf_annotator(input_vcf, output_vcf, output_file):
+def vcf_annotator(filtered_vcf, annotated_vcf, completed_file):
     """ Annotate called SNPs/InDel. """
     shared.run_command(
-        [BIN['vcf_annotator'], '--gb', SNP['ref_genbank'], '--vcf', input_vcf],
-        stdout=output_vcf
+        [BIN['vcf_annotator'],
+         '--gb', SNP['ref_genbank'],
+         '--vcf', filtered_vcf],
+        stdout=annotated_vcf
     )
 
-    if shared.try_to_complete_task(output_vcf, output_file):
+    if shared.try_to_complete_task(annotated_vcf, completed_file):
         return True
     else:
         raise Exception("vcf-annotator did not complete successfully.")
 
 
-def move_final_vcf(input_vcf, compressed_vcf, output_file):
+def move_final_vcf(annotated_vcf, compressed_vcf, completed_file):
     """ Move the final VCF to the project root. """
     shared.run_command(
-        ['gzip', '-c', input_vcf],
+        ['gzip', '-c', annotated_vcf],
         stdout=compressed_vcf
     )
 
-    if shared.try_to_complete_task(compressed_vcf, output_file):
+    if shared.try_to_complete_task(compressed_vcf, completed_file):
         return True
     else:
         raise Exception("final vcf gzip did not complete successfully.")
 
 
-def cleanup(base_dir, tar_gz, output_file):
+def cleanup(base_dir, tar_gz, completed_file):
     """ Clean up all the intermediate files. """
     remove_these = ['*.bam', '*.bai', '*.intervals', '*.sam', '*.sai']
     for name in remove_these:
@@ -190,7 +218,7 @@ def cleanup(base_dir, tar_gz, output_file):
 
     gatk_files = shared.find_files(base_dir, '*', '1', '1')
     if shared.compress_and_remove(tar_gz, gatk_files):
-        if shared.try_to_complete_task(tar_gz, output_file):
+        if shared.try_to_complete_task(tar_gz, completed_file):
             return True
         else:
             raise Exception("Unable to complete GATK clean up.")
