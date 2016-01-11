@@ -4,7 +4,7 @@ Static variables used throughout the analysis pipeline.
 
 Please note, the Makefile should update BASE_DIR, but if not you will need to.
 """
-BASE_DIR = "/home/rpetit/staphopia/analysis-pipeline"
+BASE_DIR = CHANGE_ME
 
 # PATH
 PATH = BASE_DIR + '/bin'
@@ -61,7 +61,7 @@ BIN = {
     'illumina_assembly': PIPELINE_PATH + '/illumina_assembly',
     'predict_mlst': PIPELINE_PATH + '/predict_mlst',
     'predict_sccmec': PIPELINE_PATH + '/predict_sccmec',
-    'call_variants': PIPELINE_PATH + '/call_variants',
+    'call_variants': THIRD_PARTY_PATH + '/call_variants',
     'kmer_analysis': PIPELINE_PATH + '/kmer_analysis',
     'annotation': PIPELINE_PATH + '/annotation',
 

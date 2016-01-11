@@ -4,7 +4,7 @@ import sys
 
 from ruffus import *
 
-from staphopia.config import BIN
+from staphopia.config import BIN, SNP
 from staphopia.helpers.time_job import time_job
 from staphopia.tasks import shared
 
@@ -75,8 +75,13 @@ def kmer_analysis():
 def call_variants():
     """ Call variants. """
     out, err = shared.run_command(
-        [BIN['call_variants'], '-f', CLEAN_FASTQ, '-p', str(args.processors),
-         '--tag', args.sample_tag, LOG_TIMES],
+        [BIN['call_variants'],
+         CLEAN_FASTQ,
+         SNP['reference'],
+         '--genbank', SNP['ref_genbank'],
+         '-p', str(args.processors),
+         '--tag', args.sample_tag,
+         LOG_TIMES],
         stdout='logs/call_variants.stdout',
         stderr='logs/call_variants.stderr',
     )
