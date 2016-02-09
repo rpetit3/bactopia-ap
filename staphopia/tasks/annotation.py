@@ -18,7 +18,7 @@ def run_prokka(fasta, output_dir, tag, log, num_cpu):
             '--proteins', ANNOTATION['proteins'],
             '--prefix', tag,
             '--locustag', tag,
-            '--centre', tag,
+            '--centre', tag[0:3],
             '--compliant',
             '--quiet',
             fasta

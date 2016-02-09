@@ -6,10 +6,13 @@ THIRD_PARTY_BIN := $(TOP_DIR)/bin/third-party
 AWS_S3 := https://s3.amazonaws.com/analysis-pipeline/src
 TEST_DATA := https://s3.amazonaws.com/analysis-pipeline/test-data
 
-all: config python s3tools aspera fastq assembly mlst variants jellyfish sccmec variants_pythonpath;
+all: config python s3tools aspera fastq assembly mlst variants jellyfish sccmec annotation variants_pythonpath;
 
 config: ;
 	sed -i 's#^BASE_DIR.*#BASE_DIR = "$(TOP_DIR)"#' staphopia/config.py
+
+clean-config: ;
+	sed -i 's#^BASE_DIR.*#BASE_DIR = CHANGE_ME#' staphopia/config.py
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
@@ -193,12 +196,12 @@ test: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-clean: ;
+clean: clean-config ;
 	rm -rf $(THIRD_PARTY)/*
 	rm -rf $(THIRD_PARTY_BIN)/*
 	rm -rf $(TOP_DIR)/test/test-pipeline
 	rm -rf $(TOP_DIR)/test-data/test_genome.fastq.gz
 	rm -f bin/fastq_interleave
 	rm -f bin/fastq_stats
-	sed -i 's#^BASE_DIR.*#BASE_DIR = CHANGE_ME#' staphopia/config.py
+
 

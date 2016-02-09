@@ -16,6 +16,12 @@ TOOL_DATA = BASE_DIR + '/tool-data'
 # PYTHONPATH
 PYTHON_REQS = BASE_DIR + '/src/third-party/python'
 VCFANNOTATOR = BASE_DIR + '/src/third-party/python/vcf-annotator'
+CALL_VARIANTS = '{0}{1}:{0}{2}:{0}{3}'.format(
+    BASE_DIR,
+    '/src/third-party/call_variants',
+    '/src/third-party/call_variants/src/third-party/python',
+    '/src/third-party/call_variants/src/third-party/python/vcf-annotator'
+)
 
 # Programs
 BIN = {
