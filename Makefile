@@ -107,37 +107,46 @@ $(BIN)/assemblathon-stats.pl: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-mlst: blast srst2 bowtie2 samtools_0118 ;
+mlst: $(BIN)/makeblastdb $(BIN)/srst2.py $(BIN)/bowtie2 $(BIN)/samtools ;
 
-blast: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/ncbi-blast-2.2.29%2B-x64-linux.tar.gz
-	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/ncbi-blast-2.2.29+-x64-linux.tar.gz && mv $(THIRD_PARTY)/ncbi-blast-2.2.29+ $(THIRD_PARTY)/ncbi-blast
-	ln -s $(THIRD_PARTY)/ncbi-blast/bin/blastn $(THIRD_PARTY_BIN)/blastn
-	ln -s $(THIRD_PARTY)/ncbi-blast/bin/blastp $(THIRD_PARTY_BIN)/blastp
-	ln -s $(THIRD_PARTY)/ncbi-blast/bin/blastx $(THIRD_PARTY_BIN)/blastx
-	ln -s $(THIRD_PARTY)/ncbi-blast/bin/tblastn $(THIRD_PARTY_BIN)/tblastn
-	ln -s $(THIRD_PARTY)/ncbi-blast/bin/tblastx $(THIRD_PARTY_BIN)/tblastx
-	ln -s $(THIRD_PARTY)/ncbi-blast/bin/makeblastdb $(THIRD_PARTY_BIN)/makeblastdb
+$(BIN)/makeblastdb: ;
+	$(eval BLAST_BUILD=$(TOOLS)/blast+/build)
+	rm -rf $(BLAST_BUILD) && mkdir -p $(BLAST_BUILD)
+	cat $(TOOLS)/blast+/ncbi-blast-2.3.0+-x64-linux.tar.gz.part0* | tar -C $(BLAST_BUILD) -xzvf -
+	mv $(BLAST_BUILD)/ncbi-blast-2.3.0+ $(BLAST_BUILD)/blast
+	ln -s $(BLAST_BUILD)/blast/bin/blastn $(BIN)/blastn
+	ln -s $(BLAST_BUILD)/blast/bin/blastp $(BIN)/blastp
+	ln -s $(BLAST_BUILD)/blast/bin/blastx $(BIN)/blastx
+	ln -s $(BLAST_BUILD)/blast/bin/tblastn $(BIN)/tblastn
+	ln -s $(BLAST_BUILD)/blast/bin/tblastx $(BIN)/tblastx
+	ln -s $(BLAST_BUILD)/blast/bin/makeblastdb $@
 
-srst2: ;
-	git clone git@github.com:staphopia/srst2.git $(THIRD_PARTY)/srst2
-	chmod 755 $(THIRD_PARTY)/srst2/scripts/getmlst.py
-	ln -s $(THIRD_PARTY)/srst2/scripts/getmlst.py $(THIRD_PARTY_BIN)/getmlst.py
-	ln -s $(THIRD_PARTY)/srst2/scripts/srst2.py $(THIRD_PARTY_BIN)/srst2.py
+$(BIN)/srst2.py: ;
+	$(eval SRST_BUILD=$(TOOLS)/srst2/build)
+	rm -rf $(SRST_BUILD) && mkdir -p $(SRST_BUILD)
+	tar -C $(SRST_BUILD) -xzvf $(TOOLS)/srst2/srst2-0.1.tar.gz
+	mv $(SRST_BUILD)/srst2-0.1 $(SRST_BUILD)/srst2
+	chmod 755 $(SRST_BUILD)/srst2/scripts/getmlst.py
+	ln -s $(SRST_BUILD)/srst2/scripts/getmlst.py $(BIN)/getmlst.py
+	ln -s $(SRST_BUILD)/srst2/scripts/srst2.py $@
 
-bowtie2: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/bowtie2-2.1.0-linux-x86_64.zip
-	unzip $(THIRD_PARTY)/bowtie2-2.1.0-linux-x86_64.zip -d $(THIRD_PARTY)/ && mv $(THIRD_PARTY)/bowtie2-2.1.0 $(THIRD_PARTY)/bowtie2
-	ln -s $(THIRD_PARTY)/bowtie2/bowtie2 $(THIRD_PARTY_BIN)/bowtie2
-	ln -s $(THIRD_PARTY)/bowtie2/bowtie2-align $(THIRD_PARTY_BIN)/bowtie2-align
-	ln -s $(THIRD_PARTY)/bowtie2/bowtie2-build $(THIRD_PARTY_BIN)/bowtie2-build
-	ln -s $(THIRD_PARTY)/bowtie2/bowtie2-inspect $(THIRD_PARTY_BIN)/bowtie2-inspect
+$(BIN)/bowtie2: ;
+	$(eval BOWTIE_BUILD=$(TOOLS)/bowtie2/build)
+	rm -rf $(BOWTIE_BUILD) && mkdir -p $(BOWTIE_BUILD)
+	unzip $(TOOLS)/bowtie2/bowtie2-2.2.7-linux-x86_64.zip -d $(BOWTIE_BUILD)/
+	mv $(BOWTIE_BUILD)/bowtie2-2.2.7 $(BOWTIE_BUILD)/bowtie2
+	ln -s $(BOWTIE_BUILD)/bowtie2/bowtie2 $@
+	ln -s $(BOWTIE_BUILD)/bowtie2/bowtie2-align $(BIN)/bowtie2-align
+	ln -s $(BOWTIE_BUILD)/bowtie2/bowtie2-build $(BIN)/bowtie2-build
+	ln -s $(BOWTIE_BUILD)/bowtie2/bowtie2-inspect $(BIN)/bowtie2-inspect
 
-samtools_0118: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/samtools-0.1.18.tar.bz2
-	tar -C $(THIRD_PARTY) -xjvf $(THIRD_PARTY)/samtools-0.1.18.tar.bz2&& mv $(THIRD_PARTY)/samtools-0.1.18 $(THIRD_PARTY)/samtools_0118
-	make -C $(THIRD_PARTY)/samtools_0118
-	ln -s $(THIRD_PARTY)/samtools_0118/samtools $(THIRD_PARTY_BIN)/samtools
+$(BIN)/samtools: ;
+	$(eval SAM18_BUILD=$(TOOLS)/samtools-0.1.18/build)
+	rm -rf $(SAM18_BUILD) && mkdir -p $(SAM18_BUILD)
+	tar -C $(SAM18_BUILD) -xjvf $(TOOLS)/samtools-0.1.18/samtools-0.1.18.tar.bz2
+	mv $(SAM18_BUILD)/samtools-0.1.18 $(SAM18_BUILD)/samtools_0118
+	make -C $(SAM18_BUILD)/samtools_0118
+	ln -s $(SAM18_BUILD)/samtools_0118/samtools $@
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
@@ -154,9 +163,7 @@ variants_pythonpath: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-sccmec: samtools bedtools;
-
-samtools: $(BIN)/samtools-1.3 ;
+sccmec: $(BIN)/samtools-1.3 $(BIN)/bedtools;
 
 $(BIN)/samtools-1.3: ;
 	$(eval SAM_BUILD=$(TOOLS)/samtools/build)
@@ -165,9 +172,7 @@ $(BIN)/samtools-1.3: ;
 	mv $(SAM_BUILD)/samtools-1.3 $(SAM_BUILD)/samtools
 	cd $(SAM_BUILD)/samtools/ && ./configure && cd $(TOP_DIR)
 	make -C $(SAM_BUILD)/samtools
-	ln -s $(SAM_BUILD)/samtools/samtools $(BIN)/samtools-1.3
-
-bedtools: $(BIN)/bedtools ;
+	ln -s $(SAM_BUILD)/samtools/samtools $@
 
 $(BIN)/bedtools: ;
 	$(eval BED_BUILD=$(TOOLS)/bedtools/build)
@@ -175,7 +180,7 @@ $(BIN)/bedtools: ;
 	tar -C $(BED_BUILD) -xzvf $(TOOLS)/bedtools/bedtools-2.25.0.tar.gz
 	mv $(BED_BUILD)/bedtools2 $(BED_BUILD)/bedtools
 	make -C $(BED_BUILD)/bedtools
-	ln -s $(BED_BUILD)/bedtools/bin/bedtools $(BIN)/bedtools
+	ln -s $(BED_BUILD)/bedtools/bin/bedtools $@
 	ln -s $(BED_BUILD)/bedtools/bin/genomeCoverageBed $(BIN)/genomeCoverageBed
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -190,7 +195,7 @@ $(BIN)/jellyfish: ;
 	mv $(JF_BUILD)/jellyfish-2.2.4/ $(JF_BUILD)/jellyfish/
 	cd $(JF_BUILD)/jellyfish/ && ./configure && cd $(TOP_DIR)
 	make -C $(JF_BUILD)/jellyfish
-	ln -s $(JF_BUILD)/jellyfish/bin/jellyfish $(BIN)/jellyfish
+	ln -s $(JF_BUILD)/jellyfish/bin/jellyfish $@
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
