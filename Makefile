@@ -67,7 +67,7 @@ assembly: $(BIN)/kmergenie $(BIN)/velveth $(BIN)/spades.py $(BIN)/assemblathon-s
 $(BIN)/kmergenie: ;
 	$(eval KG_BUILD=$(TOOLS)/kmergenie/build)
 	rm -rf $(KG_BUILD) && mkdir -p $(KG_BUILD)
-	tar -C $(THIRD_PARTY) -xzvf $(TOOLS)/kmergenie/kmergenie-1.6982.tar.gz
+	tar -C $(KG_BUILD) -xzvf $(TOOLS)/kmergenie/kmergenie-1.6982.tar.gz
 	mv $(KG_BUILD)/kmergenie-1.6982 $(KG_BUILD)/kmergenie
 	make -C $(KG_BUILD)/kmergenie/
 	ln -s $(KG_BUILD)/kmergenie/kmergenie $@
@@ -86,7 +86,7 @@ $(BIN)/spades.py: ;
 	$(eval SPADES_BUILD=$(TOOLS)/spades/build)
 	rm -rf $(SPADES_BUILD) && mkdir -p $(SPADES_BUILD)
 	tar -C $(SPADES_BUILD) -xzvf $(TOOLS)/spades/SPAdes-3.6.2-Linux.tar.gz
-	mv $(SPADES_BUILD)/SPAdes-3.6.2-Linux $(THIRD_PARTY)/spades
+	mv $(SPADES_BUILD)/SPAdes-3.6.2-Linux $(SPADES_BUILD)/spades
 	ln -s $(SPADES_BUILD)/spades/bin/spades.py $@
 
 $(BIN)/assemblathon-stats.pl: ;
@@ -156,27 +156,41 @@ variants_pythonpath: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 sccmec: samtools bedtools;
 
-samtools: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/samtools-bcftools-htslib-1.0_x64-linux.tar.bz2
-	tar -C $(THIRD_PARTY) -xjvf $(THIRD_PARTY)/samtools-bcftools-htslib-1.0_x64-linux.tar.bz2 && mv $(THIRD_PARTY)/samtools-bcftools-htslib-1.0_x64-linux $(THIRD_PARTY)/samtools
-	ln -s $(THIRD_PARTY)/samtools/bin/samtools $(THIRD_PARTY_BIN)/samtools-1.0
+samtools: $(BIN)/samtools-1.3 ;
 
-bedtools: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/bedtools-2.20.1.tar.gz
-	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/bedtools-2.20.1.tar.gz && mv $(THIRD_PARTY)/bedtools2-2.20.1 $(THIRD_PARTY)/bedtools
-	make -C $(THIRD_PARTY)/bedtools
-	ln -s $(THIRD_PARTY)/bedtools/bin/bedtools $(THIRD_PARTY_BIN)/bedtools
-	ln -s $(THIRD_PARTY)/bedtools/bin/genomeCoverageBed $(THIRD_PARTY_BIN)/genomeCoverageBed
+$(BIN)/samtools-1.3: ;
+	$(eval SAM_BUILD=$(TOOLS)/samtools/build)
+	rm -rf $(SAM_BUILD) && mkdir -p $(SAM_BUILD)
+	tar -C $(SAM_BUILD) -xjvf $(TOOLS)/samtools/samtools-1.3.tar.bz2
+	mv $(SAM_BUILD)/samtools-1.3 $(SAM_BUILD)/samtools
+	cd $(SAM_BUILD)/samtools/ && ./configure && cd $(TOP_DIR)
+	make -C $(SAM_BUILD)/samtools
+	ln -s $(SAM_BUILD)/samtools/samtools $(BIN)/samtools-1.3
+
+bedtools: $(BIN)/bedtools ;
+
+$(BIN)/bedtools: ;
+	$(eval BED_BUILD=$(TOOLS)/bedtools/build)
+	rm -rf $(BED_BUILD) && mkdir -p $(BED_BUILD)
+	tar -C $(BED_BUILD) -xzvf $(TOOLS)/bedtools/bedtools-2.25.0.tar.gz
+	mv $(BED_BUILD)/bedtools2 $(BED_BUILD)/bedtools
+	make -C $(BED_BUILD)/bedtools
+	ln -s $(BED_BUILD)/bedtools/bin/bedtools $(BIN)/bedtools
+	ln -s $(BED_BUILD)/bedtools/bin/genomeCoverageBed $(BIN)/genomeCoverageBed
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-jellyfish: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/jellyfish-2.1.4.tar.gz
-	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/jellyfish-2.1.4.tar.gz && mv $(THIRD_PARTY)/jellyfish-2.1.4/ $(THIRD_PARTY)/jellyfish/
-	cd $(THIRD_PARTY)/jellyfish/ && ./configure && cd $(TOP_DIR)
-	make -C $(THIRD_PARTY)/jellyfish
-	ln -s $(THIRD_PARTY)/jellyfish/bin/jellyfish $(THIRD_PARTY_BIN)/jellyfish
+jellyfish: $(BIN)/jellyfish
+
+$(BIN)/jellyfish: ;
+	$(eval JF_BUILD=$(TOOLS)/jellyfish/build)
+	rm -rf $(JF_BUILD) && mkdir -p $(JF_BUILD)
+	tar -C $(JF_BUILD) -xzvf $(TOOLS)/jellyfish/jellyfish-2.2.4.tar.gz
+	mv $(JF_BUILD)/jellyfish-2.2.4/ $(JF_BUILD)/jellyfish/
+	cd $(JF_BUILD)/jellyfish/ && ./configure && cd $(TOP_DIR)
+	make -C $(JF_BUILD)/jellyfish
+	ln -s $(JF_BUILD)/jellyfish/bin/jellyfish $(BIN)/jellyfish
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
