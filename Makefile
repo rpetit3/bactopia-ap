@@ -1,5 +1,7 @@
 .PHONY: all test clean
 TOP_DIR := $(shell pwd)
+BIN=$(TOP_DIR)/bin
+TOOLS=$(TOP_DIR)/tools
 THIRD_PARTY := $(TOP_DIR)/src/third-party
 THIRD_PARTY_PYTHON := $(TOP_DIR)/src/third-party/python
 THIRD_PARTY_BIN := $(TOP_DIR)/bin/third-party
@@ -23,74 +25,84 @@ python: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-s3tools: ;
-	git clone git@github.com:staphopia/s3tools.git $(THIRD_PARTY)/s3tools
-	pip install --target $(THIRD_PARTY)/python -r $(THIRD_PARTY)/s3tools/requirements.txt
-	ln -s $(THIRD_PARTY)/s3tools/bin $(THIRD_PARTY_BIN)/s3tools
+aspera: $(BIN)/ascp ;
+
+$(BIN)/ascp : ;
+	$(eval ASCP_BUILD=$(TOOLS)/aspera-connect/build)
+	rm -rf $(ASCP_BUILD) && mkdir -p $(ASCP_BUILD)
+	tar -C $(ASCP_BUILD) -xzvf $(TOOLS)/aspera-connect/aspera-connect-3.6.2.117442-linux-64.tar.gz
+	sed -i 's=^INSTALL_DIR\=~/.aspera/connect$$=INSTALL_DIR\=$$1=' $(ASCP_BUILD)/aspera-connect-3.6.2.117442-linux-64.sh
+	sh $(ASCP_BUILD)/aspera-connect-3.6.2.117442-linux-64.sh $(ASCP_BUILD)/aspera
+	ln -s $(ASCP_BUILD)/aspera/bin/ascp $@
+	ln -s $(ASCP_BUILD)/aspera/etc/asperaweb_id_dsa.openssh $(BIN)/asperaweb_id_dsa.openssh
+	ln -s $(ASCP_BUILD)/aspera/etc/asperaweb_id_dsa.putty $(BIN)/asperaweb_id_dsa.putty
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-aspera: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/aspera-connect-3.5.1.92523-linux-64.sh
-	sh $(THIRD_PARTY)/aspera-connect-3.5.1.92523-linux-64.sh $(THIRD_PARTY)/aspera
-	ln -s $(THIRD_PARTY)/aspera/bin/ascp $(THIRD_PARTY_BIN)/ascp
-	ln -s $(THIRD_PARTY)/aspera/etc/asperaweb_id_dsa.openssh $(THIRD_PARTY_BIN)/asperaweb_id_dsa.openssh
-	ln -s $(THIRD_PARTY)/aspera/etc/asperaweb_id_dsa.putty $(THIRD_PARTY_BIN)/asperaweb_id_dsa.putty
+fastq: $(BIN)/fastq-validator $(BIN)/fastq-stats $(BIN)/fastq-interleave ;
+
+$(BIN)/fastq-validator: ;
+	$(eval FASTQ_BUILD=$(TOOLS)/fastq-validator/build)
+	rm -rf $(FASTQ_BUILD) && mkdir -p $(FASTQ_BUILD)
+	tar -C $(FASTQ_BUILD) -xzvf $(TOOLS)/fastq-validator/libStatGen-0.0.1.tar.gz
+	mv $(FASTQ_BUILD)/libStatGen-0.0.1 $(FASTQ_BUILD)/libStatGen
+	make -C $(FASTQ_BUILD)/libStatGen
+	tar -C $(FASTQ_BUILD) -xzvf $(TOOLS)/fastq-validator/fastQValidator-0.1.tar.gz
+	mv $(FASTQ_BUILD)/fastQValidator-0.1 $(FASTQ_BUILD)/fastQValidator
+	make -C $(FASTQ_BUILD)/fastQValidator
+	ln -s $(FASTQ_BUILD)/fastQValidator/bin/fastQValidator $@
+
+$(BIN)/fastq-stats: ;
+	g++ -Wall -O3 -o $@ $(TOP_DIR)/src/fastq-stats.cpp
+
+$(BIN)/fastq-interleave: ;
+	g++ -Wall -O3 -o $@ src/fastq-interleave.cpp
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-fastq: fastq_validator fastq_stats fastq_interleave ;
+assembly: $(BIN)/kmergenie $(BIN)/velveth $(BIN)/spades.py $(BIN)/assemblathon-stats.pl ;
 
-fastq_validator: ;
-	git clone git@github.com:staphopia/fastQValidator.git $(THIRD_PARTY)/fastQValidator
-	git clone git@github.com:staphopia/libStatGen.git $(THIRD_PARTY)/libStatGen
-	make -C $(THIRD_PARTY)/libStatGen
-	make -C $(THIRD_PARTY)/fastQValidator
-	ln -s $(THIRD_PARTY)/fastQValidator/bin/fastQValidator $(THIRD_PARTY_BIN)/fastq_validator
+$(BIN)/kmergenie: ;
+	$(eval KG_BUILD=$(TOOLS)/kmergenie/build)
+	rm -rf $(KG_BUILD) && mkdir -p $(KG_BUILD)
+	tar -C $(THIRD_PARTY) -xzvf $(TOOLS)/kmergenie/kmergenie-1.6982.tar.gz
+	mv $(KG_BUILD)/kmergenie-1.6982 $(KG_BUILD)/kmergenie
+	make -C $(KG_BUILD)/kmergenie/
+	ln -s $(KG_BUILD)/kmergenie/kmergenie $@
+	ln -s $(KG_BUILD)/kmergenie/specialk $(BIN)/specialk
 
-fastq_stats: ;
-	g++ -Wall -O3 -o bin/fastq_stats src/fastq_stats.cpp
+$(BIN)/velveth: ;
+	$(eval VELVET_BUILD=$(TOOLS)/velvet/build)
+	rm -rf $(VELVET_BUILD) && mkdir -p $(VELVET_BUILD)
+	tar -C $(VELVET_BUILD) -xzvf $(TOOLS)/velvet/velvet_1.2.10.tgz
+	mv $(VELVET_BUILD)/velvet_1.2.10 $(VELVET_BUILD)/velvet
+	make -C $(VELVET_BUILD)/velvet 'MAXKMERLENGTH=256' 'BIGASSEMBLY=1' 'LONGSEQUENCES=1' 'OPENMP=1'
+	ln -s $(VELVET_BUILD)/velvet/velveth $@
+	ln -s $(VELVET_BUILD)/velvet/velvetg $(BIN)/velvetg
 
-fastq_interleave: ;
-	g++ -Wall -O3 -o bin/fastq_interleave src/fastq_interleave.cpp
+$(BIN)/spades.py: ;
+	$(eval SPADES_BUILD=$(TOOLS)/spades/build)
+	rm -rf $(SPADES_BUILD) && mkdir -p $(SPADES_BUILD)
+	tar -C $(SPADES_BUILD) -xzvf $(TOOLS)/spades/SPAdes-3.6.2-Linux.tar.gz
+	mv $(SPADES_BUILD)/SPAdes-3.6.2-Linux $(THIRD_PARTY)/spades
+	ln -s $(SPADES_BUILD)/spades/bin/spades.py $@
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-assembly: kmergenie velvet spades assemblathon2_analysis ;
-
-kmergenie: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/kmergenie-1.6741.tar.gz
-	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/kmergenie-1.6741.tar.gz && mv $(THIRD_PARTY)/kmergenie-1.6741 $(THIRD_PARTY)/kmergenie
-	make -C $(THIRD_PARTY)/kmergenie/
-	ln -s $(THIRD_PARTY)/kmergenie/kmergenie $(THIRD_PARTY_BIN)/kmergenie
-	ln -s $(THIRD_PARTY)/kmergenie/specialk $(THIRD_PARTY_BIN)/specialk
-
-velvet: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/velvet_1.2.10.tgz
-	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/velvet_1.2.10.tgz && mv $(THIRD_PARTY)/velvet_1.2.10 $(THIRD_PARTY)/velvet
-	make -C $(THIRD_PARTY)/velvet 'MAXKMERLENGTH=256' 'BIGASSEMBLY=1' 'LONGSEQUENCES=1' 'OPENMP=1'
-	ln -s $(THIRD_PARTY)/velvet/velveth $(THIRD_PARTY_BIN)/velveth
-	ln -s $(THIRD_PARTY)/velvet/velvetg $(THIRD_PARTY_BIN)/velvetg
-
-spades: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/SPAdes-3.1.1-Linux.tar.gz
-	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/SPAdes-3.1.1-Linux.tar.gz && mv $(THIRD_PARTY)/SPAdes-3.1.1-Linux $(THIRD_PARTY)/spades
-	ln -s $(THIRD_PARTY)/spades/bin/spades.py $(THIRD_PARTY_BIN)/spades.py
-
-assemblathon2_analysis: ;
-	git clone git@github.com:staphopia/assemblathon2-analysis.git $(THIRD_PARTY)/assemblathon2-analysis
-	sed -i 's=^use strict;=use lib "$(THIRD_PARTY)/assemblathon2-analysis";\nuse strict;=' $(THIRD_PARTY)/assemblathon2-analysis/assemblathon_stats.pl
-	wget -P $(THIRD_PARTY) $(AWS_S3)/JSON-2.90.tar.gz
-	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/JSON-2.90.tar.gz && mv $(THIRD_PARTY)/JSON-2.90 $(THIRD_PARTY)/JSON
-	cd $(THIRD_PARTY)/JSON && perl Makefile.PL PREFIX=$(THIRD_PARTY)/JSON && cd $(TOP_DIR)
-	make -C $(THIRD_PARTY)/JSON
-	make -C $(THIRD_PARTY)/JSON install
-	ln -s $(THIRD_PARTY)/JSON/lib/JSON.pm $(THIRD_PARTY)/assemblathon2-analysis/JSON.pm
-	ln -s $(THIRD_PARTY)/JSON/lib/JSON $(THIRD_PARTY)/assemblathon2-analysis/JSON
-	ln -s $(THIRD_PARTY)/assemblathon2-analysis/assemblathon_stats.pl $(THIRD_PARTY_BIN)/assemblathon_stats.pl
+$(BIN)/assemblathon-stats.pl: ;
+	$(eval ASTATS_BUILD=$(TOOLS)/assemblathon-stats/build)
+	rm -rf $(ASTATS_BUILD) && mkdir -p $(ASTATS_BUILD)
+	tar -C $(ASTATS_BUILD) -xzvf $(TOOLS)/assemblathon-stats/assemblathon-stats-0.1.tar.gz
+	mv $(ASTATS_BUILD)/assemblathon2-analysis-0.1 $(ASTATS_BUILD)/assemblathon-stats
+	sed -i 's=^use strict;=use lib "$(ASTATS_BUILD)/assemblathon-stats";\nuse strict;=' $(ASTATS_BUILD)/assemblathon-stats/assemblathon_stats.pl
+	tar -C $(ASTATS_BUILD) -xzvf $(TOOLS)/assemblathon-stats/JSON-2.90.tar.gz
+	mv $(ASTATS_BUILD)/JSON-2.90 $(ASTATS_BUILD)/JSON
+	cd $(ASTATS_BUILD)/JSON && perl Makefile.PL PREFIX=$(ASTATS_BUILD)/JSON && cd $(TOP_DIR)
+	make -C $(ASTATS_BUILD)/JSON
+	make -C $(ASTATS_BUILD)/JSON install
+	ln -s $(ASTATS_BUILD)/JSON/lib/JSON.pm $(ASTATS_BUILD)/assemblathon-stats/JSON.pm
+	ln -s $(ASTATS_BUILD)/JSON/lib/JSON $(ASTATS_BUILD)/assemblathon-stats/JSON
+	ln -s $(ASTATS_BUILD)/assemblathon-stats/assemblathon_stats.pl $@
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
@@ -197,11 +209,5 @@ test: ;
 #                                                                             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 clean: clean-config ;
-	rm -rf $(THIRD_PARTY)/*
-	rm -rf $(THIRD_PARTY_BIN)/*
-	rm -rf $(TOP_DIR)/test/test-pipeline
-	rm -rf $(TOP_DIR)/test-data/test_genome.fastq.gz
-	rm -f bin/fastq_interleave
-	rm -f bin/fastq_stats
-
-
+	rm -rf $(BIN)/*
+	find tools/ | grep "/build$" | xargs -I {} rm -rf {}
