@@ -210,4 +210,4 @@ test: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 clean: clean-config ;
 	rm -rf $(BIN)/*
-	find tools/ | grep "/build$" | xargs -I {} rm -rf {}
+	find tools/ | grep "/build$$" | xargs -I {} rm -rf {}
