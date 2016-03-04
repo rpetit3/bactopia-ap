@@ -1,5 +1,5 @@
-!bin/#PLACEHOLDER#
 bin/*
+!bin/.gitignore
 
 tools/*/build
 
