@@ -1,30 +1,29 @@
 .PHONY: all test clean
-TOP_DIR := $(shell pwd)
-BIN=$(TOP_DIR)/bin
-TOOLS=$(TOP_DIR)/tools
-THIRD_PARTY := $(TOP_DIR)/src/third-party
-THIRD_PARTY_PYTHON := $(TOP_DIR)/src/third-party/python
-THIRD_PARTY_BIN := $(TOP_DIR)/bin/third-party
+PWD := $(shell pwd)
+BIN=$(PWD)/bin
+TOOLS=$(PWD)/tools
+THIRD_PARTY := $(PWD)/src/third-party
+THIRD_PARTY_PYTHON := $(PWD)/src/third-party/python
+THIRD_PARTY_BIN := $(PWD)/bin/third-party
 AWS_S3 := https://s3.amazonaws.com/analysis-pipeline/src
 TEST_DATA := https://s3.amazonaws.com/analysis-pipeline/test-data
 
-all: config python s3tools aspera fastq assembly mlst variants jellyfish sccmec annotation variants_pythonpath;
+all: config python s3tools aspera fastq assembly mlst sccmec jellyfish variants annotation variants_pythonpath;
 
 config: ;
-	sed -i 's#^BASE_DIR.*#BASE_DIR = "$(TOP_DIR)"#' staphopia/config.py
+	sed -i 's#^BASE_DIR.*#BASE_DIR = "$(PWD)"#' staphopia/config.py
 
-clean-config: ;
-	sed -i 's#^BASE_DIR.*#BASE_DIR = CHANGE_ME#' staphopia/config.py
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 python: ;
-	pip install --target $(THIRD_PARTY)/python -r $(TOP_DIR)/requirements.txt
+	pip install --target $(THIRD_PARTY)/python -r $(PWD)/requirements.txt
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 aspera: $(BIN)/ascp ;
 
 $(BIN)/ascp : ;
@@ -37,9 +36,10 @@ $(BIN)/ascp : ;
 	ln -s $(ASCP_BUILD)/aspera/etc/asperaweb_id_dsa.openssh $(BIN)/asperaweb_id_dsa.openssh
 	ln -s $(ASCP_BUILD)/aspera/etc/asperaweb_id_dsa.putty $(BIN)/asperaweb_id_dsa.putty
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 fastq: $(BIN)/fastq-validator $(BIN)/fastq-stats $(BIN)/fastq-interleave ;
 
 $(BIN)/fastq-validator: ;
@@ -54,14 +54,15 @@ $(BIN)/fastq-validator: ;
 	ln -s $(FASTQ_BUILD)/fastQValidator/bin/fastQValidator $@
 
 $(BIN)/fastq-stats: ;
-	g++ -Wall -O3 -o $@ $(TOP_DIR)/src/fastq-stats.cpp
+	g++ -Wall -O3 -o $@ $(PWD)/src/fastq-stats.cpp
 
 $(BIN)/fastq-interleave: ;
 	g++ -Wall -O3 -o $@ src/fastq-interleave.cpp
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 assembly: $(BIN)/kmergenie $(BIN)/velveth $(BIN)/spades.py $(BIN)/assemblathon-stats.pl ;
 
 $(BIN)/kmergenie: ;
@@ -97,16 +98,17 @@ $(BIN)/assemblathon-stats.pl: ;
 	sed -i 's=^use strict;=use lib "$(ASTATS_BUILD)/assemblathon-stats";\nuse strict;=' $(ASTATS_BUILD)/assemblathon-stats/assemblathon_stats.pl
 	tar -C $(ASTATS_BUILD) -xzvf $(TOOLS)/assemblathon-stats/JSON-2.90.tar.gz
 	mv $(ASTATS_BUILD)/JSON-2.90 $(ASTATS_BUILD)/JSON
-	cd $(ASTATS_BUILD)/JSON && perl Makefile.PL PREFIX=$(ASTATS_BUILD)/JSON && cd $(TOP_DIR)
+	cd $(ASTATS_BUILD)/JSON && perl Makefile.PL PREFIX=$(ASTATS_BUILD)/JSON && cd $(PWD)
 	make -C $(ASTATS_BUILD)/JSON
 	make -C $(ASTATS_BUILD)/JSON install
 	ln -s $(ASTATS_BUILD)/JSON/lib/JSON.pm $(ASTATS_BUILD)/assemblathon-stats/JSON.pm
 	ln -s $(ASTATS_BUILD)/JSON/lib/JSON $(ASTATS_BUILD)/assemblathon-stats/JSON
 	ln -s $(ASTATS_BUILD)/assemblathon-stats/assemblathon_stats.pl $@
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mlst: $(BIN)/makeblastdb $(BIN)/srst2.py $(BIN)/bowtie2 $(BIN)/samtools ;
 
 $(BIN)/makeblastdb: ;
@@ -148,21 +150,10 @@ $(BIN)/samtools: ;
 	make -C $(SAM18_BUILD)/samtools_0118
 	ln -s $(SAM18_BUILD)/samtools_0118/samtools $@
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-variants: ;
-	git clone https://github.com/rpetit3-science/call_variants.git $(THIRD_PARTY)/call_variants
-	make -C $(THIRD_PARTY)/call_variants
-	make -C $(THIRD_PARTY)/call_variants test
-	ln -s $(THIRD_PARTY)/call_variants/bin/call_variants $(THIRD_PARTY_BIN)/call_variants
 
-variants_pythonpath: ;
-	make -C $(THIRD_PARTY)/call_variants add_to_profile
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 sccmec: $(BIN)/samtools-1.3 $(BIN)/bedtools;
 
 $(BIN)/samtools-1.3: ;
@@ -170,7 +161,7 @@ $(BIN)/samtools-1.3: ;
 	rm -rf $(SAM_BUILD) && mkdir -p $(SAM_BUILD)
 	tar -C $(SAM_BUILD) -xjvf $(TOOLS)/samtools/samtools-1.3.tar.bz2
 	mv $(SAM_BUILD)/samtools-1.3 $(SAM_BUILD)/samtools
-	cd $(SAM_BUILD)/samtools/ && ./configure && cd $(TOP_DIR)
+	cd $(SAM_BUILD)/samtools/ && ./configure && cd $(PWD)
 	make -C $(SAM_BUILD)/samtools
 	ln -s $(SAM_BUILD)/samtools/samtools $@
 
@@ -183,9 +174,10 @@ $(BIN)/bedtools: ;
 	ln -s $(BED_BUILD)/bedtools/bin/bedtools $@
 	ln -s $(BED_BUILD)/bedtools/bin/genomeCoverageBed $(BIN)/genomeCoverageBed
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 jellyfish: $(BIN)/jellyfish
 
 $(BIN)/jellyfish: ;
@@ -193,40 +185,86 @@ $(BIN)/jellyfish: ;
 	rm -rf $(JF_BUILD) && mkdir -p $(JF_BUILD)
 	tar -C $(JF_BUILD) -xzvf $(TOOLS)/jellyfish/jellyfish-2.2.4.tar.gz
 	mv $(JF_BUILD)/jellyfish-2.2.4/ $(JF_BUILD)/jellyfish/
-	cd $(JF_BUILD)/jellyfish/ && ./configure && cd $(TOP_DIR)
+	cd $(JF_BUILD)/jellyfish/ && ./configure && cd $(PWD)
 	make -C $(JF_BUILD)/jellyfish
 	ln -s $(JF_BUILD)/jellyfish/bin/jellyfish $@
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+variants: $(BIN)/bwa $(BIN)/java $(BIN)/picard.jar $(BIN)/GenomeAnalysisTK.jar $(BIN)/vcf-annotator $(BIN)/samtools-1.3;
+
+$(BIN)/bwa: ;
+	$(eval BWA_BUILD=$(TOOLS)/bwa/build)
+	rm -rf $(BWA_BUILD) && mkdir -p $(BWA_BUILD)
+	tar -C $(BWA_BUILD) -xzvf $(TOOLS)/bwa/bwa-0.7.13.tar.gz
+	mv $(BWA_BUILD)/bwa-0.7.13 $(BWA_BUILD)/bwa
+	make -C $(BWA_BUILD)/bwa
+	ln -s $(BWA_BUILD)/bwa/bwa $@
+$(BIN)/java: ;
+	$(eval JAVA_BUILD=$(TOOLS)/java/build)
+	rm -rf $(JAVA_BUILD) && mkdir -p $(JAVA_BUILD)
+	cat $(TOOLS)/java/jdk-7u79-linux-x64.tar.gz.part0* | tar -C $(JAVA_BUILD) -xzvf -
+	mv $(JAVA_BUILD)/jdk1.7.0_79 $(JAVA_BUILD)/jdk
+	ln -s $(JAVA_BUILD)/jdk/bin/java $@
+
+$(BIN)/picard.jar: ;
+	$(eval PICARD_BUILD=$(TOOLS)/picard-tools/build)
+	rm -rf $(PICARD_BUILD) && mkdir -p $(PICARD_BUILD)
+	tar -C $(PICARD_BUILD) -xzvf $(TOOLS)/picard-tools/picard-tools-2.1.1.tar.gz
+	mv $(PICARD_BUILD)/picard-tools-2.1.1 $(PICARD_BUILD)/picard-tools
+	ln -s $(PICARD_BUILD)/picard-tools/picard.jar $@
+
+$(BIN)/GenomeAnalysisTK.jar: ;
+	$(eval GATK_BUILD=$(TOOLS)/gatk/build)
+	rm -rf $(GATK_BUILD) && mkdir -p $(GATK_BUILD)
+	tar -C $(GATK_BUILD) -xjvf $(TOOLS)/gatk/GenomeAnalysisTK-3.5.tar.bz2
+	ln -s $(GATK_BUILD)/GenomeAnalysisTK.jar $@
+
+$(BIN)/vcf-annotator: ;
+	$(eval VCF_BUILD=$(TOOLS)/vcf-annotator/build)
+	rm -rf $(VCF_BUILD) && mkdir -p $(VCF_BUILD)
+	tar -C $(VCF_BUILD) -xzvf $(TOOLS)/vcf-annotator/vcf-annotator-0.1.tar.gz
+	mv $(VCF_BUILD)/vcf-annotator-0.1 $(VCF_BUILD)/vcf-annotator
+	ln -s $(VCF_BUILD)/vcf-annotator/bin/vcf-annotator $@
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 annotation: prokka barrnap ;
 
 prokka: ;
 	git clone git@github.com:tseemann/prokka.git $(THIRD_PARTY)/prokka
 	ln -s $(THIRD_PARTY)/prokka/bin $(THIRD_PARTY_BIN)/prokka
-	ln -s $(TOP_DIR)/tool-data/annotation/staphylococcus-uniref90.prokka $(THIRD_PARTY)/prokka/db/genus/Staphylococcus-uniref90
+	ln -s $(PWD)/tool-data/annotation/staphylococcus-uniref90.prokka $(THIRD_PARTY)/prokka/db/genus/Staphylococcus-uniref90
 	rm $(THIRD_PARTY)/prokka/db/kingdom/Bacteria/sprot
-	ln -s $(TOP_DIR)/tool-data/annotation/bacteria-uniref90.prokka $(THIRD_PARTY)/prokka/db/kingdom/Bacteria/sprot
+	ln -s $(PWD)/tool-data/annotation/bacteria-uniref90.prokka $(THIRD_PARTY)/prokka/db/kingdom/Bacteria/sprot
 	$(THIRD_PARTY_BIN)/prokka/prokka --setupdb
 
 barrnap: ;
 	git clone git@github.com:tseemann/barrnap.git $(THIRD_PARTY)/barrnap
 	ln -s $(THIRD_PARTY)/barrnap/bin/barrnap $(THIRD_PARTY_BIN)/barrnap
 
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 test: ;
-	wget -P $(TOP_DIR)/test-data $(TEST_DATA)/test_genome.fastq.gz
-	mkdir $(TOP_DIR)/test/test-pipeline
-	ln -s $(TOP_DIR)/test-data/test_genome.fastq.gz $(TOP_DIR)/test/test-pipeline/test_genome.fastq.gz
-	python $(TOP_DIR)/bin/pipelines/create_job_script --input $(TOP_DIR)/test/test-pipeline/test_genome.fastq.gz --working_dir $(TOP_DIR)/test/test-pipeline --processors 23  --sample_tag tester --log_times > $(TOP_DIR)/test/test-pipeline/job_script.sh
-	cd $(TOP_DIR)/test/test-pipeline && sh $(TOP_DIR)/test/test-pipeline/job_script.sh
+	wget -P $(PWD)/test-data $(TEST_DATA)/test_genome.fastq.gz
+	mkdir $(PWD)/test/test-pipeline
+	ln -s $(PWD)/test-data/test_genome.fastq.gz $(PWD)/test/test-pipeline/test_genome.fastq.gz
+	python $(PWD)/bin/pipelines/create_job_script --input $(PWD)/test/test-pipeline/test_genome.fastq.gz --working_dir $(PWD)/test/test-pipeline --processors 23  --sample_tag tester --log_times > $(PWD)/test/test-pipeline/job_script.sh
+	cd $(PWD)/test/test-pipeline && sh $(PWD)/test/test-pipeline/job_script.sh
+
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 clean: clean-config ;
-	rm -rf $(BIN)/*
-	find tools/ | grep "/build$$" | xargs -I {} rm -rf {}
+	ls $(BIN) | xargs -I {} rm -rf {}
+	find $(PWD)/tools/ | grep "/build$$" | xargs -I {} rm -rf {}
+
+clean-config: ;
+	sed -i 's#^BASE_DIR.*#BASE_DIR = CHANGE_ME#' staphopia/config.py
