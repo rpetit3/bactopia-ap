@@ -24,7 +24,7 @@ def create_dir():
     out, err = shared.run_command(['mkdir', 'logs'])
 
 
-@transform(options.fastq, regex(r"(.*).gz"), r"\1.stats")
+@transform(options.fastq, regex(r"(.*).fastq.gz"), r"\1.original.fastq.stats")
 @time_job(TIME_LOG, new_stream=True)
 def raw_stats(input_file, output_file):
     """ Calculate sequence stats of the input FASTQ. """
@@ -33,7 +33,7 @@ def raw_stats(input_file, output_file):
 
 @follows(raw_stats)
 @transform(options.fastq, regex(r"(.*).fastq.gz"),
-           r"\1.cleanup.fastq.gz", r"\1.fastq.stats")
+           r"\1.cleanup.fastq.gz", r"\1.original.fastq.stats")
 @time_job(TIME_LOG)
 def cleanup(input_file, output_file, stats_file):
     """ Clean up FASTQ based on statistics. """

@@ -22,5 +22,4 @@ def jellyfish_dump(input_file, output_file):
         ['gzip', '-'],
         stdout=output_file
     )
-    shared.run_command(['rm', input_file])
     return jellyfish
