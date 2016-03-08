@@ -10,12 +10,11 @@ Staphopia's analysis pipeline is primarily written in Python. There are however 
     libsqlite3-dev
 
 ### Installation
+See wiki for more details
 
     git clone git@github.com:Read-Lab-Confederation/staphopia-analysis-pipeline.git
     cd staphopia-analysis-pipeline
     make
-    # Wait...
-    # Eventually when complete you should get something similar to below. Copy and past this into your .bashrc or remember to export this each login.
     
     *******************************************************************
     *******************************************************************

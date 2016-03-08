@@ -1,6 +1,7 @@
-bin/fastq_interleave
-bin/fastq_stats
-bin/fastq_validator
+bin/*
+!bin/.gitignore
+
+tools/*/build
 
 staphopia/*.pyc
 staphopia/helpers/*.pyc

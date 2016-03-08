@@ -1,207 +1,270 @@
 .PHONY: all test clean
-TOP_DIR := $(shell pwd)
-THIRD_PARTY := $(TOP_DIR)/src/third-party
-THIRD_PARTY_PYTHON := $(TOP_DIR)/src/third-party/python
-THIRD_PARTY_BIN := $(TOP_DIR)/bin/third-party
+PWD := $(shell pwd)
+BIN=$(PWD)/bin
+TOOLS=$(PWD)/tools
+THIRD_PARTY := $(PWD)/src/third-party
+THIRD_PARTY_PYTHON := $(PWD)/src/third-party/python
+THIRD_PARTY_BIN := $(PWD)/bin/third-party
 AWS_S3 := https://s3.amazonaws.com/analysis-pipeline/src
 TEST_DATA := https://s3.amazonaws.com/analysis-pipeline/test-data
 
-all: config python s3tools aspera fastq assembly mlst variants jellyfish sccmec annotation variants_pythonpath;
+all: config python s3tools aspera fastq assembly mlst sccmec jellyfish variants annotation variants_pythonpath;
 
 config: ;
-	sed -i 's#^BASE_DIR.*#BASE_DIR = "$(TOP_DIR)"#' staphopia/config.py
+	sed -i 's#^BASE_DIR.*#BASE_DIR = "$(PWD)"#' staphopia/config.py
 
-clean-config: ;
-	sed -i 's#^BASE_DIR.*#BASE_DIR = CHANGE_ME#' staphopia/config.py
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 python: ;
-	pip install --target $(THIRD_PARTY)/python -r $(TOP_DIR)/requirements.txt
+	pip install --target $(THIRD_PARTY)/python -r $(PWD)/requirements.txt
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-s3tools: ;
-	git clone git@github.com:staphopia/s3tools.git $(THIRD_PARTY)/s3tools
-	pip install --target $(THIRD_PARTY)/python -r $(THIRD_PARTY)/s3tools/requirements.txt
-	ln -s $(THIRD_PARTY)/s3tools/bin $(THIRD_PARTY_BIN)/s3tools
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-aspera: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/aspera-connect-3.5.1.92523-linux-64.sh
-	sh $(THIRD_PARTY)/aspera-connect-3.5.1.92523-linux-64.sh $(THIRD_PARTY)/aspera
-	ln -s $(THIRD_PARTY)/aspera/bin/ascp $(THIRD_PARTY_BIN)/ascp
-	ln -s $(THIRD_PARTY)/aspera/etc/asperaweb_id_dsa.openssh $(THIRD_PARTY_BIN)/asperaweb_id_dsa.openssh
-	ln -s $(THIRD_PARTY)/aspera/etc/asperaweb_id_dsa.putty $(THIRD_PARTY_BIN)/asperaweb_id_dsa.putty
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+aspera: $(BIN)/ascp ;
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-fastq: fastq_validator fastq_stats fastq_interleave ;
+$(BIN)/ascp : ;
+	$(eval ASCP_BUILD=$(TOOLS)/aspera-connect/build)
+	rm -rf $(ASCP_BUILD) && mkdir -p $(ASCP_BUILD)
+	tar -C $(ASCP_BUILD) -xzvf $(TOOLS)/aspera-connect/aspera-connect-3.6.2.117442-linux-64.tar.gz
+	sed -i 's=^INSTALL_DIR\=~/.aspera/connect$$=INSTALL_DIR\=$$1=' $(ASCP_BUILD)/aspera-connect-3.6.2.117442-linux-64.sh
+	sh $(ASCP_BUILD)/aspera-connect-3.6.2.117442-linux-64.sh $(ASCP_BUILD)/aspera
+	ln -s $(ASCP_BUILD)/aspera/bin/ascp $@
+	ln -s $(ASCP_BUILD)/aspera/etc/asperaweb_id_dsa.openssh $(BIN)/asperaweb_id_dsa.openssh
+	ln -s $(ASCP_BUILD)/aspera/etc/asperaweb_id_dsa.putty $(BIN)/asperaweb_id_dsa.putty
 
-fastq_validator: ;
-	git clone git@github.com:staphopia/fastQValidator.git $(THIRD_PARTY)/fastQValidator
-	git clone git@github.com:staphopia/libStatGen.git $(THIRD_PARTY)/libStatGen
-	make -C $(THIRD_PARTY)/libStatGen
-	make -C $(THIRD_PARTY)/fastQValidator
-	ln -s $(THIRD_PARTY)/fastQValidator/bin/fastQValidator $(THIRD_PARTY_BIN)/fastq_validator
 
-fastq_stats: ;
-	g++ -Wall -O3 -o bin/fastq_stats src/fastq_stats.cpp
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+fastq: $(BIN)/fastq-validator $(BIN)/fastq-stats $(BIN)/fastq-interleave ;
 
-fastq_interleave: ;
-	g++ -Wall -O3 -o bin/fastq_interleave src/fastq_interleave.cpp
+$(BIN)/fastq-validator: ;
+	$(eval FASTQ_BUILD=$(TOOLS)/fastq-validator/build)
+	rm -rf $(FASTQ_BUILD) && mkdir -p $(FASTQ_BUILD)
+	tar -C $(FASTQ_BUILD) -xzvf $(TOOLS)/fastq-validator/libStatGen-0.0.1.tar.gz
+	mv $(FASTQ_BUILD)/libStatGen-0.0.1 $(FASTQ_BUILD)/libStatGen
+	make -C $(FASTQ_BUILD)/libStatGen
+	tar -C $(FASTQ_BUILD) -xzvf $(TOOLS)/fastq-validator/fastQValidator-0.1.tar.gz
+	mv $(FASTQ_BUILD)/fastQValidator-0.1 $(FASTQ_BUILD)/fastQValidator
+	make -C $(FASTQ_BUILD)/fastQValidator
+	ln -s $(FASTQ_BUILD)/fastQValidator/bin/fastQValidator $@
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-assembly: kmergenie velvet spades assemblathon2_analysis ;
+$(BIN)/fastq-stats: ;
+	g++ -Wall -O3 -o $@ $(PWD)/src/fastq-stats.cpp
 
-kmergenie: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/kmergenie-1.6741.tar.gz
-	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/kmergenie-1.6741.tar.gz && mv $(THIRD_PARTY)/kmergenie-1.6741 $(THIRD_PARTY)/kmergenie
-	make -C $(THIRD_PARTY)/kmergenie/
-	ln -s $(THIRD_PARTY)/kmergenie/kmergenie $(THIRD_PARTY_BIN)/kmergenie
-	ln -s $(THIRD_PARTY)/kmergenie/specialk $(THIRD_PARTY_BIN)/specialk
+$(BIN)/fastq-interleave: ;
+	g++ -Wall -O3 -o $@ src/fastq-interleave.cpp
 
-velvet: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/velvet_1.2.10.tgz
-	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/velvet_1.2.10.tgz && mv $(THIRD_PARTY)/velvet_1.2.10 $(THIRD_PARTY)/velvet
-	make -C $(THIRD_PARTY)/velvet 'MAXKMERLENGTH=256' 'BIGASSEMBLY=1' 'LONGSEQUENCES=1' 'OPENMP=1'
-	ln -s $(THIRD_PARTY)/velvet/velveth $(THIRD_PARTY_BIN)/velveth
-	ln -s $(THIRD_PARTY)/velvet/velvetg $(THIRD_PARTY_BIN)/velvetg
 
-spades: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/SPAdes-3.1.1-Linux.tar.gz
-	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/SPAdes-3.1.1-Linux.tar.gz && mv $(THIRD_PARTY)/SPAdes-3.1.1-Linux $(THIRD_PARTY)/spades
-	ln -s $(THIRD_PARTY)/spades/bin/spades.py $(THIRD_PARTY_BIN)/spades.py
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+assembly: $(BIN)/kmergenie $(BIN)/velveth $(BIN)/spades.py $(BIN)/assemblathon-stats.pl ;
 
-assemblathon2_analysis: ;
-	git clone git@github.com:staphopia/assemblathon2-analysis.git $(THIRD_PARTY)/assemblathon2-analysis
-	sed -i 's=^use strict;=use lib "$(THIRD_PARTY)/assemblathon2-analysis";\nuse strict;=' $(THIRD_PARTY)/assemblathon2-analysis/assemblathon_stats.pl
-	wget -P $(THIRD_PARTY) $(AWS_S3)/JSON-2.90.tar.gz
-	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/JSON-2.90.tar.gz && mv $(THIRD_PARTY)/JSON-2.90 $(THIRD_PARTY)/JSON
-	cd $(THIRD_PARTY)/JSON && perl Makefile.PL PREFIX=$(THIRD_PARTY)/JSON && cd $(TOP_DIR)
-	make -C $(THIRD_PARTY)/JSON
-	make -C $(THIRD_PARTY)/JSON install
-	ln -s $(THIRD_PARTY)/JSON/lib/JSON.pm $(THIRD_PARTY)/assemblathon2-analysis/JSON.pm
-	ln -s $(THIRD_PARTY)/JSON/lib/JSON $(THIRD_PARTY)/assemblathon2-analysis/JSON
-	ln -s $(THIRD_PARTY)/assemblathon2-analysis/assemblathon_stats.pl $(THIRD_PARTY_BIN)/assemblathon_stats.pl
+$(BIN)/kmergenie: ;
+	$(eval KG_BUILD=$(TOOLS)/kmergenie/build)
+	rm -rf $(KG_BUILD) && mkdir -p $(KG_BUILD)
+	tar -C $(KG_BUILD) -xzvf $(TOOLS)/kmergenie/kmergenie-1.6982.tar.gz
+	mv $(KG_BUILD)/kmergenie-1.6982 $(KG_BUILD)/kmergenie
+	make -C $(KG_BUILD)/kmergenie/
+	ln -s $(KG_BUILD)/kmergenie/kmergenie $@
+	ln -s $(KG_BUILD)/kmergenie/specialk $(BIN)/specialk
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-mlst: blast srst2 bowtie2 samtools_0118 ;
+$(BIN)/velveth: ;
+	$(eval VELVET_BUILD=$(TOOLS)/velvet/build)
+	rm -rf $(VELVET_BUILD) && mkdir -p $(VELVET_BUILD)
+	tar -C $(VELVET_BUILD) -xzvf $(TOOLS)/velvet/velvet_1.2.10.tgz
+	mv $(VELVET_BUILD)/velvet_1.2.10 $(VELVET_BUILD)/velvet
+	make -C $(VELVET_BUILD)/velvet 'MAXKMERLENGTH=256' 'BIGASSEMBLY=1' 'LONGSEQUENCES=1' 'OPENMP=1'
+	ln -s $(VELVET_BUILD)/velvet/velveth $@
+	ln -s $(VELVET_BUILD)/velvet/velvetg $(BIN)/velvetg
 
-blast: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/ncbi-blast-2.2.29%2B-x64-linux.tar.gz
-	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/ncbi-blast-2.2.29+-x64-linux.tar.gz && mv $(THIRD_PARTY)/ncbi-blast-2.2.29+ $(THIRD_PARTY)/ncbi-blast
-	ln -s $(THIRD_PARTY)/ncbi-blast/bin/blastn $(THIRD_PARTY_BIN)/blastn
-	ln -s $(THIRD_PARTY)/ncbi-blast/bin/blastp $(THIRD_PARTY_BIN)/blastp
-	ln -s $(THIRD_PARTY)/ncbi-blast/bin/blastx $(THIRD_PARTY_BIN)/blastx
-	ln -s $(THIRD_PARTY)/ncbi-blast/bin/tblastn $(THIRD_PARTY_BIN)/tblastn
-	ln -s $(THIRD_PARTY)/ncbi-blast/bin/tblastx $(THIRD_PARTY_BIN)/tblastx
-	ln -s $(THIRD_PARTY)/ncbi-blast/bin/makeblastdb $(THIRD_PARTY_BIN)/makeblastdb
+$(BIN)/spades.py: ;
+	$(eval SPADES_BUILD=$(TOOLS)/spades/build)
+	rm -rf $(SPADES_BUILD) && mkdir -p $(SPADES_BUILD)
+	tar -C $(SPADES_BUILD) -xzvf $(TOOLS)/spades/SPAdes-3.6.2-Linux.tar.gz
+	mv $(SPADES_BUILD)/SPAdes-3.6.2-Linux $(SPADES_BUILD)/spades
+	ln -s $(SPADES_BUILD)/spades/bin/spades.py $@
 
-srst2: ;
-	git clone git@github.com:staphopia/srst2.git $(THIRD_PARTY)/srst2
-	chmod 755 $(THIRD_PARTY)/srst2/scripts/getmlst.py
-	ln -s $(THIRD_PARTY)/srst2/scripts/getmlst.py $(THIRD_PARTY_BIN)/getmlst.py
-	ln -s $(THIRD_PARTY)/srst2/scripts/srst2.py $(THIRD_PARTY_BIN)/srst2.py
+$(BIN)/assemblathon-stats.pl: ;
+	$(eval ASTATS_BUILD=$(TOOLS)/assemblathon-stats/build)
+	rm -rf $(ASTATS_BUILD) && mkdir -p $(ASTATS_BUILD)
+	tar -C $(ASTATS_BUILD) -xzvf $(TOOLS)/assemblathon-stats/assemblathon-stats-0.1.tar.gz
+	mv $(ASTATS_BUILD)/assemblathon2-analysis-0.1 $(ASTATS_BUILD)/assemblathon-stats
+	sed -i 's=^use strict;=use lib "$(ASTATS_BUILD)/assemblathon-stats";\nuse strict;=' $(ASTATS_BUILD)/assemblathon-stats/assemblathon_stats.pl
+	tar -C $(ASTATS_BUILD) -xzvf $(TOOLS)/assemblathon-stats/JSON-2.90.tar.gz
+	mv $(ASTATS_BUILD)/JSON-2.90 $(ASTATS_BUILD)/JSON
+	cd $(ASTATS_BUILD)/JSON && perl Makefile.PL PREFIX=$(ASTATS_BUILD)/JSON && cd $(PWD)
+	make -C $(ASTATS_BUILD)/JSON
+	make -C $(ASTATS_BUILD)/JSON install
+	ln -s $(ASTATS_BUILD)/JSON/lib/JSON.pm $(ASTATS_BUILD)/assemblathon-stats/JSON.pm
+	ln -s $(ASTATS_BUILD)/JSON/lib/JSON $(ASTATS_BUILD)/assemblathon-stats/JSON
+	ln -s $(ASTATS_BUILD)/assemblathon-stats/assemblathon_stats.pl $@
 
-bowtie2: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/bowtie2-2.1.0-linux-x86_64.zip
-	unzip $(THIRD_PARTY)/bowtie2-2.1.0-linux-x86_64.zip -d $(THIRD_PARTY)/ && mv $(THIRD_PARTY)/bowtie2-2.1.0 $(THIRD_PARTY)/bowtie2
-	ln -s $(THIRD_PARTY)/bowtie2/bowtie2 $(THIRD_PARTY_BIN)/bowtie2
-	ln -s $(THIRD_PARTY)/bowtie2/bowtie2-align $(THIRD_PARTY_BIN)/bowtie2-align
-	ln -s $(THIRD_PARTY)/bowtie2/bowtie2-build $(THIRD_PARTY_BIN)/bowtie2-build
-	ln -s $(THIRD_PARTY)/bowtie2/bowtie2-inspect $(THIRD_PARTY_BIN)/bowtie2-inspect
 
-samtools_0118: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/samtools-0.1.18.tar.bz2
-	tar -C $(THIRD_PARTY) -xjvf $(THIRD_PARTY)/samtools-0.1.18.tar.bz2&& mv $(THIRD_PARTY)/samtools-0.1.18 $(THIRD_PARTY)/samtools_0118
-	make -C $(THIRD_PARTY)/samtools_0118
-	ln -s $(THIRD_PARTY)/samtools_0118/samtools $(THIRD_PARTY_BIN)/samtools
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+mlst: $(BIN)/makeblastdb $(BIN)/srst2.py $(BIN)/bowtie2 $(BIN)/samtools ;
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-variants: ;
-	git clone https://github.com/rpetit3-science/call_variants.git $(THIRD_PARTY)/call_variants
-	make -C $(THIRD_PARTY)/call_variants
-	make -C $(THIRD_PARTY)/call_variants test
-	ln -s $(THIRD_PARTY)/call_variants/bin/call_variants $(THIRD_PARTY_BIN)/call_variants
+$(BIN)/makeblastdb: ;
+	$(eval BLAST_BUILD=$(TOOLS)/blast+/build)
+	rm -rf $(BLAST_BUILD) && mkdir -p $(BLAST_BUILD)
+	cat $(TOOLS)/blast+/ncbi-blast-2.3.0+-x64-linux.tar.gz.part0* | tar -C $(BLAST_BUILD) -xzvf -
+	mv $(BLAST_BUILD)/ncbi-blast-2.3.0+ $(BLAST_BUILD)/blast
+	ln -s $(BLAST_BUILD)/blast/bin/blastn $(BIN)/blastn
+	ln -s $(BLAST_BUILD)/blast/bin/blastp $(BIN)/blastp
+	ln -s $(BLAST_BUILD)/blast/bin/blastx $(BIN)/blastx
+	ln -s $(BLAST_BUILD)/blast/bin/tblastn $(BIN)/tblastn
+	ln -s $(BLAST_BUILD)/blast/bin/tblastx $(BIN)/tblastx
+	ln -s $(BLAST_BUILD)/blast/bin/makeblastdb $@
 
-variants_pythonpath: ;
-	make -C $(THIRD_PARTY)/call_variants add_to_profile
+$(BIN)/srst2.py: ;
+	$(eval SRST_BUILD=$(TOOLS)/srst2/build)
+	rm -rf $(SRST_BUILD) && mkdir -p $(SRST_BUILD)
+	tar -C $(SRST_BUILD) -xzvf $(TOOLS)/srst2/srst2-0.1.tar.gz
+	mv $(SRST_BUILD)/srst2-0.1 $(SRST_BUILD)/srst2
+	chmod 755 $(SRST_BUILD)/srst2/scripts/getmlst.py
+	ln -s $(SRST_BUILD)/srst2/scripts/getmlst.py $(BIN)/getmlst.py
+	ln -s $(SRST_BUILD)/srst2/scripts/srst2.py $@
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-sccmec: samtools bedtools;
+$(BIN)/bowtie2: ;
+	$(eval BOWTIE_BUILD=$(TOOLS)/bowtie2/build)
+	rm -rf $(BOWTIE_BUILD) && mkdir -p $(BOWTIE_BUILD)
+	unzip $(TOOLS)/bowtie2/bowtie2-2.2.7-linux-x86_64.zip -d $(BOWTIE_BUILD)/
+	mv $(BOWTIE_BUILD)/bowtie2-2.2.7 $(BOWTIE_BUILD)/bowtie2
+	ln -s $(BOWTIE_BUILD)/bowtie2/bowtie2 $@
+	ln -s $(BOWTIE_BUILD)/bowtie2/bowtie2-align $(BIN)/bowtie2-align
+	ln -s $(BOWTIE_BUILD)/bowtie2/bowtie2-build $(BIN)/bowtie2-build
+	ln -s $(BOWTIE_BUILD)/bowtie2/bowtie2-inspect $(BIN)/bowtie2-inspect
 
-samtools: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/samtools-bcftools-htslib-1.0_x64-linux.tar.bz2
-	tar -C $(THIRD_PARTY) -xjvf $(THIRD_PARTY)/samtools-bcftools-htslib-1.0_x64-linux.tar.bz2 && mv $(THIRD_PARTY)/samtools-bcftools-htslib-1.0_x64-linux $(THIRD_PARTY)/samtools
-	ln -s $(THIRD_PARTY)/samtools/bin/samtools $(THIRD_PARTY_BIN)/samtools-1.0
+$(BIN)/samtools: ;
+	$(eval SAM18_BUILD=$(TOOLS)/samtools-0.1.18/build)
+	rm -rf $(SAM18_BUILD) && mkdir -p $(SAM18_BUILD)
+	tar -C $(SAM18_BUILD) -xjvf $(TOOLS)/samtools-0.1.18/samtools-0.1.18.tar.bz2
+	mv $(SAM18_BUILD)/samtools-0.1.18 $(SAM18_BUILD)/samtools_0118
+	make -C $(SAM18_BUILD)/samtools_0118
+	ln -s $(SAM18_BUILD)/samtools_0118/samtools $@
 
-bedtools: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/bedtools-2.20.1.tar.gz
-	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/bedtools-2.20.1.tar.gz && mv $(THIRD_PARTY)/bedtools2-2.20.1 $(THIRD_PARTY)/bedtools
-	make -C $(THIRD_PARTY)/bedtools
-	ln -s $(THIRD_PARTY)/bedtools/bin/bedtools $(THIRD_PARTY_BIN)/bedtools
-	ln -s $(THIRD_PARTY)/bedtools/bin/genomeCoverageBed $(THIRD_PARTY_BIN)/genomeCoverageBed
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-jellyfish: ;
-	wget -P $(THIRD_PARTY) $(AWS_S3)/jellyfish-2.1.4.tar.gz
-	tar -C $(THIRD_PARTY) -xzvf $(THIRD_PARTY)/jellyfish-2.1.4.tar.gz && mv $(THIRD_PARTY)/jellyfish-2.1.4/ $(THIRD_PARTY)/jellyfish/
-	cd $(THIRD_PARTY)/jellyfish/ && ./configure && cd $(TOP_DIR)
-	make -C $(THIRD_PARTY)/jellyfish
-	ln -s $(THIRD_PARTY)/jellyfish/bin/jellyfish $(THIRD_PARTY_BIN)/jellyfish
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sccmec: $(BIN)/samtools-1.3 $(BIN)/bedtools;
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-#                                                                             #
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+$(BIN)/samtools-1.3: ;
+	$(eval SAM_BUILD=$(TOOLS)/samtools/build)
+	rm -rf $(SAM_BUILD) && mkdir -p $(SAM_BUILD)
+	tar -C $(SAM_BUILD) -xjvf $(TOOLS)/samtools/samtools-1.3.tar.bz2
+	mv $(SAM_BUILD)/samtools-1.3 $(SAM_BUILD)/samtools
+	cd $(SAM_BUILD)/samtools/ && ./configure && cd $(PWD)
+	make -C $(SAM_BUILD)/samtools
+	ln -s $(SAM_BUILD)/samtools/samtools $@
+
+$(BIN)/bedtools: ;
+	$(eval BED_BUILD=$(TOOLS)/bedtools/build)
+	rm -rf $(BED_BUILD) && mkdir -p $(BED_BUILD)
+	tar -C $(BED_BUILD) -xzvf $(TOOLS)/bedtools/bedtools-2.25.0.tar.gz
+	mv $(BED_BUILD)/bedtools2 $(BED_BUILD)/bedtools
+	make -C $(BED_BUILD)/bedtools
+	ln -s $(BED_BUILD)/bedtools/bin/bedtools $@
+	ln -s $(BED_BUILD)/bedtools/bin/genomeCoverageBed $(BIN)/genomeCoverageBed
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+jellyfish: $(BIN)/jellyfish
+
+$(BIN)/jellyfish: ;
+	$(eval JF_BUILD=$(TOOLS)/jellyfish/build)
+	rm -rf $(JF_BUILD) && mkdir -p $(JF_BUILD)
+	tar -C $(JF_BUILD) -xzvf $(TOOLS)/jellyfish/jellyfish-2.2.4.tar.gz
+	mv $(JF_BUILD)/jellyfish-2.2.4/ $(JF_BUILD)/jellyfish/
+	cd $(JF_BUILD)/jellyfish/ && ./configure && cd $(PWD)
+	make -C $(JF_BUILD)/jellyfish
+	ln -s $(JF_BUILD)/jellyfish/bin/jellyfish $@
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+variants: $(BIN)/bwa $(BIN)/java $(BIN)/picard.jar $(BIN)/GenomeAnalysisTK.jar $(BIN)/vcf-annotator $(BIN)/samtools-1.3;
+
+$(BIN)/bwa: ;
+	$(eval BWA_BUILD=$(TOOLS)/bwa/build)
+	rm -rf $(BWA_BUILD) && mkdir -p $(BWA_BUILD)
+	tar -C $(BWA_BUILD) -xzvf $(TOOLS)/bwa/bwa-0.7.13.tar.gz
+	mv $(BWA_BUILD)/bwa-0.7.13 $(BWA_BUILD)/bwa
+	make -C $(BWA_BUILD)/bwa
+	ln -s $(BWA_BUILD)/bwa/bwa $@
+$(BIN)/java: ;
+	$(eval JAVA_BUILD=$(TOOLS)/java/build)
+	rm -rf $(JAVA_BUILD) && mkdir -p $(JAVA_BUILD)
+	cat $(TOOLS)/java/jdk-7u79-linux-x64.tar.gz.part0* | tar -C $(JAVA_BUILD) -xzvf -
+	mv $(JAVA_BUILD)/jdk1.7.0_79 $(JAVA_BUILD)/jdk
+	ln -s $(JAVA_BUILD)/jdk/bin/java $@
+
+$(BIN)/picard.jar: ;
+	$(eval PICARD_BUILD=$(TOOLS)/picard-tools/build)
+	rm -rf $(PICARD_BUILD) && mkdir -p $(PICARD_BUILD)
+	tar -C $(PICARD_BUILD) -xzvf $(TOOLS)/picard-tools/picard-tools-2.1.1.tar.gz
+	mv $(PICARD_BUILD)/picard-tools-2.1.1 $(PICARD_BUILD)/picard-tools
+	ln -s $(PICARD_BUILD)/picard-tools/picard.jar $@
+
+$(BIN)/GenomeAnalysisTK.jar: ;
+	$(eval GATK_BUILD=$(TOOLS)/gatk/build)
+	rm -rf $(GATK_BUILD) && mkdir -p $(GATK_BUILD)
+	tar -C $(GATK_BUILD) -xjvf $(TOOLS)/gatk/GenomeAnalysisTK-3.5.tar.bz2
+	ln -s $(GATK_BUILD)/GenomeAnalysisTK.jar $@
+
+$(BIN)/vcf-annotator: ;
+	$(eval VCF_BUILD=$(TOOLS)/vcf-annotator/build)
+	rm -rf $(VCF_BUILD) && mkdir -p $(VCF_BUILD)
+	tar -C $(VCF_BUILD) -xzvf $(TOOLS)/vcf-annotator/vcf-annotator-0.1.tar.gz
+	mv $(VCF_BUILD)/vcf-annotator-0.1 $(VCF_BUILD)/vcf-annotator
+	ln -s $(VCF_BUILD)/vcf-annotator/bin/vcf-annotator $@
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 annotation: prokka barrnap ;
 
 prokka: ;
 	git clone git@github.com:tseemann/prokka.git $(THIRD_PARTY)/prokka
 	ln -s $(THIRD_PARTY)/prokka/bin $(THIRD_PARTY_BIN)/prokka
-	ln -s $(TOP_DIR)/tool-data/annotation/staphylococcus-uniref90.prokka $(THIRD_PARTY)/prokka/db/genus/Staphylococcus-uniref90
+	ln -s $(PWD)/tool-data/annotation/staphylococcus-uniref90.prokka $(THIRD_PARTY)/prokka/db/genus/Staphylococcus-uniref90
 	rm $(THIRD_PARTY)/prokka/db/kingdom/Bacteria/sprot
-	ln -s $(TOP_DIR)/tool-data/annotation/bacteria-uniref90.prokka $(THIRD_PARTY)/prokka/db/kingdom/Bacteria/sprot
+	ln -s $(PWD)/tool-data/annotation/bacteria-uniref90.prokka $(THIRD_PARTY)/prokka/db/kingdom/Bacteria/sprot
 	$(THIRD_PARTY_BIN)/prokka/prokka --setupdb
 
 barrnap: ;
 	git clone git@github.com:tseemann/barrnap.git $(THIRD_PARTY)/barrnap
 	ln -s $(THIRD_PARTY)/barrnap/bin/barrnap $(THIRD_PARTY_BIN)/barrnap
 
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 test: ;
-	wget -P $(TOP_DIR)/test-data $(TEST_DATA)/test_genome.fastq.gz
-	mkdir $(TOP_DIR)/test/test-pipeline
-	ln -s $(TOP_DIR)/test-data/test_genome.fastq.gz $(TOP_DIR)/test/test-pipeline/test_genome.fastq.gz
-	python $(TOP_DIR)/bin/pipelines/create_job_script --input $(TOP_DIR)/test/test-pipeline/test_genome.fastq.gz --working_dir $(TOP_DIR)/test/test-pipeline --processors 23  --sample_tag tester --log_times > $(TOP_DIR)/test/test-pipeline/job_script.sh
-	cd $(TOP_DIR)/test/test-pipeline && sh $(TOP_DIR)/test/test-pipeline/job_script.sh
+	wget -P $(PWD)/test-data $(TEST_DATA)/test_genome.fastq.gz
+	mkdir $(PWD)/test/test-pipeline
+	ln -s $(PWD)/test-data/test_genome.fastq.gz $(PWD)/test/test-pipeline/test_genome.fastq.gz
+	python $(PWD)/bin/pipelines/create_job_script --input $(PWD)/test/test-pipeline/test_genome.fastq.gz --working_dir $(PWD)/test/test-pipeline --processors 23  --sample_tag tester --log_times > $(PWD)/test/test-pipeline/job_script.sh
+	cd $(PWD)/test/test-pipeline && sh $(PWD)/test/test-pipeline/job_script.sh
+
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                                                             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 clean: clean-config ;
-	rm -rf $(THIRD_PARTY)/*
-	rm -rf $(THIRD_PARTY_BIN)/*
-	rm -rf $(TOP_DIR)/test/test-pipeline
-	rm -rf $(TOP_DIR)/test-data/test_genome.fastq.gz
-	rm -f bin/fastq_interleave
-	rm -f bin/fastq_stats
+	ls $(BIN) | xargs -I {} rm -rf {}
+	find $(PWD)/tools/ | grep "/build$$" | xargs -I {} rm -rf {}
 
-
+clean-config: ;
+	sed -i 's#^BASE_DIR.*#BASE_DIR = CHANGE_ME#' staphopia/config.py
