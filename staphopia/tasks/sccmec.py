@@ -77,10 +77,9 @@ def sam_to_bam(input_file, output_file):
     """ Convert SAM to BAM. """
     sam_input = input_file.replace('completed', 'sccmec')
     bam_output = output_file.replace('completed', 'sccmec')
-    bam_prefix = bam_output.replace('.bam', '')
     shared.pipe_command(
         [BIN['samtools'], 'view', '-bS', sam_input],
-        [BIN['samtools'], 'sort', '-', bam_prefix]
+        [BIN['samtools'], 'sort', '-o', bam_output, '-']
     )
 
     if shared.try_to_complete_task(bam_output, output_file):

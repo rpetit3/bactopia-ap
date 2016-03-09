@@ -1,14 +1,12 @@
 .PHONY: all test clean
 PWD := $(shell pwd)
 BIN=$(PWD)/bin
+PATH := $(BIN):$(PATH)
+LIBS=$(PWD)/libs
 TOOLS=$(PWD)/tools
-THIRD_PARTY := $(PWD)/src/third-party
-THIRD_PARTY_PYTHON := $(PWD)/src/third-party/python
-THIRD_PARTY_BIN := $(PWD)/bin/third-party
-AWS_S3 := https://s3.amazonaws.com/analysis-pipeline/src
 TEST_DATA := https://s3.amazonaws.com/analysis-pipeline/test-data
 
-all: config python s3tools aspera fastq assembly mlst sccmec jellyfish variants annotation variants_pythonpath;
+all: config python aspera staphopia fastq assembly mlst sccmec jellyfish variants annotation;
 
 config: ;
 	sed -i 's#^BASE_DIR.*#BASE_DIR = "$(PWD)"#' staphopia/config.py
@@ -17,15 +15,15 @@ config: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-python: ;
-	pip install --target $(THIRD_PARTY)/python -r $(PWD)/requirements.txt
+python: $(LIBS)/python/easy_install.py ;
+$(LIBS)/python/easy_install.py: ;
+	pip install --target $(LIBS)/python -r $(PWD)/requirements.txt
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 aspera: $(BIN)/ascp ;
-
 $(BIN)/ascp : ;
 	$(eval ASCP_BUILD=$(TOOLS)/aspera-connect/build)
 	rm -rf $(ASCP_BUILD) && mkdir -p $(ASCP_BUILD)
@@ -36,6 +34,22 @@ $(BIN)/ascp : ;
 	ln -s $(ASCP_BUILD)/aspera/etc/asperaweb_id_dsa.openssh $(BIN)/asperaweb_id_dsa.openssh
 	ln -s $(ASCP_BUILD)/aspera/etc/asperaweb_id_dsa.putty $(BIN)/asperaweb_id_dsa.putty
 
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+staphopia: staphopia-scripts staphopia-pipelines staphopia-python;
+staphopia-scripts: $(BIN)/unprocessed_ena ;
+$(BIN)/unprocessed_ena: ;
+	ls $(TOOLS)/staphopia | xargs -I {} ln -s $(TOOLS)/staphopia/{} $(BIN)/{}
+
+staphopia-pipelines: $(BIN)/submit_job ;
+$(BIN)/submit_job: ;
+	ls $(TOOLS)/staphopia-pipelines | xargs -I {} ln -s $(TOOLS)/staphopia-pipelines/{} $(BIN)/{}
+
+staphopia-python: $(LIBS)/python/staphopia
+$(LIBS)/python/staphopia: ;
+	ln -s $(PWD)/staphopia $(LIBS)/python/staphopia
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
@@ -57,7 +71,7 @@ $(BIN)/fastq-stats: ;
 	g++ -Wall -O3 -o $@ $(PWD)/src/fastq-stats.cpp
 
 $(BIN)/fastq-interleave: ;
-	g++ -Wall -O3 -o $@ src/fastq-interleave.cpp
+	g++ -Wall -O3 -o $@ $(PWD)/src/fastq-interleave.cpp
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -135,8 +149,8 @@ $(BIN)/srst2.py: ;
 $(BIN)/bowtie2: ;
 	$(eval BOWTIE_BUILD=$(TOOLS)/bowtie2/build)
 	rm -rf $(BOWTIE_BUILD) && mkdir -p $(BOWTIE_BUILD)
-	unzip $(TOOLS)/bowtie2/bowtie2-2.2.7-linux-x86_64.zip -d $(BOWTIE_BUILD)/
-	mv $(BOWTIE_BUILD)/bowtie2-2.2.7 $(BOWTIE_BUILD)/bowtie2
+	unzip $(TOOLS)/bowtie2/bowtie2-2.2.4-linux-x86_64.zip -d $(BOWTIE_BUILD)/
+	mv $(BOWTIE_BUILD)/bowtie2-2.2.4 $(BOWTIE_BUILD)/bowtie2
 	ln -s $(BOWTIE_BUILD)/bowtie2/bowtie2 $@
 	ln -s $(BOWTIE_BUILD)/bowtie2/bowtie2-align $(BIN)/bowtie2-align
 	ln -s $(BOWTIE_BUILD)/bowtie2/bowtie2-build $(BIN)/bowtie2-build
@@ -193,7 +207,7 @@ $(BIN)/jellyfish: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-variants: $(BIN)/bwa $(BIN)/java $(BIN)/picard.jar $(BIN)/GenomeAnalysisTK.jar $(BIN)/vcf-annotator $(BIN)/samtools-1.3;
+variants: $(BIN)/bwa $(BIN)/java7 $(BIN)/java8 $(BIN)/picard.jar $(BIN)/GenomeAnalysisTK.jar $(BIN)/vcf-annotator $(BIN)/samtools-1.3;
 
 $(BIN)/bwa: ;
 	$(eval BWA_BUILD=$(TOOLS)/bwa/build)
@@ -202,12 +216,20 @@ $(BIN)/bwa: ;
 	mv $(BWA_BUILD)/bwa-0.7.13 $(BWA_BUILD)/bwa
 	make -C $(BWA_BUILD)/bwa
 	ln -s $(BWA_BUILD)/bwa/bwa $@
-$(BIN)/java: ;
-	$(eval JAVA_BUILD=$(TOOLS)/java/build)
-	rm -rf $(JAVA_BUILD) && mkdir -p $(JAVA_BUILD)
-	cat $(TOOLS)/java/jdk-7u79-linux-x64.tar.gz.part0* | tar -C $(JAVA_BUILD) -xzvf -
-	mv $(JAVA_BUILD)/jdk1.7.0_79 $(JAVA_BUILD)/jdk
-	ln -s $(JAVA_BUILD)/jdk/bin/java $@
+
+$(BIN)/java7: ;
+	$(eval JAVA7_BUILD=$(TOOLS)/java7/build)
+	rm -rf $(JAVA7_BUILD) && mkdir -p $(JAVA7_BUILD)
+	cat $(TOOLS)/java7/jdk-7u79-linux-x64.tar.gz.part0* | tar -C $(JAVA7_BUILD) -xzvf -
+	mv $(JAVA7_BUILD)/jdk1.7.0_79 $(JAVA7_BUILD)/jdk
+	ln -s $(JAVA7_BUILD)/jdk/bin/java $@
+
+$(BIN)/java8: ;
+	$(eval JAVA8_BUILD=$(TOOLS)/java8/build)
+	rm -rf $(JAVA8_BUILD) && mkdir -p $(JAVA8_BUILD)
+	cat $(TOOLS)/java8/jdk-8u73-linux-x64.tar.gz.part0* | tar -C $(JAVA8_BUILD) -xzvf -
+	mv $(JAVA8_BUILD)/jdk1.8.0_73 $(JAVA8_BUILD)/jdk
+	ln -s $(JAVA8_BUILD)/jdk/bin/java $@
 
 $(BIN)/picard.jar: ;
 	$(eval PICARD_BUILD=$(TOOLS)/picard-tools/build)
@@ -227,25 +249,41 @@ $(BIN)/vcf-annotator: ;
 	rm -rf $(VCF_BUILD) && mkdir -p $(VCF_BUILD)
 	tar -C $(VCF_BUILD) -xzvf $(TOOLS)/vcf-annotator/vcf-annotator-0.1.tar.gz
 	mv $(VCF_BUILD)/vcf-annotator-0.1 $(VCF_BUILD)/vcf-annotator
+	ln -s $(VCF_BUILD)/vcf-annotator/vcfannotator $(LIBS)/python/vcfannotator
 	ln -s $(VCF_BUILD)/vcf-annotator/bin/vcf-annotator $@
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-annotation: prokka barrnap ;
+annotation: prokka barrnap prokka-setupdb;
 
-prokka: ;
-	git clone git@github.com:tseemann/prokka.git $(THIRD_PARTY)/prokka
-	ln -s $(THIRD_PARTY)/prokka/bin $(THIRD_PARTY_BIN)/prokka
-	ln -s $(PWD)/tool-data/annotation/staphylococcus-uniref90.prokka $(THIRD_PARTY)/prokka/db/genus/Staphylococcus-uniref90
-	rm $(THIRD_PARTY)/prokka/db/kingdom/Bacteria/sprot
-	ln -s $(PWD)/tool-data/annotation/bacteria-uniref90.prokka $(THIRD_PARTY)/prokka/db/kingdom/Bacteria/sprot
-	$(THIRD_PARTY_BIN)/prokka/prokka --setupdb
+prokka: $(BIN)/prokka ;
+$(BIN)/prokka: ;
+	$(eval PROKKA_BUILD=$(TOOLS)/prokka/build)
+	rm -rf $(PROKKA_BUILD) && mkdir -p $(PROKKA_BUILD)
+	cat $(TOOLS)/prokka/prokka-1.11.1.tar.gz.part0* | tar -C $(PROKKA_BUILD) -xzvf -
+	mv $(PROKKA_BUILD)/prokka-1.11.1 $(PROKKA_BUILD)/prokka
+	ln -s $(PWD)/data/annotation/staphylococcus-uniref90.prokka $(PROKKA_BUILD)/prokka/db/genus/Staphylococcus-uniref90
+	rm $(PROKKA_BUILD)/prokka/db/kingdom/Bacteria/sprot
+	ln -s $(PWD)/data/annotation/bacteria-uniref90.prokka $(PROKKA_BUILD)/prokka/db/kingdom/Bacteria/sprot
+	ls $(PROKKA_BUILD)/prokka/bin | xargs -I {} ln -s $(PROKKA_BUILD)/prokka/bin/{} $(BIN)/{}
 
-barrnap: ;
-	git clone git@github.com:tseemann/barrnap.git $(THIRD_PARTY)/barrnap
-	ln -s $(THIRD_PARTY)/barrnap/bin/barrnap $(THIRD_PARTY_BIN)/barrnap
+prokka-setupdb: $(TOOLS)/prokka/build/prokka/db/kingdom/Bacteria/sprot.psq ;
+$(TOOLS)/prokka/build/prokka/db/kingdom/Bacteria/sprot.psq: ;
+	$(eval PROKKA_BUILD=$(TOOLS)/prokka/build)
+	$(BIN)/prokka --setupdb
+	ln -s $(PROKKA_BUILD)/prokka/db/kingdom/Bacteria/sprot.00.phr $(PROKKA_BUILD)/prokka/db/kingdom/Bacteria/sprot.phr
+	ln -s $(PROKKA_BUILD)/prokka/db/kingdom/Bacteria/sprot.00.pin $(PROKKA_BUILD)/prokka/db/kingdom/Bacteria/sprot.pin
+	ln -s $(PROKKA_BUILD)/prokka/db/kingdom/Bacteria/sprot.00.psq $(PROKKA_BUILD)/prokka/db/kingdom/Bacteria/sprot.psq
+
+barrnap: $(BIN)/barrnap ;
+$(BIN)/barrnap: ;
+	$(eval BARRNAP_BUILD=$(TOOLS)/barrnap/build)
+	rm -rf $(BARRNAP_BUILD) && mkdir -p $(BARRNAP_BUILD)
+	tar -C $(BARRNAP_BUILD) -xzvf $(TOOLS)/barrnap/barrnap-0.7.tar.gz
+	mv $(BARRNAP_BUILD)/barrnap-0.7 $(BARRNAP_BUILD)/barrnap
+	ln -s $(BARRNAP_BUILD)/barrnap/bin/barrnap $@
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -263,7 +301,8 @@ test: ;
 #                                                                             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 clean: clean-config ;
-	ls $(BIN) | xargs -I {} rm -rf {}
+	ls $(BIN) | xargs -I {} rm $(BIN)/{}
+	ls $(LIBS)/python | xargs -I {} rm -rf $(LIBS)/python/{}
 	find $(PWD)/tools/ | grep "/build$$" | xargs -I {} rm -rf {}
 
 clean-config: ;

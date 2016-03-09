@@ -7,109 +7,85 @@ Please note, the Makefile should update BASE_DIR, but if not you will need to.
 BASE_DIR = CHANGE_ME
 
 # PATH
-PATH = BASE_DIR + '/bin'
-PIPELINE_PATH = PATH + '/pipelines'
-THIRD_PARTY_PATH = PATH + '/third-party'
-PROKKA_PATH = BASE_DIR + '/src/third-party/prokka/binaries/linux'
-TOOL_DATA = BASE_DIR + '/tool-data'
+PATH = '{0}/bin'.format(BASE_DIR)
+TOOL_DATA = '{0}/data'.format(BASE_DIR)
 
 # PYTHONPATH
-PYTHON_REQS = BASE_DIR + '/src/third-party/python'
-VCFANNOTATOR = BASE_DIR + '/src/third-party/python/vcf-annotator'
-CALL_VARIANTS = '{0}{1}:{0}{2}:{0}{3}'.format(
-    BASE_DIR,
-    '/src/third-party/call_variants',
-    '/src/third-party/call_variants/src/third-party/python',
-    '/src/third-party/call_variants/src/third-party/python/vcf-annotator'
-)
+PYTHON_REQS = '{0}/libs/python'.format(BASE_DIR)
 
 # Programs
 BIN = {
     # FASTQ related
-    'fastq_cleanup': PATH + '/fastq_cleanup',
-    'fastq_stats': PATH + '/fastq_stats',
-    'fastq_validator': THIRD_PARTY_PATH + '/fastq_validator',
+    'fastq_cleanup': '{0}/fastq_cleanup'.format(PATH),
+    'fastq_stats': '{0}/fastq-stats'.format(PATH),
+    'fastq_validator': '{0}/fastq-validator'.format(PATH),
 
     # Assembly related
-    'kmergenie': THIRD_PARTY_PATH + '/kmergenie',
-    'velvetg': THIRD_PARTY_PATH + '/velvetg',
-    'velveth': THIRD_PARTY_PATH + '/velveth',
-    'spades': THIRD_PARTY_PATH + '/spades.py',
-    'makeblastdb': THIRD_PARTY_PATH + '/makeblastdb',
-    'assemblathon_stats': THIRD_PARTY_PATH + '/assemblathon_stats.pl',
+    'kmergenie': '{0}/kmergenie'.format(PATH),
+    'velvetg': '{0}/velvetg'.format(PATH),
+    'velveth': '{0}/velveth'.format(PATH),
+    'spades': '{0}/spades.py'.format(PATH),
+    'makeblastdb': '{0}/makeblastdb'.format(PATH),
+    'assemblathon_stats': '{0}/assemblathon-stats.pl'.format(PATH),
 
     # MLST related
-    'srst2': THIRD_PARTY_PATH + '/srst2.py',
-    'blastn': THIRD_PARTY_PATH + '/blastn',
+    'srst2': '{0}/srst2.py'.format(PATH),
+    'blastn': '{0}/blastn'.format(PATH),
 
     # SCCmec related
-    'tblastn': THIRD_PARTY_PATH + '/tblastn',
-    'samtools': THIRD_PARTY_PATH + '/samtools-1.0',
-    'genomeCoverageBed': THIRD_PARTY_PATH + '/genomeCoverageBed',
+    'tblastn': '{0}/tblastn'.format(PATH),
+    'samtools': '{0}/samtools-1.3'.format(PATH),
+    'genomeCoverageBed': '{0}/genomeCoverageBed'.format(PATH),
 
     # SNP/InDel related
-    'bwa': THIRD_PARTY_PATH + '/bwa',
-    'java': THIRD_PARTY_PATH + '/java',
-    'picardtools': '{0}/picard.jar'.format(
-        THIRD_PARTY_PATH
-    ),
-    'gatk': THIRD_PARTY_PATH + '/GenomeAnalysisTK.jar',
-    'vcf_annotator': THIRD_PARTY_PATH + '/vcf-annotator',
+    'bwa': '{0}/bwa'.format(PATH),
+    'java7': '{0}/java7'.format(PATH),
+    'java8': '{0}/java8'.format(PATH),
+    'picardtools': '{0}/picard.jar'.format(PATH),
+    'gatk': '{0}/GenomeAnalysisTK.jar'.format(PATH),
+    'vcf_annotator': '{0}/vcf-annotator'.format(PATH),
 
     # K-mer related
-    'jellyfish': THIRD_PARTY_PATH + '/jellyfish',
+    'jellyfish': '{0}/jellyfish'.format(PATH),
 
     # Annotation related
-    'prokka': THIRD_PARTY_PATH + '/prokka/prokka',
+    'prokka': '{0}/prokka'.format(PATH),
 
     # Pipelines
-    'fastq_cleanup_pipeline': PIPELINE_PATH + '/fastq_cleanup',
-    'illumina_assembly': PIPELINE_PATH + '/illumina_assembly',
-    'predict_mlst': PIPELINE_PATH + '/predict_mlst',
-    'predict_sccmec': PIPELINE_PATH + '/predict_sccmec',
-    'call_variants': THIRD_PARTY_PATH + '/call_variants',
-    'kmer_analysis': PIPELINE_PATH + '/kmer_analysis',
-    'annotation': PIPELINE_PATH + '/annotation',
+    'fastq_cleanup_pipeline': '{0}/cleanup_fastq'.format(PATH),
+    'illumina_assembly': '{0}/illumina_assembly'.format(PATH),
+    'predict_mlst': '{0}/predict_mlst'.format(PATH),
+    'predict_sccmec': '{0}/predict_sccmec'.format(PATH),
+    'call_variants': '{0}/call_variants'.format(PATH),
+    'kmer_analysis': '{0}/kmer_analysis'.format(PATH),
+    'annotation': '{0}/annotation'.format(PATH),
 
     # Staphopia related
-    'download_ena': PATH + '/download_ena',
-    'ascp': THIRD_PARTY_PATH + '/ascp',
-    'aspera_key': THIRD_PARTY_PATH + '/asperaweb_id_dsa.openssh',
-    'fastq_interleave': PATH + '/fastq_interleave',
-    'manage': '/staphopia/ebs/staphopia.com/manage.py',
-
-    # s3tools related
-    'bucket-contents': THIRD_PARTY_PATH + '/s3tools/bucket-contents',
-    'cleanup': THIRD_PARTY_PATH + '/s3tools/cleanup',
-    'compare-directory': THIRD_PARTY_PATH + '/s3tools/compare-directory',
-    'copy': THIRD_PARTY_PATH + '/s3tools/copy',
-    'delete-contents': THIRD_PARTY_PATH + '/s3tools/delete-contents',
-    'download': THIRD_PARTY_PATH + '/s3tools/download',
-    'download-directory': THIRD_PARTY_PATH + '/s3tools/download-directory',
-    'move': THIRD_PARTY_PATH + '/s3tools/move',
-    'multipart-upload': THIRD_PARTY_PATH + '/s3tools/multipart-upload',
-    'upload': THIRD_PARTY_PATH + '/s3tools/upload',
-    'upload-directory': THIRD_PARTY_PATH + '/s3tools/upload-directory',
+    'download_ena': '{0}/download_ena'.format(PATH),
+    'ascp': '{0}/ascp'.format(PATH),
+    'aspera_key': '{0}/asperaweb_id_dsa.openssh'.format(PATH),
+    'fastq_interleave': '{0}/fastq-interleave'.format(PATH),
+    'manage': '/staphopia/ebs/staphopia.com/manage.py'.format(PATH),
 }
 
 MLST = {
-    'mlst_db': TOOL_DATA + '/mlst/Staphylococcus_aureus.fasta',
-    'mlst_definitions': TOOL_DATA + '/mlst/saureus.txt',
-    'mlst_blastdb': TOOL_DATA + '/mlst/blastdb',
+    'mlst_db': '{0}/mlst/Staphylococcus_aureus.fasta'.format(TOOL_DATA),
+    'mlst_definitions': '{0}/mlst/saureus.txt'.format(TOOL_DATA),
+    'mlst_blastdb': '{0}/mlst/blastdb'.format(TOOL_DATA),
 }
 
 SCCMEC = {
-    'primers': TOOL_DATA + '/sccmec_primers.fasta',
-    'proteins': TOOL_DATA + '/sccmec_proteins.fasta',
-    'cassettes': TOOL_DATA + '/sccmec/sccmec_cassettes',
+    'primers': '{0}/sccmec_primers.fasta'.format(TOOL_DATA),
+    'proteins': '{0}/sccmec_proteins.fasta'.format(TOOL_DATA),
+    'cassettes': '{0}/sccmec/sccmec_cassettes'.format(TOOL_DATA),
 }
 
 SNP = {
-    'reference': TOOL_DATA + '/snp/n315.fasta',
-    'ref_genbank': TOOL_DATA + '/snp/n315.gb',
+    'reference': '{0}/snp/n315.fasta'.format(TOOL_DATA),
+    'ref_genbank': '{0}/snp/n315.gb'.format(TOOL_DATA),
 }
 
 ANNOTATION = {
     'genus': 'Staphylococcus-uniref90',
-    'proteins': TOOL_DATA + '/annotation/sa-uniref90-reviewed.prokka'
+    'proteins': '{0}/annotation/sa-uniref90-reviewed.prokka'.format(TOOL_DATA)
 }
