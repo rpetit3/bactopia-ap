@@ -100,8 +100,8 @@ $(BIN)/velveth: ;
 $(BIN)/spades.py: ;
 	$(eval SPADES_BUILD=$(TOOLS)/spades/build)
 	rm -rf $(SPADES_BUILD) && mkdir -p $(SPADES_BUILD)
-	tar -C $(SPADES_BUILD) -xzvf $(TOOLS)/spades/SPAdes-3.6.2-Linux.tar.gz
-	mv $(SPADES_BUILD)/SPAdes-3.6.2-Linux $(SPADES_BUILD)/spades
+	tar -C $(SPADES_BUILD) -xzvf $(TOOLS)/spades/SPAdes-3.7.1-Linux.tar.gz
+	mv $(SPADES_BUILD)/SPAdes-3.7.1-Linux $(SPADES_BUILD)/spades
 	ln -s $(SPADES_BUILD)/spades/bin/spades.py $@
 
 $(BIN)/assemblathon-stats.pl: ;
