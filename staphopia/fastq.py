@@ -10,16 +10,15 @@ import numpy as np
 
 
 class CleanUpFASTQ(object):
+    """Class for the clean up of FASTQ files."""
 
-    """ Class for the clean up of FASTQ files. """
-
-    def __init__(self, subsample, paired_reads, read_length_cutoff,
+    def __init__(self, subsample, is_paired, read_length_cutoff,
                  min_mean_quality, min_read_length):
-        """ Initialize class variables. """
+        """Initialize class variables."""
         self.VERSION = "0.5"
         self.fastq = []
         self.subsample = subsample
-        self.paired_reads = paired_reads
+        self.is_paired = is_paired
         self.read_length_cutoff = read_length_cutoff
         self.min_mean_quality = min_mean_quality
         self.min_read_length = min_read_length
@@ -29,7 +28,7 @@ class CleanUpFASTQ(object):
         self.__phredunk = 0
 
     def read_large_fastq(self, file, fraction):
-        """ Reduce a large (2 GB+) file to a subset before cleanup. """
+        """Reduce a large (2 GB+) file to a subset before cleanup."""
         while 1:
             head = file.readline().rstrip()
             if not head:
@@ -45,19 +44,19 @@ class CleanUpFASTQ(object):
                 self.fastq.append(plus)
                 self.fastq.append(qual)
 
-                if self.paired_reads:
+                if self.is_paired:
                     self.fastq.append(file.readline().rstrip())
                     self.fastq.append(file.readline().rstrip())
                     self.fastq.append(file.readline().rstrip())
                     self.fastq.append(file.readline().rstrip())
 
     def __mean_quality(self, qual):
-        """ Create a count of the quality score. """
+        """Create a count of the quality score."""
         qual_stats = np.array([ord(j) for j in qual])
         return np.mean(qual_stats) - 33
 
     def __test_read(self, index):
-        """ Test if the read passes quality filters. """
+        """Test if the read passes quality filters."""
         head = self.fastq[index]
         seq = self.fastq[index + 1]
         length = 0
@@ -79,32 +78,32 @@ class CleanUpFASTQ(object):
         return length
 
     def generate_order(self, total_read_count):
-        """ Generate a random (seeded) order of reads to be selected. """
-        if self.paired_reads and total_read_count % 2 == 0:
+        """Generate a random (seeded) order of reads to be selected."""
+        if self.is_paired and total_read_count % 2 == 0:
             total_read_count = total_read_count / 2
         self.__read_order = range(total_read_count)
         if self.subsample:
             random.seed(123456)
             random.shuffle(self.__read_order)
 
-    def clean_up_fastq(self, ):
-        """ Test each read, if good print it else move next read. """
+    def clean_up_fastq(self):
+        """Test each read, if good print it else move next read."""
         basepair_count = 0
         for i in xrange(len(self.__read_order)):
             self.__temp_read[:] = []
-            if self.paired_reads:
+            if self.is_paired:
                 index = self.__read_order[i] * 8 - 8
                 read1 = self.__test_read(index)
                 index = self.__read_order[i] * 8 - 4
                 read2 = self.__test_read(index)
                 if read1 > 0 and read2 > 0:
-                    print '\n'.join(self.__temp_read)
+                    print('\n'.join(self.__temp_read))
                     basepair_count += (read1 + read2)
             else:
                 index = self.__read_order[i] * 4 - 4
                 read = self.__test_read(index)
                 if read > 0:
-                    print self.__temp_read[0]
+                    print(self.__temp_read[0])
                     basepair_count += read
 
             if self.subsample and basepair_count >= self.subsample:
