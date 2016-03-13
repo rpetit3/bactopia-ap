@@ -1,11 +1,11 @@
 #! /usr/bin/env python
-""" Ruffus wrappers for assembly related tasks. """
+"""Ruffus wrappers for assembly related tasks."""
 from staphopia.config import BIN, SCCMEC
 from staphopia.tasks import shared
 
 
 def blast_genes(blastdb, output_file, num_cpu):
-    """ BLAST SCCmec related genes against given blast database. """
+    """BLAST SCCmec related genes against given blast database."""
     outfmt = (
         "6 qseqid nident qlen length sstart send pident ppos bitscore evalue"
         " gaps"
@@ -25,7 +25,7 @@ def blast_genes(blastdb, output_file, num_cpu):
 
 
 def blast_primers(blastdb, output_file):
-    """ BLAST SCCmec related primers against given blast database. """
+    """BLAST SCCmec related primers against given blast database."""
     outfmt = (
         "6 qseqid nident qlen length sstart send pident ppos bitscore evalue"
         " gaps"
@@ -44,37 +44,52 @@ def blast_primers(blastdb, output_file):
         raise Exception("blastn did not complete successfully.")
 
 
-def bwa_aln(fastq, output_file, num_cpu):
-    """ Align FASTQ against each SCCmec cassette (BWA part 1). """
-    sai_output = output_file.replace('completed', 'sccmec')
+def bwa_mem(fastq, output_sam, num_cpu, is_paired, completed_file):
+    """Align reads (mean length < 70bp) against reference genome."""
+    p = '-p' if is_paired else ''
     shared.run_command(
-        [BIN['bwa'], 'aln', '-f', sai_output, '-t', num_cpu,
-         SCCMEC['cassettes'], fastq]
+        [BIN['bwa'], 'mem',
+         '-M',
+         p,
+         '-t', num_cpu,
+         SCCMEC['cassettes'],
+         fastq],
+        stdout=output_sam
     )
 
-    if shared.try_to_complete_task(sai_output, output_file):
+    if shared.try_to_complete_task(output_sam, completed_file):
         return True
     else:
-        raise Exception("bwa aln did not complete successfully.")
+        raise Exception("bwa mem did not complete successfully.")
 
 
-def bwa_samse(sai, fastq, output_file):
-    """ Align FASTQ against each SCCmec cassette (BWA part 2). """
-    sai_input = sai.replace('completed', 'sccmec')
-    sam_output = output_file.replace('completed', 'sccmec')
-    shared.run_command(
-        [BIN['bwa'], 'samse', '-n', '9999', '-f', sam_output,
-         SCCMEC['cassettes'], sai_input, fastq]
-    )
+def bwa_aln(fastq, sai, output_sam, num_cpu, completed_file):
+    """Align reads (mean length < 70bp) against reference genome."""
+    shared.run_command([
+        BIN['bwa'], 'aln',
+        '-f', sai,
+        '-t', num_cpu,
+        SCCMEC['cassettes'],
+        fastq
+    ])
 
-    if shared.try_to_complete_task(sam_output, output_file):
+    shared.run_command([
+        BIN['bwa'], 'samse',
+        '-n', '9999',
+        '-f', output_sam,
+        SCCMEC['cassettes'],
+        sai,
+        fastq
+    ])
+
+    if shared.try_to_complete_task(output_sam, completed_file):
         return True
     else:
-        raise Exception("bwa samse did not complete successfully.")
+        raise Exception("bwa aln/samse did not complete successfully.")
 
 
 def sam_to_bam(input_file, output_file):
-    """ Convert SAM to BAM. """
+    """Convert SAM to BAM."""
     sam_input = input_file.replace('completed', 'sccmec')
     bam_output = output_file.replace('completed', 'sccmec')
     shared.pipe_command(
@@ -89,7 +104,7 @@ def sam_to_bam(input_file, output_file):
 
 
 def genome_coverage_bed(input_file, output_file):
-    """ Calculate coverage of the alignment. """
+    """Calculate coverage of the alignment."""
     bam_input = input_file.replace('completed', 'sccmec')
     coverage_output = output_file.replace('completed', 'sccmec')
     shared.run_command(
@@ -104,7 +119,7 @@ def genome_coverage_bed(input_file, output_file):
 
 
 def cleanup_mapping(output_file):
-    """ Cleanup BWA related files. """
+    """Cleanup BWA related files."""
     prefix = output_file.replace('completed.cleanup', 'sccmec')
     remove_these_files = [prefix + ext for ext in ['.sai', '.sam', '.bam']]
     shared.remove(remove_these_files)

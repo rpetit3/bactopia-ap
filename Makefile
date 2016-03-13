@@ -77,25 +77,7 @@ $(BIN)/fastq-interleave: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-assembly: $(BIN)/kmergenie $(BIN)/velveth $(BIN)/spades.py $(BIN)/assemblathon-stats.pl ;
-
-$(BIN)/kmergenie: ;
-	$(eval KG_BUILD=$(TOOLS)/kmergenie/build)
-	rm -rf $(KG_BUILD) && mkdir -p $(KG_BUILD)
-	tar -C $(KG_BUILD) -xzvf $(TOOLS)/kmergenie/kmergenie-1.6982.tar.gz
-	mv $(KG_BUILD)/kmergenie-1.6982 $(KG_BUILD)/kmergenie
-	make -C $(KG_BUILD)/kmergenie/
-	ln -s $(KG_BUILD)/kmergenie/kmergenie $@
-	ln -s $(KG_BUILD)/kmergenie/specialk $(BIN)/specialk
-
-$(BIN)/velveth: ;
-	$(eval VELVET_BUILD=$(TOOLS)/velvet/build)
-	rm -rf $(VELVET_BUILD) && mkdir -p $(VELVET_BUILD)
-	tar -C $(VELVET_BUILD) -xzvf $(TOOLS)/velvet/velvet_1.2.10.tgz
-	mv $(VELVET_BUILD)/velvet_1.2.10 $(VELVET_BUILD)/velvet
-	make -C $(VELVET_BUILD)/velvet 'MAXKMERLENGTH=256' 'BIGASSEMBLY=1' 'LONGSEQUENCES=1' 'OPENMP=1'
-	ln -s $(VELVET_BUILD)/velvet/velveth $@
-	ln -s $(VELVET_BUILD)/velvet/velvetg $(BIN)/velvetg
+assembly: $(BIN)/spades.py $(BIN)/assemblathon-stats.pl ;
 
 $(BIN)/spades.py: ;
 	$(eval SPADES_BUILD=$(TOOLS)/spades/build)
