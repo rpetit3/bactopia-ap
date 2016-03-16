@@ -28,12 +28,13 @@ def stats(fastq, output_file):
     return fastq_stats
 
 
-def cleanup(fastq, stats_file, is_paired, output_file):
+def cleanup(fastq, stats_file, is_paired, is_miseq, output_file):
     """Read stats_file, and remove low quality reads and reduce coverage."""
     paired = '--paired' if is_paired else ''
+    miseq = '--miseq' if is_miseq else ''
     fastq_cleanup = shared.pipe_commands(
         ['zcat', fastq],
-        [BIN['fastq_cleanup'], '--stats', stats_file, paired],
+        [BIN['fastq_cleanup'], '--stats', stats_file, paired, miseq],
         ['gzip', '-'],
         stdout=output_file
     )
