@@ -66,7 +66,8 @@ class Stats {
         double get_std(vector<double> array, double mean) {
             double temp = 0;
             for (unsigned int i = 0; i < read_total; i++) {
-                temp += (array[i] - mean) * (array[i] - mean);
+
+                temp += pow(((array[i]-phred) - mean), 2);
             }
             return sqrt(temp / read_total);
         }
@@ -84,7 +85,7 @@ class Stats {
         double get_std(vector<unsigned int> array, double mean) {
             double temp = 0;
             for (unsigned int i = 0; i < read_total; i++) {
-                temp += (array[i] - mean) * (array[i] - mean);
+                temp += pow((array[i] - mean), 2);
             }
             return sqrt(temp / read_total);
         }
@@ -132,7 +133,7 @@ class Stats {
 
         void qual_stats(void) {
             sort(per_read_qual.begin(), per_read_qual.end());
-            qual_mean = (qual_sum / read_total);
+            qual_mean = (qual_sum / read_total) - phred;
             qual_std = get_std(per_read_qual, qual_mean);
             qual_25th = get_percentile(per_read_qual, per_read_qual.size(), 0.25) - phred;
             qual_median = get_percentile(per_read_qual, per_read_qual.size(), 0.50) - phred;
