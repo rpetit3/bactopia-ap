@@ -1,10 +1,17 @@
 '''
-    Author: Robert A Petit III
+Author: Robert A Petit III
 
-    A group of shared methods between tasks.
+A group of shared methods between tasks.
 '''
 import os
 import subprocess
+
+
+def gziplines(fname):
+    """Use zcat to deliver lines from gzipped input."""
+    f = subprocess.Popen(['zcat', fname], stdout=subprocess.PIPE)
+    for line in f.stdout:
+        yield line
 
 
 def run_command(cmd, stdout=False, stderr=False, verbose=True):
