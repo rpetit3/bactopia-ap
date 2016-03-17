@@ -1,0 +1,144 @@
+#! /usr/bin/env python
+""" Create a job script for a file stored on S3. """
+
+if __name__ == '__main__':
+    import os
+    import sys
+    import argparse as ap
+
+    from staphopia.config import *
+
+    parser = ap.ArgumentParser(
+        prog='create_job_script',
+        conflict_handler='resolve',
+        description=('Create a SGE usable script to submit a FASTQ file '
+                     'through the pipeline. Print to STDOUT.'))
+    group1 = parser.add_argument_group('Options', '')
+    group1.add_argument('--working_dir', metavar="STR", type=str, default='./',
+                        help='Working directory to execute script from.')
+    group1.add_argument('--processors', metavar="INT", type=int, default=1,
+                        help='Number of processors to use.')
+    group1.add_argument('--sample_tag', metavar="STR", type=str, default=False,
+                        help='Optional: Sample tag of the input')
+    group1.add_argument('--paired', action='store_true', default=False,
+                        help='Input is interleaved paired end reads.')
+    group1.add_argument('--log_times', action='store_true', default=False,
+                        help='Write task run times to file (Default: STDERR).')
+    group2 = parser.add_argument_group('S3 Related', '')
+    group2.add_argument('--s3_file', metavar="STR", type=str, default=False,
+                        help='S3 input FASTQ file to download.')
+    group2.add_argument('--s3_file_bucket', metavar="STR", type=str,
+                        help='S3 input file bucket.')
+    group2.add_argument('--s3_upload', action='store_true', default=False,
+                        help='Upload results to S3 bucket.')
+    group2.add_argument('--s3_bucket', metavar="STR", type=str,
+                        default='staphopia-samples',
+                        help='S3 bucket to upload results to.')
+    group2.add_argument('--s3_bucket_path', metavar="STR", type=str,
+                        default='', help='Path to upload results to.')
+    group3 = parser.add_argument_group('Help', '')
+    group3.add_argument('-h', '--help', action='help',
+                        help='Show this help message and exit')
+    group3.add_argument('--version', action='version', version='%(prog)s v0.1',
+                        help='Show program\'s version number and exit')
+
+    if len(sys.argv) == 1:
+        parser.print_usage()
+        sys.exit(1)
+
+    args = parser.parse_args()
+
+    # Job Constants -----------------------------------------------------------
+    IS_PAIRED = '--paired' if args.paired else ''
+    SAMPLE_TAG = '--sample_tag ' + args.sample_tag if args.sample_tag else ''
+    LOG_TIMES = '--log_times' if args.log_times else ''
+
+    JOB_SCRIPT = '\n'.join([
+        '#! /bin/bash',
+        '#$ -V',
+        '#$ -N j{0}'.format(args.sample_tag),
+        '#$ -S /bin/bash',
+        '#$ -pe orte {0}'.format(args.processors),
+        '#$ -l h_rt=01:30:00'
+        '',
+        '# Create Working Directory if it does not exist',
+        'WORKING_DIR={0}'.format(args.working_dir),
+        'if [ ! -d "$WORKING_DIR" ]; then',
+        'mkdir -p $WORKING_DIR/logs',
+        'fi',
+        '',
+        '# navigate to the working directory',
+        'cd $WORKING_DIR',
+        '',
+        '#$ -o /staphopia/ebs/logs/{0}.stdout'.format(args.sample_tag),
+        '#$ -e /staphopia/ebs/logs/{0}.stderr'.format(args.sample_tag),
+        '',
+        '# Environment Variables',
+        'export PATH={0}:{1}:{2}:$PATH'.format(
+            PATH, PIPELINE_PATH, THIRD_PARTY_PATH
+        ),
+        'export PYTHONPATH={0}:{1}:{2}:$PYTHONPATH'.format(
+            BASE_DIR, PYTHON_REQS, VCFANNOTATOR
+        ),
+        'export OMP_NUM_THREADS={0}'.format(
+            (1 if args.processors - 1 == 0 else args.processors - 1)
+        ),
+        'export OMP_THREAD_LIMIT={0}'.format(args.processors),
+        '',
+        '# Download file from S3',
+        'while [ ! -f {0}/{1} ]'.format(
+            args.working_dir,
+            os.path.basename(args.s3_file)
+        ),
+        'do',
+        'python {0} --file {1} --bucket {2} --directory {3}'.format(
+            BIN['download'],
+            args.s3_file,
+            args.s3_file_bucket,
+            args.working_dir
+        ),
+        'done',
+        '',
+        '# Run file through pipeline',
+        'python {0}/submit_job -i {1} -p {2} {3} {4} {5}'.format(
+            PIPELINE_PATH,
+            os.path.basename(args.s3_file),
+            args.processors,
+            IS_PAIRED,
+            SAMPLE_TAG,
+            LOG_TIMES
+        ),
+        '',
+        '# Upload analysis results to S3',
+        'python {0} --directory {1} --bucket {2} --bucket_path {3}/{4}'.format(
+            BIN['upload-directory'],
+            args.working_dir,
+            args.s3_bucket,
+            args.s3_bucket_path,
+            args.sample_tag
+        ),
+        '',
+        '# Cleanup duplicates',
+        'python {0} --original_file {1} --original_bucket {2} '
+        '--final_file {3}/{4}/{5} --final_bucket {6}'.format(
+            BIN['cleanup'],
+            args.s3_file,
+            args.s3_file_bucket,
+            args.s3_bucket_path,
+            args.sample_tag,
+            os.path.basename(args.s3_file),
+            args.s3_bucket,
+        ),
+        '',
+        '# Remove Directory',
+        'python {0} --directory {1} --bucket {2} --bucket_path {3}/{4} '
+        '--delete_local'.format(
+            BIN['compare-directory'],
+            args.working_dir,
+            args.s3_bucket,
+            args.s3_bucket_path,
+            args.sample_tag
+        ),
+    ])
+
+    print JOB_SCRIPT
