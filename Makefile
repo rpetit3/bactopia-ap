@@ -6,11 +6,14 @@ LIBS=$(PWD)/libs
 TOOLS=$(PWD)/tools
 TEST_DATA := https://s3.amazonaws.com/analysis-pipeline/test-data
 
-all: config python aspera staphopia fastq assembly mlst sccmec jellyfish variants annotation;
+all: config python staphopia download tools;
 
 config: ;
 	sed -i 's#^BASE_DIR.*#BASE_DIR = "$(PWD)"#' staphopia/config.py
 
+download: download-tools download-uniref90
+
+tools: download aspera staphopia fastq assembly mlst sccmec jellyfish variants annotation ;
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
@@ -19,6 +22,26 @@ python: $(LIBS)/python/easy_install.py ;
 $(LIBS)/python/easy_install.py: ;
 	pip install --target $(LIBS)/python -r $(PWD)/requirements.txt
 
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+download-tools: $(PWD)/tools.tar.gz $(TOOLS)/spades/SPAdes-3.7.1-Linux.tar.gz ;
+$(PWD)/tools.tar.gz: ;
+	wget https://www.dropbox.com/s/0yv3xq83rt8jnt9/tools.tar.gz
+
+$(TOOLS)/spades/SPAdes-3.7.1-Linux.tar.gz: $(PWD)/tools.tar.gz ;
+	tar -xvf $^
+	touch $@
+
+download-uniref90: staphopia $(PWD)/data/annotation/bacteria-uniref90.prokka $(PWD)/data/annotation/bacteria-uniref90.tab;
+$(PWD)/data/annotation/bacteria-uniref90.prokka: ;
+	wget -O $(PWD)/data/annotation/bacteria-uniref90.prokka.bz2 https://www.dropbox.com/s/du49as5bu3fxwt8/bacteria-uniref90.prokka.bz2
+	bunzip2 $(PWD)/data/annotation/bacteria-uniref90.prokka.bz2
+	touch $@
+
+$(PWD)/data/annotation/bacteria-uniref90.tab: $(PWD)/data/annotation/bacteria-uniref90.prokka ;
+	$(BIN)/fasta-to-tab $^ > $@
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
@@ -51,11 +74,11 @@ staphopia-python: $(LIBS)/python/staphopia
 $(LIBS)/python/staphopia: ;
 	ln -s $(PWD)/staphopia $(LIBS)/python/staphopia
 
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 fastq: $(BIN)/fastq-validator $(BIN)/fastq-stats $(BIN)/fastq-interleave ;
-
 $(BIN)/fastq-validator: ;
 	$(eval FASTQ_BUILD=$(TOOLS)/fastq-validator/build)
 	rm -rf $(FASTQ_BUILD) && mkdir -p $(FASTQ_BUILD)
@@ -78,7 +101,6 @@ $(BIN)/fastq-interleave: ;
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 assembly: $(BIN)/spades.py $(BIN)/assemblathon-stats.pl ;
-
 $(BIN)/spades.py: ;
 	$(eval SPADES_BUILD=$(TOOLS)/spades/build)
 	rm -rf $(SPADES_BUILD) && mkdir -p $(SPADES_BUILD)
@@ -106,7 +128,6 @@ $(BIN)/assemblathon-stats.pl: ;
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 mlst: $(BIN)/makeblastdb $(BIN)/srst2.py $(BIN)/bowtie2 $(BIN)/samtools ;
-
 $(BIN)/makeblastdb: ;
 	$(eval BLAST_BUILD=$(TOOLS)/blast+/build)
 	rm -rf $(BLAST_BUILD) && mkdir -p $(BLAST_BUILD)
@@ -151,7 +172,6 @@ $(BIN)/samtools: ;
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 sccmec: $(BIN)/samtools-1.3 $(BIN)/bedtools;
-
 $(BIN)/samtools-1.3: ;
 	$(eval SAM_BUILD=$(TOOLS)/samtools/build)
 	rm -rf $(SAM_BUILD) && mkdir -p $(SAM_BUILD)
@@ -175,7 +195,6 @@ $(BIN)/bedtools: ;
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 jellyfish: $(BIN)/jellyfish
-
 $(BIN)/jellyfish: ;
 	$(eval JF_BUILD=$(TOOLS)/jellyfish/build)
 	rm -rf $(JF_BUILD) && mkdir -p $(JF_BUILD)
@@ -190,7 +209,6 @@ $(BIN)/jellyfish: ;
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 variants: $(BIN)/bwa $(BIN)/java7 $(BIN)/java8 $(BIN)/picard.jar $(BIN)/GenomeAnalysisTK.jar $(BIN)/vcf-annotator $(BIN)/samtools-1.3;
-
 $(BIN)/bwa: ;
 	$(eval BWA_BUILD=$(TOOLS)/bwa/build)
 	rm -rf $(BWA_BUILD) && mkdir -p $(BWA_BUILD)
@@ -239,7 +257,6 @@ $(BIN)/vcf-annotator: ;
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 annotation: prokka barrnap prokka-setupdb;
-
 prokka: $(BIN)/prokka ;
 $(BIN)/prokka: ;
 	$(eval PROKKA_BUILD=$(TOOLS)/prokka/build)
@@ -285,7 +302,12 @@ test: ;
 clean: clean-config ;
 	ls $(BIN) | xargs -I {} rm $(BIN)/{}
 	ls $(LIBS)/python | xargs -I {} rm -rf $(LIBS)/python/{}
+	cat $(TOOLS)/list.txt | xargs -I {} rm -rf {}
 	find $(PWD)/tools/ | grep "/build$$" | xargs -I {} rm -rf {}
+
+extra-clean: clean ;
+	rm $(PWD)/tools.tar.gz
+	rm $(PWD)/data/annotation/bacteria-uniref90.*
 
 clean-config: ;
 	sed -i 's#^BASE_DIR.*#BASE_DIR = CHANGE_ME#' staphopia/config.py

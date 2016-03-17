@@ -1,0 +1,45 @@
+#! /usr/bin/env python
+"""
+Convert 2 line per entry FASTA to tab delimited file.
+
+Assumes the header and sequence span two lines.
+
+Example:
+    >SEQUENCE1
+    ATCGCAGTCGATGCATGATCGTCG
+    >SEQUENCE2
+    ATGCTCAGTAGCCGCGTCAGTACG
+
+Will not work (or at least will not print expected results!):
+    >SEQUENCE1
+    ATCATGCTGACTGTC
+    CATGCTGCATGTCGA
+    CATGCATGCTGCATG
+    >SEQUENCE2
+    ACATGCATGCATGCA
+    ACTGCATGATGACAC
+"""
+
+
+if __name__ == '__main__':
+    import argparse as ap
+
+    parser = ap.ArgumentParser(
+        prog='fasta-to-tab',
+        conflict_handler='resolve',
+        description='Convert 2 line per entry FASTA to tab delimited file.')
+    group1 = parser.add_argument_group('Options', '')
+    group1.add_argument('fasta', metavar="FASTA_FILE", type=str,
+                        help='FASTA file with 2 lines per entry.')
+
+    args = parser.parse_args()
+
+    with open(args.fasta, 'r') as fh:
+        while 1:
+            header = fh.readline()
+            if not header:
+                break
+            else:
+                seq_id = header[1:].split(' ')[0]
+                seq = fh.readline().rstrip()
+                print('{0}\t{1}'.format(seq_id, seq))
