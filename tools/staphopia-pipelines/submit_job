@@ -27,18 +27,20 @@ args = parser.parse_args()
 # Configuration ---------------------------------------------------------------
 IS_PAIRED = '--paired' if args.paired else ''
 IS_MISEQ = '--miseq' if args.miseq else ''
-BLASTDB = "assembly/blastdb/assembly"
+BLASTDB = "blastdb/scaffolds"
 CLEAN_FASTQ = args.input_file.replace('.fastq.gz', '.cleanup.fastq.gz')
-ASSEMBLY = args.input_file.replace('.fastq.gz', '.scaffolds.fasta.gz')
+ASSEMBLY = 'analyses/assembly/{0}'.format(
+    args.input_file.replace('.fastq.gz', '.scaffolds.fasta.gz')
+)
 
-TIME_LOG = 'logs/submit_job.time' if args.log_times else sys.stderr
+TIME_LOG = 'logs/time/submit_job.txt' if args.log_times else sys.stderr
 LOG_TIMES = '--log_times' if args.log_times else ''
 # -----------------------------------------------------------------------------
 
 # Pipeline --------------------------------------------------------------------
 
 
-@mkdir('logs')
+@mkdir('logs/time')
 @time_job(TIME_LOG, new_stream=True)
 def fastq_cleanup():
     """Clean up FASTQ file."""
@@ -85,7 +87,7 @@ def call_variants():
         [BIN['call_variants'],
          CLEAN_FASTQ,
          SNP['reference'],
-         '--genbank', SNP['ref_genbank'],
+         SNP['ref_genbank'],
          '-p', str(args.processors),
          '--tag', args.sample_tag,
          IS_PAIRED,
@@ -100,7 +102,10 @@ def call_variants():
 def predict_mlst():
     """Determine sequence type."""
     out, err = shared.run_command(
-        [BIN['predict_mlst'], '-f', CLEAN_FASTQ, '-a', ASSEMBLY, '-p',
+        [BIN['predict_mlst'],
+         '-f', CLEAN_FASTQ,
+         '-a', ASSEMBLY,
+         '-p',
          str(args.processors), LOG_TIMES],
         stdout='logs/predict_mlst.stdout',
         stderr='logs/predict_mlst.stderr',

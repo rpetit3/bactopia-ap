@@ -2,7 +2,6 @@
 """Call SNPs and InDels from the input FASTQ."""
 import json
 import sys
-from os.path import dirname
 
 from ruffus import *
 
@@ -13,7 +12,7 @@ parser = cmdline.get_argparse(description='Call variants from input FASTQ.')
 parser.add_argument("fastq", metavar="INPUT_FASTQ", help="Input FASTQ file")
 parser.add_argument("reference", metavar="REFERENCE_FASTA",
                     help="Input reference FASTA file.")
-parser.add_argument("--genbank", metavar="REFERENCE_GENBANK", default='',
+parser.add_argument("genbank", metavar="REFERENCE_GENBANK", default='',
                     help="Input reference GenBank file.")
 parser.add_argument("-o", "--output", dest="output", type=str,
                     help="Output directory. (Default: ./)", metavar="STR",
@@ -31,9 +30,12 @@ parser.add_argument('--log_times', action='store_true', default=False,
                     help='Write task run times to file (Default: STDERR).', )
 options = parser.parse_args()
 
+NUM_CPU = str(options.processors)
+GATK_DIR = 'analyses/variants/gatk'
+REFERENCE = '{0}/ref.fasta'.format(GATK_DIR)
 TIME_LOG = sys.stderr
 if options.log_times:
-    TIME_LOG = ''.join([options.output, '/logs/call_variants.time'])
+    TIME_LOG = 'logs/time/call_variants.txt'
 # Pipeline --------------------------------------------------------------------
 read_length = options.read_length
 if not options.read_length:
@@ -47,164 +49,57 @@ if not options.read_length:
         # Unknown read length, set to 0 and use BWA aln/samse
         read_length = 0
 
-
-@active_if(options.log_times)
-def create_dir():
-    """Make logs directory if required."""
-    out, err = shared.run_command([
-        'mkdir', ''.join([options.output, '/logs'])
-    ])
-
-
-@mkdir(''.join([options.output, '/variants/completed']))
-@mkdir(''.join([options.output, '/variants/gatk']))
-@transform(options.reference, regex(r"(.*)"), r"\1.bwt")
+@mkdir('logs/time')
+@transform(options.fastq,
+           regex(r"(.*).cleanup.fastq.gz"),
+           r"analyses/variants/\1.variants.vcf.gz")
 @time_job(TIME_LOG, new_stream=True)
-def build_bwa_index(input_file, completed_file):
-    """Align reads using BWA."""
-    variants.bwa_index(options.reference)
+def call_variants(ref, final_vcf):
+    """Call variants."""
+    # Build index will local copy of reference
+    shared.run_command(['rm', '-rf', GATK_DIR])
+    shared.run_command(['mkdir', '-p', GATK_DIR])
+    shared.run_command(['cp', options.reference, REFERENCE])
+    variants.bwa_index(REFERENCE)
+    variants.samtools_faidx(REFERENCE)
+    variants.create_sequence_dictionary(REFERENCE)
 
-
-@follows(build_bwa_index)
-@transform(options.reference, regex(r"(.*)"), r"\1.fai")
-@time_job(TIME_LOG)
-def build_fasta_index(input_file, completed_file):
-    """Align reads using BWA."""
-    variants.samtools_faidx(options.reference)
-
-
-@follows(build_fasta_index)
-@transform(options.reference, regex(r"(.*).fasta"), r"\1.dict")
-@time_job(TIME_LOG)
-def build_fasta_dictionary(input_file, completed_file):
-    """Align reads using BWA."""
-    variants.create_sequence_dictionary(options.reference, completed_file)
-
-
-@follows(build_fasta_dictionary)
-@transform(options.fastq, regex(r"(.*)"),
-           ''.join([options.output, '/', r"variants/completed/bwa.sam"]))
-@time_job(TIME_LOG)
-def bwa(input_file, completed_file):
-    """Align reads using BWA."""
-    output_sam = completed_file.replace('completed', 'gatk')
-
+    # Align reads
+    sam = '{0}/bwa.sam'.format(GATK_DIR)
     if (read_length > 70):
         # Run BWA mem
-        variants.bwa_mem(options.fastq, output_sam, str(options.processors),
-                         options.reference, options.paired, completed_file)
+        variants.bwa_mem(options.fastq, sam, NUM_CPU, REFERENCE,
+                         options.paired)
     else:
         # Run BWA aln/samse
-        sai = output_sam.replace('sam', 'sai')
-        variants.bwa_aln(options.fastq, sai, output_sam,
-                         str(options.processors), options.reference,
-                         completed_file)
+        sai = sam.replace('sam', 'sai')
+        variants.bwa_aln(options.fastq, sai, sam, NUM_CPU, REFERENCE)
 
+    # Sam to Bam
+    sorted_bam = '{0}/sorted.bam'.format(GATK_DIR)
+    variants.add_or_replace_read_groups(sam, sorted_bam)
 
-@follows(bwa)
-@transform(bwa, regex(r"(.*)"),
-           ''.join([options.output, '/', r"variants/completed/sorted.bam"]))
-@time_job(TIME_LOG)
-def add_or_replace_read_groups(input_file, completed_file):
-    """Place each read into a read group for GATK processing."""
-    input_sam = input_file.replace('completed', 'gatk')
-    sorted_bam = completed_file.replace('completed', 'gatk')
-    variants.add_or_replace_read_groups(input_sam, sorted_bam, completed_file)
+    # Alignment filtering/improvement
+    deduped_bam = '{0}/deduped.bam'.format(GATK_DIR)
+    intervals = '{0}/deduped.intervals'.format(GATK_DIR)
+    realigned_bam = '{0}/realigned.bam'.format(GATK_DIR)
+    variants.mark_duplicates(sorted_bam, deduped_bam)
+    variants.realigner_target_creator(deduped_bam, intervals, REFERENCE)
+    variants.indel_realigner(intervals, deduped_bam, realigned_bam, REFERENCE)
 
+    # Call variants
+    raw_vcf = '{0}/raw.vcf'.format(GATK_DIR)
+    variants.haplotype_caller(realigned_bam, raw_vcf, NUM_CPU, REFERENCE)
 
-@follows(add_or_replace_read_groups)
-@transform(add_or_replace_read_groups, regex(r"(.*)"),
-           ''.join([options.output, '/', r"variants/completed/deduped.bam"]))
-@time_job(TIME_LOG)
-def mark_duplicates(input_file, completed_file):
-    """Mark identical reads as duplicates for GATK to ignore."""
-    sorted_bam = input_file.replace('completed', 'gatk')
-    deduped_bam = completed_file.replace('completed', 'gatk')
-    variants.mark_duplicates(sorted_bam, deduped_bam, completed_file)
+    # Filter and annotate variants
+    filtered_vcf = '{0}/filtered.vcf'.format(GATK_DIR)
+    annotated_vcf = '{0}/annotated.vcf'.format(GATK_DIR)
+    variants.variant_filtration(raw_vcf, filtered_vcf, REFERENCE)
+    variants.vcf_annotator(filtered_vcf, annotated_vcf, options.genbank)
 
-
-@follows(mark_duplicates)
-@transform(mark_duplicates, regex(r"(.*).bam"), r"\1.intervals")
-@time_job(TIME_LOG)
-def realigner_target_creator(input_file, completed_file):
-    """Create a list of InDel regions to be realigned."""
-    deduped_bam = input_file.replace('completed', 'gatk')
-    intervals = completed_file.replace('completed', 'gatk')
-    variants.realigner_target_creator(deduped_bam, intervals,
-                                      options.reference, completed_file)
-
-
-@follows(realigner_target_creator)
-@transform(realigner_target_creator, regex(r"(.*)"),
-           ''.join([options.output, '/', r"variants/completed/realigned.bam"]))
-@time_job(TIME_LOG)
-def indel_realigner(input_file, completed_file):
-    """Realign InDel regions."""
-    intervals = input_file.replace('completed', 'gatk')
-    deduped_bam = intervals.replace('intervals', 'bam')
-    realigned_bam = completed_file.replace('completed', 'gatk')
-    variants.indel_realigner(intervals, deduped_bam, realigned_bam,
-                             options.reference, completed_file)
-
-
-@follows(indel_realigner)
-@transform(indel_realigner, regex(r"(.*)"),
-           ''.join([options.output, '/', r"variants/completed/raw.vcf"]))
-@time_job(TIME_LOG)
-def haplotype_caller(input_file, completed_file):
-    """Call variants (SNPs and InDels)."""
-    realigned_bam = input_file.replace('completed', 'gatk')
-    output_vcf = completed_file.replace('completed', 'gatk')
-    variants.haplotype_caller(realigned_bam, output_vcf,
-                              str(options.processors), options.reference,
-                              completed_file)
-
-
-@follows(haplotype_caller)
-@transform(haplotype_caller, regex(r"(.*)"),
-           ''.join([options.output, '/', r"variants/completed/filtered.vcf"]))
-@time_job(TIME_LOG)
-def variant_filtration(input_file, completed_file):
-    """Apply filters to the input VCF."""
-    input_vcf = input_file.replace('completed', 'gatk')
-    filtered_vcf = completed_file.replace('completed', 'gatk')
-    variants.variant_filtration(input_vcf, filtered_vcf, options.reference,
-                                completed_file)
-
-
-@follows(variant_filtration)
-@transform(variant_filtration, regex(r"(.*)"),
-           ''.join([options.output, '/', r"variants/completed/annotated.vcf"]))
-@time_job(TIME_LOG)
-def vcf_annotator(input_file, completed_file):
-    """Annotate the variants."""
-    filtered_vcf = input_file.replace('completed', 'gatk')
-    annotated_vcf = completed_file.replace('completed', 'gatk')
-    if options.genbank:
-        variants.vcf_annotator(filtered_vcf, annotated_vcf, options.genbank,
-                               completed_file)
-    else:
-        variants.copy_vcf(filtered_vcf, annotated_vcf, completed_file)
-
-
-@follows(vcf_annotator)
-@transform(vcf_annotator, regex(r"(.*)"), r"\1.gz")
-@time_job(TIME_LOG)
-def move_final_vcf(input_file, completed_file):
-    """Move the final annotated VCF to the root of the project."""
-    annotated_vcf = input_file.replace('completed', 'gatk')
-    final_vcf = '{0}/{1}.variants.vcf.gz'.format(options.output, options.tag)
-    variants.move_final_vcf(annotated_vcf, final_vcf, completed_file)
-
-
-@follows(move_final_vcf)
-@transform(move_final_vcf, regex(r"(.*).vcf.gz"), r"\1.cleanup")
-@time_job(TIME_LOG)
-def cleanup(input_file, completed_file):
-    """Remove all the intermediate files."""
-    base_dir = dirname(input_file.replace('completed', 'gatk'))
-    tar_gz = '{0}/gatk/gatk.tar.gz'.format(dirname(base_dir))
-    variants.cleanup(base_dir, tar_gz, completed_file)
+    # Move final vcf and cleanup
+    shared.run_command(['gzip', '-c', annotated_vcf], stdout=final_vcf)
+    shared.run_command(['rm', '-rf', GATK_DIR])
 
 # -----------------------------------------------------------------------------
 pipeline_run(exceptions_terminate_immediately=True, verbose=5)

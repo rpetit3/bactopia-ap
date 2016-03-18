@@ -5,7 +5,7 @@ import sys
 from ruffus import *
 
 from staphopia.helpers.time_job import time_job
-from staphopia.tasks import assembly, shared
+from staphopia.tasks import assembly
 
 parser = cmdline.get_argparse(description='Assemble Illumina reads')
 parser.add_argument("-f", "--fastq", dest="fastq", help="Input FASTQ file",
@@ -18,64 +18,58 @@ parser.add_argument('--log_times', action='store_true', default=False,
                     help='Write task run times to file (Default: STDERR).', )
 options = parser.parse_args()
 
-TIME_LOG = 'logs/illumina_assembly.time' if options.log_times else sys.stderr
+NUM_CPU = str(options.processors)
+ASSEMBLY_DIR = 'analyses/assembly/spades/'
+TIME_LOG = sys.stderr
+if options.log_times:
+    TIME_LOG = 'logs/time/illumina_assembly.txt'
 # Pipeline --------------------------------------------------------------------
 
-
-@active_if(options.log_times)
-def create_dir():
-    """Make logs directory if required."""
-    out, err = shared.run_command(['mkdir', 'logs'])
-
-
-@mkdir('assembly/spades/spades')
-@transform(options.fastq, regex(r"(.*)"), r"assembly/spades/completed")
-@time_job(TIME_LOG)
-def spades(input_file, output_file):
+@mkdir('logs/time')
+@mkdir('analyses/assembly')
+@mkdir('blastdb')
+@transform(options.fastq,
+           regex(r"(.*).cleanup.fastq.gz"),
+           r"analyses/assembly/\1.contigs.fasta.gz",
+           r"analyses/assembly/\1.scaffolds.fasta.gz",
+           r"analyses/assembly/\1.assembly_graph.fastg.gz")
+@time_job(TIME_LOG, new_stream=True)
+def spades(fastq, contigs, scaffolds, graph):
     """Assemble using Spades."""
-    assembly.spades(input_file, output_file, str(options.processors),
-                    options.paired)
+    assembly.spades(fastq, ASSEMBLY_DIR, NUM_CPU, options.paired)
+    assembly.cleanup_spades(ASSEMBLY_DIR, contigs, scaffolds, graph)
 
 
 @follows(spades)
-@transform(options.fastq, regex(r"(.*).cleanup.fastq.gz"),
-           r"\1.contigs.fasta.gz", r"\1.scaffolds.fasta.gz",
-           r"\1.assembly_graph.fastg.gz")
+@transform(options.fastq,
+           regex(r"(.*).cleanup.fastq.gz"),
+           r"blastdb/scaffolds.nin",
+           r"analyses/assembly/\1.scaffolds.fasta.gz")
 @time_job(TIME_LOG)
-def move_assembly(input_file, contigs, scaffolds, graph):
-    """Copy the Spades assembly to the project root."""
-    spades_dir = "assembly/spades/spades"
-    assembly.move_spades(spades_dir, contigs, scaffolds, graph)
-
-
-@follows(move_assembly)
-@mkdir('assembly/blastdb')
-@transform(options.fastq, regex(r"(.*).cleanup.fastq.gz"),
-           r"assembly/blastdb/completed", r"\1.scaffolds.fasta.gz")
-@time_job(TIME_LOG)
-def makeblastdb(input_file, output_file, scaffolds):
+def makeblastdb(fastq, output, scaffolds):
     """Make a blast database of the Spades assembly."""
-    assembly.makeblastdb(scaffolds, output_file)
+    output_prefix = output.replace(".nin", "")
+    assembly.makeblastdb(scaffolds, 'Assembled scaffolds from SPAdes',
+                         output_prefix)
 
 
 @follows(makeblastdb)
-@transform(options.fastq, regex(r"(.*).cleanup.fastq.gz"),
-           r"\1.assembly.stats")
+@transform(options.fastq,
+           regex(r"(.*).cleanup.fastq.gz"),
+           r"analyses/assembly/results/\1.contigs.json",
+           r"analyses/assembly/results/\1.scaffolds.json")
 @time_job(TIME_LOG)
-def assembly_stats(input_file, output_file):
+def assembly_stats(fastq, contig_stats, scaffold_stats):
     """Calculate assembly statistics."""
-    contigs = input_file.replace('cleanup.fastq.gz', 'contigs.fasta.gz')
-    scaffolds = input_file.replace('cleanup.fastq.gz', 'scaffolds.fasta.gz')
-    assembly.assembly_stats(contigs, output_file)
-    assembly.assembly_stats(scaffolds, output_file)
+    contigs = 'analyses/assembly/{0}'.format(
+        fastq.replace('cleanup.fastq.gz', 'contigs.fasta.gz')
+    )
+    scaffolds = 'analyses/assembly/{0}'.format(
+        fastq.replace('cleanup.fastq.gz', 'scaffolds.fasta.gz')
+    )
+    assembly.assembly_stats(contigs, contig_stats)
+    assembly.assembly_stats(scaffolds, scaffold_stats)
 
-
-@follows(assembly_stats)
-@transform(spades, regex(r"(.*)"), r"\1.cleanup")
-@time_job(TIME_LOG)
-def cleanup_spades(input_file, output_file):
-    """Clean up Spades output."""
-    assembly.cleanup_spades(input_file, output_file)
 
 # -----------------------------------------------------------------------------
 pipeline_run(exceptions_terminate_immediately=True, verbose=5)

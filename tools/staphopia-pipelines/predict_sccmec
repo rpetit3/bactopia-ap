@@ -22,9 +22,12 @@ parser.add_argument('--paired', action='store_true', default=False,
 parser.add_argument('--log_times', action='store_true', default=False,
                     help='Write task run times to file (Default: STDERR).', )
 options = parser.parse_args()
-blastdb_exists = options.blastdb + ".out"
+blastdb_exists = options.blastdb + ".nin"
 
-TIME_LOG = 'logs/predict_sccmec.time' if options.log_times else sys.stderr
+NUM_CPU = str(options.processors)
+TIME_LOG = sys.stderr
+if options.log_times:
+    TIME_LOG = 'logs/time/predict_sccmec.time'
 # Pipeline --------------------------------------------------------------------
 read_length = options.read_length
 if not options.read_length:
@@ -38,70 +41,45 @@ if not options.read_length:
         # Unknown read length, set to 0 and use BWA aln/samse
         read_length = 0
 
-
-@active_if(options.log_times)
-def create_dir():
-    """Make logs directory if required."""
-    out, err = shared.run_command(['mkdir', 'logs'])
-
-
-@mkdir('sccmec')
-@transform(blastdb_exists, regex(r"(.*)"), r"sccmec/completed.proteins")
+@mkdir('logs/time')
+@mkdir('analyses/sccmec')
+@transform(blastdb_exists, regex(r"(.*)"), r"analyses/sccmec/proteins.json")
 @time_job(TIME_LOG, new_stream=True)
-def blast_genes(blastdb, output_file):
+def blast_proteins(blastdb, output_file):
     """Blast SCCmec related genes against given blast database."""
-    sccmec.blast_genes(options.blastdb, output_file, str(options.processors))
+    sccmec.blast_proteins(options.blastdb, output_file, NUM_CPU)
 
 
-@follows(blast_genes)
-@transform(blastdb_exists, regex(r"(.*)"), r"sccmec/completed.primers")
+@follows(blast_proteins)
+@transform(blastdb_exists, regex(r"(.*)"), r"analyses/sccmec/primers.json")
 @time_job(TIME_LOG)
 def blast_primers(blastdb, output_file):
     """Blast SCCmec related primers against given blast database."""
     sccmec.blast_primers(options.blastdb, output_file)
 
 
-@mkdir('sccmec/cassettes')
 @follows(blast_primers)
-@transform(options.fastq, regex(r"(.*)"), r"sccmec/cassettes/completed.sam")
+@transform(options.fastq,
+           regex(r"(.*)"),
+           r"analyses/sccmec/cassette-coverages.gz")
 @time_job(TIME_LOG)
-def bwa(input_file, completed_file):
+def cassette_coverages(fastq, coverage_bed_output):
     """Align reads using BWA."""
-    output_sam = completed_file.replace('completed', 'sccmec')
+    shared.run_command(['mkdir', 'sccmec/'])
+    sam = 'sccmec/sccmec.sam'
+    bam = 'sccmec/sccmec.bam'
 
     if (read_length > 70):
         # Run BWA mem
-        sccmec.bwa_mem(options.fastq, output_sam, str(options.processors),
-                       options.paired, completed_file)
+        sccmec.bwa_mem(options.fastq, sam, NUM_CPU, options.paired)
     else:
         # Run BWA aln/samse
-        sai = output_sam.replace('sam', 'sai')
-        sccmec.bwa_aln(options.fastq, sai, output_sam, str(options.processors),
-                       completed_file)
+        sai = sam.replace('sam', 'sai')
+        sccmec.bwa_aln(options.fastq, sai, sam, NUM_CPU)
 
-
-@follows(bwa)
-@transform(bwa, regex(r"(.*).sam"), r"\1.bam")
-@time_job(TIME_LOG)
-def sam_to_bam(input_file, output_file):
-    """Convert SAM  to BAM."""
-    sccmec.sam_to_bam(input_file, output_file)
-
-
-@follows(sam_to_bam)
-@transform(sam_to_bam, regex(r"(.*).bam"), r"\1.coverage")
-@time_job(TIME_LOG)
-def genome_coverage_bed(input_file, output_file):
-    """Calculate coverage of the alinged reads."""
-    sccmec.genome_coverage_bed(input_file, output_file)
-
-
-@follows(genome_coverage_bed)
-@transform(genome_coverage_bed, regex(r"(.*).coverage"), r"\1.cleanup")
-@time_job(TIME_LOG)
-def cleanup_mapping(input_file, output_file):
-    """Clean up all the intermediate files."""
-    sccmec.cleanup_mapping(output_file)
+    sccmec.sam_to_bam(sam, bam)
+    sccmec.genome_coverage_bed(bam, coverage_bed_output)
+    shared.run_command(['rm', '-rf', 'sccmec/'])
 
 # -----------------------------------------------------------------------------
 pipeline_run(exceptions_terminate_immediately=True, verbose=5)

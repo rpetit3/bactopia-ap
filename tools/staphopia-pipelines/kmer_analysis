@@ -5,7 +5,7 @@ import sys
 from ruffus import *
 
 from staphopia.helpers.time_job import time_job
-from staphopia.tasks import kmer, shared
+from staphopia.tasks import kmer
 
 parser = cmdline.get_argparse(description='Count kmers in a FASTQ file.')
 parser.add_argument("-f", "--fastq", dest="fastq", help="Input FASTQ file",
@@ -16,21 +16,20 @@ parser.add_argument('--log_times', action='store_true', default=False,
                     help='Write task run times to file (Default: STDERR).', )
 options = parser.parse_args()
 
-TIME_LOG = 'logs/kmer_analysis.time' if options.log_times else sys.stderr
+TIME_LOG = sys.stderr
+if options.log_times:
+    TIME_LOG = 'logs/time/kmer_analysis.txt'
 # Pipeline --------------------------------------------------------------------
 
-
-@active_if(options.log_times)
-def create_dir():
-    """Make logs directory if required."""
-    out, err = shared.run_command(['mkdir', 'logs'])
-
-
-@transform(options.fastq, regex(r"(.*).cleanup.fastq.gz"), r"\1.jf")
+@mkdir('logs/time')
+@mkdir('analyses/kmer')
+@transform(options.fastq,
+           regex(r"(.*).cleanup.fastq.gz"),
+           r"analyses/kmer/\1.jf")
 @time_job(TIME_LOG, new_stream=True)
-def count_and_dump(input_file, output_file):
+def count(fastq, jellyfish):
     """Count kmers using Jellyfish."""
-    kmer.jellyfish_count(input_file, output_file, str(options.processors))
+    kmer.jellyfish_count(fastq, jellyfish, str(options.processors))
 
 # -----------------------------------------------------------------------------
 pipeline_run(exceptions_terminate_immediately=True, verbose=5)

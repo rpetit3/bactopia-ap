@@ -1,11 +1,11 @@
 #! /usr/bin/env python
-""" Determine sequence type of the input sample. """
+"""Determine sequence type of the input sample."""
 import sys
 
 from ruffus import *
 
 from staphopia.helpers.time_job import time_job
-from staphopia.tasks import mlst, shared
+from staphopia.tasks import mlst
 
 parser = cmdline.get_argparse(description='Determine MLST for sample.')
 parser.add_argument("-f", "--fastq", dest="fastq", help="Input FASTQ file",
@@ -18,31 +18,27 @@ parser.add_argument('--log_times', action='store_true', default=False,
                     help='Write task run times to file (Default: STDERR).', )
 options = parser.parse_args()
 
-TIME_LOG = 'logs/predict_mlst.time' if options.log_times else sys.stderr
+TIME_LOG = 'logs/time/predict_mlst.txt' if options.log_times else sys.stderr
 # Pipeline --------------------------------------------------------------------
 
-
-@active_if(options.log_times)
-def create_dir():
-    """ Make logs directory if required. """
-    out, err = shared.run_command(['mkdir', 'logs'])
-
-
-@mkdir('mlst/srst2')
-@transform(options.fastq, regex(r"(.*)"), r"mlst/srst2/completed")
+@mkdir('logs/time')
+@mkdir('analyses/mlst')
+@transform(options.fastq,
+           regex(r"(.*)"),
+           r"analyses/mlst/srst2__mlst__Staphylococcus_aureus__results.txt",
+           r"analyses/mlst/")
 @time_job(TIME_LOG, new_stream=True)
-def srst2(input_file, output_file):
-    """ Use SRST2 to predict sequence type. """
-    mlst.srst2(input_file, output_file, str(options.processors))
+def srst2(fastq, output, out_dir):
+    """Use SRST2 to predict sequence type."""
+    mlst.srst2(fastq, out_dir, str(options.processors))
 
 
 @follows(srst2)
-@mkdir('mlst/blastn')
-@transform(options.assembly, regex(r"(.*)"), r"mlst/blastn/completed")
+@transform(options.assembly, regex(r"(.*)"), r"analyses/mlst/mlst-blastn.json")
 @time_job(TIME_LOG)
-def blast_alleles(input_file, output_file):
-    """ Blast alleles against the assembly. """
-    mlst.blast_alleles(input_file, output_file, str(options.processors))
+def blast_alleles(assembly, output):
+    """Blast alleles against the assembly."""
+    mlst.blast_alleles(assembly, output, str(options.processors))
 
 # -----------------------------------------------------------------------------
 pipeline_run(exceptions_terminate_immediately=True, verbose=5)

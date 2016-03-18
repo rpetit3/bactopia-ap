@@ -18,17 +18,18 @@ def samtools_faidx(fasta):
     )
 
 
-def create_sequence_dictionary(reference, output):
+def create_sequence_dictionary(reference):
     """Index the reference FASTA file."""
+    dictionary = reference.replace('fasta', 'dict')
     shared.run_command([
         BIN['java8'], '-Xmx8g', '-jar', BIN['picardtools'],
         'CreateSequenceDictionary',
         'REFERENCE=' + reference,
-        'OUTPUT=' + output,
+        'OUTPUT=' + dictionary,
     ])
 
 
-def bwa_mem(fastq, output_sam, num_cpu, reference, is_paired, completed_file):
+def bwa_mem(fastq, output_sam, num_cpu, reference, is_paired):
     """Align reads (mean length < 70bp) against reference genome."""
     p = '-p' if is_paired else ''
     shared.run_command(
@@ -36,13 +37,8 @@ def bwa_mem(fastq, output_sam, num_cpu, reference, is_paired, completed_file):
         stdout=output_sam
     )
 
-    if shared.try_to_complete_task(output_sam, completed_file):
-        return True
-    else:
-        raise Exception("bwa mem did not complete successfully.")
 
-
-def bwa_aln(fastq, sai, output_sam, num_cpu, reference, completed_file):
+def bwa_aln(fastq, sai, output_sam, num_cpu, reference,):
     """Align reads (mean length < 70bp) against reference genome."""
     shared.run_command([
         BIN['bwa'], 'aln', '-f', sai, '-t', num_cpu, reference, fastq
@@ -52,13 +48,8 @@ def bwa_aln(fastq, sai, output_sam, num_cpu, reference, completed_file):
         BIN['bwa'], 'samse', '-f', output_sam, reference, sai, fastq
     ])
 
-    if shared.try_to_complete_task(output_sam, completed_file):
-        return True
-    else:
-        raise Exception("bwa aln/samse did not complete successfully.")
 
-
-def add_or_replace_read_groups(input_sam, sorted_bam, completed_file):
+def add_or_replace_read_groups(input_sam, sorted_bam):
     """
     Picard Tools - AddOrReplaceReadGroups.
 
@@ -79,13 +70,8 @@ def add_or_replace_read_groups(input_sam, sorted_bam, completed_file):
         'VALIDATION_STRINGENCY=LENIENT'
     ])
 
-    if shared.try_to_complete_task(sorted_bam, completed_file):
-        return True
-    else:
-        raise Exception("AddOrReplaceReadGroups didn't complete successfully.")
 
-
-def mark_duplicates(sorted_bam, deduped_bam, completed_file):
+def mark_duplicates(sorted_bam, deduped_bam):
     """
     GATK Best Practices - Mark Duplicates.
 
@@ -103,12 +89,6 @@ def mark_duplicates(sorted_bam, deduped_bam, completed_file):
         'VALIDATION_STRINGENCY=LENIENT'
     ])
 
-    if shared.try_to_complete_task(deduped_bam, completed_file):
-        build_bam_index(deduped_bam)
-        return True
-    else:
-        raise Exception("MarkDuplicates didn't complete successfully.")
-
 
 def build_bam_index(bam):
     """
@@ -123,8 +103,7 @@ def build_bam_index(bam):
     ])
 
 
-def realigner_target_creator(deduped_bam, intervals, reference,
-                             completed_file):
+def realigner_target_creator(deduped_bam, intervals, reference):
     """
     GATK Best Practices - Realign Indels.
 
@@ -139,14 +118,8 @@ def realigner_target_creator(deduped_bam, intervals, reference,
         '-o', intervals
     ])
 
-    if shared.try_to_complete_task(intervals, completed_file):
-        return True
-    else:
-        raise Exception("RealignerTargetCreator didn't complete successfully.")
 
-
-def indel_realigner(intervals, deduped_bam, realigned_bam, reference,
-                    completed_file):
+def indel_realigner(intervals, deduped_bam, realigned_bam, reference):
     """
     GATK Best Practices - Realign Indels.
 
@@ -161,14 +134,8 @@ def indel_realigner(intervals, deduped_bam, realigned_bam, reference,
         '-targetIntervals', intervals
     ])
 
-    if shared.try_to_complete_task(realigned_bam, completed_file):
-        return True
-    else:
-        raise Exception("IndelRealigner did not complete successfully.")
 
-
-def haplotype_caller(realigned_bam, output_vcf, num_cpu, reference,
-                     completed_file):
+def haplotype_caller(realigned_bam, output_vcf, num_cpu, reference):
     """
     GATK Best Practices - Call Variants.
 
@@ -186,13 +153,9 @@ def haplotype_caller(realigned_bam, output_vcf, num_cpu, reference,
         '-rf', 'BadCigar',
         '-nct', num_cpu
     ])
-    if shared.try_to_complete_task(output_vcf, completed_file):
-        return True
-    else:
-        raise Exception("HaplotypeCaller did not complete successfully.")
 
 
-def variant_filtration(input_vcf, filtered_vcf, reference, completed_file):
+def variant_filtration(input_vcf, filtered_vcf, reference):
     """Apply filters to the input VCF."""
     shared.run_command([
         BIN['java7'], '-Xmx8g', '-jar', BIN['gatk'],
@@ -210,13 +173,8 @@ def variant_filtration(input_vcf, filtered_vcf, reference, completed_file):
         '--filterName', 'LowGQ'
     ])
 
-    if shared.try_to_complete_task(filtered_vcf, completed_file):
-        return True
-    else:
-        raise Exception("VariantFiltration did not complete successfully.")
 
-
-def vcf_annotator(filtered_vcf, annotated_vcf, genbank, completed_file):
+def vcf_annotator(filtered_vcf, annotated_vcf, genbank):
     """Annotate called SNPs/InDel."""
     shared.run_command(
         [BIN['vcf_annotator'],
@@ -224,49 +182,3 @@ def vcf_annotator(filtered_vcf, annotated_vcf, genbank, completed_file):
          '--vcf', filtered_vcf],
         stdout=annotated_vcf
     )
-
-    if shared.try_to_complete_task(annotated_vcf, completed_file):
-        return True
-    else:
-        raise Exception("vcf-annotator did not complete successfully.")
-
-
-def copy_vcf(filtered_vcf, annotated_vcf, completed_file):
-    """Annotate called SNPs/InDel."""
-    shared.run_command(
-        ['cp', filtered_vcf, annotated_vcf],
-    )
-
-    if shared.try_to_complete_task(annotated_vcf, completed_file):
-        return True
-    else:
-        raise Exception("Could not copy filtered VCF successfully.")
-
-
-def move_final_vcf(annotated_vcf, compressed_vcf, completed_file):
-    """Move the final VCF to the project root."""
-    shared.run_command(
-        ['gzip', '-c', annotated_vcf],
-        stdout=compressed_vcf
-    )
-
-    if shared.try_to_complete_task(compressed_vcf, completed_file):
-        return True
-    else:
-        raise Exception("final vcf gzip did not complete successfully.")
-
-
-def cleanup(base_dir, tar_gz, completed_file):
-    """Clean up all the intermediate files."""
-    remove_these = ['*.bam', '*.bai', '*.intervals', '*.sam', '*.sai']
-    for name in remove_these:
-        shared.find_and_remove_files(base_dir, name)
-
-    gatk_files = shared.find_files(base_dir, '*', '1', '1')
-    if shared.compress_and_remove(tar_gz, gatk_files):
-        if shared.try_to_complete_task(tar_gz, completed_file):
-            return True
-        else:
-            raise Exception("Unable to complete GATK clean up.")
-    else:
-        raise Exception("Cannot compress GATK output, please check.")

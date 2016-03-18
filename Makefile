@@ -28,9 +28,9 @@ $(LIBS)/python/easy_install.py: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 download-tools: $(PWD)/tools.tar.gz $(TOOLS)/spades/SPAdes-3.7.1-Linux.tar.gz ;
 $(PWD)/tools.tar.gz: ;
-	wget https://www.dropbox.com/s/0yv3xq83rt8jnt9/tools.tar.gz
+	wget https://www.dropbox.com/s/b3tkucnm3tvoe9z/tools.tar
 
-$(TOOLS)/spades/SPAdes-3.7.1-Linux.tar.gz: $(PWD)/tools.tar.gz ;
+$(TOOLS)/spades/SPAdes-3.7.1-Linux.tar.gz: $(PWD)/tools.tar ;
 	tar -xvf $^
 	touch $@
 
@@ -111,16 +111,9 @@ $(BIN)/spades.py: ;
 $(BIN)/assemblathon-stats.pl: ;
 	$(eval ASTATS_BUILD=$(TOOLS)/assemblathon-stats/build)
 	rm -rf $(ASTATS_BUILD) && mkdir -p $(ASTATS_BUILD)
-	tar -C $(ASTATS_BUILD) -xzvf $(TOOLS)/assemblathon-stats/assemblathon-stats-0.1.tar.gz
-	mv $(ASTATS_BUILD)/assemblathon2-analysis-0.1 $(ASTATS_BUILD)/assemblathon-stats
+	tar -C $(ASTATS_BUILD) -xzvf $(TOOLS)/assemblathon-stats/assemblathon-stats-0.2.tar.gz
+	mv $(ASTATS_BUILD)/assemblathon2-analysis-0.2 $(ASTATS_BUILD)/assemblathon-stats
 	sed -i 's=^use strict;=use lib "$(ASTATS_BUILD)/assemblathon-stats";\nuse strict;=' $(ASTATS_BUILD)/assemblathon-stats/assemblathon_stats.pl
-	tar -C $(ASTATS_BUILD) -xzvf $(TOOLS)/assemblathon-stats/JSON-2.90.tar.gz
-	mv $(ASTATS_BUILD)/JSON-2.90 $(ASTATS_BUILD)/JSON
-	cd $(ASTATS_BUILD)/JSON && perl Makefile.PL PREFIX=$(ASTATS_BUILD)/JSON && cd $(PWD)
-	make -C $(ASTATS_BUILD)/JSON
-	make -C $(ASTATS_BUILD)/JSON install
-	ln -s $(ASTATS_BUILD)/JSON/lib/JSON.pm $(ASTATS_BUILD)/assemblathon-stats/JSON.pm
-	ln -s $(ASTATS_BUILD)/JSON/lib/JSON $(ASTATS_BUILD)/assemblathon-stats/JSON
 	ln -s $(ASTATS_BUILD)/assemblathon-stats/assemblathon_stats.pl $@
 
 
@@ -131,7 +124,7 @@ mlst: $(BIN)/makeblastdb $(BIN)/srst2.py $(BIN)/bowtie2 $(BIN)/samtools ;
 $(BIN)/makeblastdb: ;
 	$(eval BLAST_BUILD=$(TOOLS)/blast+/build)
 	rm -rf $(BLAST_BUILD) && mkdir -p $(BLAST_BUILD)
-	cat $(TOOLS)/blast+/ncbi-blast-2.3.0+-x64-linux.tar.gz.part0* | tar -C $(BLAST_BUILD) -xzvf -
+	tar -C $(BLAST_BUILD) -xzvf $(TOOLS)/blast+/ncbi-blast-2.3.0+-x64-linux.tar.gz
 	mv $(BLAST_BUILD)/ncbi-blast-2.3.0+ $(BLAST_BUILD)/blast
 	ln -s $(BLAST_BUILD)/blast/bin/blastn $(BIN)/blastn
 	ln -s $(BLAST_BUILD)/blast/bin/blastp $(BIN)/blastp
@@ -220,14 +213,14 @@ $(BIN)/bwa: ;
 $(BIN)/java7: ;
 	$(eval JAVA7_BUILD=$(TOOLS)/java7/build)
 	rm -rf $(JAVA7_BUILD) && mkdir -p $(JAVA7_BUILD)
-	cat $(TOOLS)/java7/jdk-7u79-linux-x64.tar.gz.part0* | tar -C $(JAVA7_BUILD) -xzvf -
+	tar -C $(JAVA7_BUILD) -xzvf $(TOOLS)/java7/jdk-7u79-linux-x64.tar.gz
 	mv $(JAVA7_BUILD)/jdk1.7.0_79 $(JAVA7_BUILD)/jdk
 	ln -s $(JAVA7_BUILD)/jdk/bin/java $@
 
 $(BIN)/java8: ;
 	$(eval JAVA8_BUILD=$(TOOLS)/java8/build)
 	rm -rf $(JAVA8_BUILD) && mkdir -p $(JAVA8_BUILD)
-	cat $(TOOLS)/java8/jdk-8u73-linux-x64.tar.gz.part0* | tar -C $(JAVA8_BUILD) -xzvf -
+	tar -C $(JAVA8_BUILD) -xzvf $(TOOLS)/java8/jdk-8u73-linux-x64.tar.gz
 	mv $(JAVA8_BUILD)/jdk1.8.0_73 $(JAVA8_BUILD)/jdk
 	ln -s $(JAVA8_BUILD)/jdk/bin/java $@
 
@@ -261,7 +254,7 @@ prokka: $(BIN)/prokka ;
 $(BIN)/prokka: ;
 	$(eval PROKKA_BUILD=$(TOOLS)/prokka/build)
 	rm -rf $(PROKKA_BUILD) && mkdir -p $(PROKKA_BUILD)
-	cat $(TOOLS)/prokka/prokka-1.11.1.tar.gz.part0* | tar -C $(PROKKA_BUILD) -xzvf -
+	tar -C $(PROKKA_BUILD) -xzvf $(TOOLS)/prokka/prokka-1.11.1.tar.gz
 	mv $(PROKKA_BUILD)/prokka-1.11.1 $(PROKKA_BUILD)/prokka
 	ln -s $(PWD)/data/annotation/staphylococcus-uniref90.prokka $(PROKKA_BUILD)/prokka/db/genus/Staphylococcus-uniref90
 	rm $(PROKKA_BUILD)/prokka/db/kingdom/Bacteria/sprot
@@ -306,7 +299,7 @@ clean: clean-config ;
 	find $(PWD)/tools/ | grep "/build$$" | xargs -I {} rm -rf {}
 
 extra-clean: clean ;
-	rm $(PWD)/tools.tar.gz
+	rm $(PWD)/tools.tar
 	rm $(PWD)/data/annotation/bacteria-uniref90.*
 
 clean-config: ;

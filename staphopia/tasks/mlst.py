@@ -1,40 +1,37 @@
 #! /usr/bin/env python
-""" Ruffus wrappers for MLST related tasks. """
+"""Ruffus wrappers for MLST related tasks."""
+from collections import OrderedDict
+import json
+
 from staphopia.config import BIN, MLST
 from staphopia.tasks import shared
 
 
-def srst2(input_file, output_file, num_cpu):
-    """ Predict MLST using SRST. """
-    output_prefix = output_file.replace('completed', 'srst2')
+def srst2(fastq, out_dir, num_cpu):
+    """Predict MLST using SRST."""
+    prefix = '{0}/srst2'.format(out_dir)
     n_cpu = '"-p {0}"'.format(num_cpu)
     shared.run_command(
-        [BIN['srst2'], '--input_se', input_file, '--mlst_db',
+        [BIN['srst2'], '--input_se', fastq, '--mlst_db',
          MLST['mlst_db'], '--mlst_definitions', MLST['mlst_definitions'],
-         '--other', n_cpu, '--output', output_prefix],
-        stdout=output_prefix + '.log',
-        stderr=output_prefix + '.err'
+         '--other', n_cpu, '--output', prefix],
+        stdout='logs/mlst-srst2.stdout',
+        stderr='logs/mlst-srst2.stderr'
     )
 
     # Remove intermediate files
-    base_dir = output_file.replace('completed', '')
-    shared.find_and_remove_files(base_dir, '*.pileup')
-    shared.find_and_remove_files(base_dir, '*.bam')
-    srst2 = output_prefix + '__mlst__Staphylococcus_aureus__results.txt'
-    if shared.try_to_complete_task(srst2, output_file):
-        return True
-    else:
-        raise Exception("SRST2 did not complete successfully.")
+    shared.find_and_remove_files(out_dir, '*.pileup')
+    shared.find_and_remove_files(out_dir, '*.bam')
 
 
-def blast_alleles(input_file, output_file, num_cpu):
-    """ Blast assembled contigs against MLST blast database. """
+def blast_alleles(input_file, blastn_results, num_cpu):
+    """Blast assembled contigs against MLST blast database."""
     # Decompress contigs
-    shared.run_command(['gunzip', '-k', input_file])
+    shared.run_command(['gunzip', '-k', '-f', input_file])
     input_file = input_file.replace(".gz", "")
     outfmt = "6 sseqid bitscore slen length gaps mismatch pident evalue"
     alleles = ['arcc', 'aroe', 'glpf', 'gmk_', 'pta_', 'tpi_', 'yqil']
-    results = []
+    results = OrderedDict()
 
     for allele in alleles:
         blastdb = '{0}/{1}.tfa'.format(MLST['mlst_blastdb'], allele)
@@ -43,22 +40,26 @@ def blast_alleles(input_file, output_file, num_cpu):
              '-outfmt', outfmt, '-max_target_seqs', '1', '-num_threads',
              num_cpu, '-evalue', '10000']
         )
-        top_hit = blastn[0].split('\n')[0]
+        top_hit = blastn[0].split('\n')[0].split('\t')
 
         # Did not return a hit
-        if not top_hit:
+        if not top_hit[0]:
             top_hit = ['0'] * 9
-            top_hit[0] = allele + '-0'
-            top_hit = '\t'.join(top_hit)
+            top_hit[0] = '{0}-0'.format(allele)
 
-        results.append(top_hit)
-    print results
-    blastn_results = output_file.replace('completed', 'blastn.txt')
-    fh = open(blastn_results, 'w')
-    fh.write('\n'.join(results))
-    fh.close()
+        results[allele] = OrderedDict((
+            ('sseqid', top_hit[0]),
+            ('bitscore', top_hit[1]),
+            ('slen', top_hit[2]),
+            ('length', top_hit[3]),
+            ('gaps', top_hit[4]),
+            ('mismatch', top_hit[5]),
+            ('pident', top_hit[6]),
+            ('evalue', top_hit[7])
+        ))
+
+    with open(blastn_results, 'w') as fh:
+        json.dump(results, fh, indent=4, separators=(',', ': '))
+
     shared.run_command(['rm', input_file])
-    if shared.try_to_complete_task(blastn_results, output_file):
-        return True
-    else:
-        raise Exception("blastn did not complete successfully.")
+

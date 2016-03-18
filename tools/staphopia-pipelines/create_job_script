@@ -83,7 +83,7 @@ if __name__ == '__main__':
         '# Command',
         interleave,
         '',
-        '{0}/submit_job -i {1} -p {2} {3} {4} {5}'.format(
+        '{0}/submit_job -i {1} -p {2} {3} {4} {5} {6}'.format(
             PATH,
             fastq,
             args.processors,

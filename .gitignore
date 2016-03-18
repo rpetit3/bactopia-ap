@@ -19,7 +19,7 @@ bin/pipelines/._run_fastq_cleanup
 tool-data/annotation/bacteria-uniref90.prokka
 
 # Downloaded tools
-tools.tar.gz
+tools.tar
 tools/*/build
 tools/aspera-connect/
 tools/assemblathon-stats/

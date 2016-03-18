@@ -1,11 +1,11 @@
 #! /usr/bin/env python
-""" Run the PROKKA annotation pipeline on an input FASTA file. """
+"""Run the PROKKA annotation pipeline on an input FASTA file."""
 import sys
 
 from ruffus import *
 
 from staphopia.helpers.time_job import time_job
-from staphopia.tasks import annotation, shared
+from staphopia.tasks import annotation
 
 parser = cmdline.get_argparse(description='Annnotate a given FASTA file.')
 parser.add_argument("-f", "--fasta", dest="fasta", help="Input FASTA file",
@@ -18,25 +18,31 @@ parser.add_argument('--log_times', action='store_true', default=False,
                     help='Write task run times to file (Default: STDERR).', )
 options = parser.parse_args()
 
-TIME_LOG = 'logs/annotation.time' if options.log_times else sys.stderr
+TIME_LOG = 'logs/time/annotation.txt' if options.log_times else sys.stderr
 # Pipeline --------------------------------------------------------------------
 
-
-@active_if(options.log_times)
-def create_dir():
-    """ Make logs directory if required. """
-    out, err = shared.run_command(['mkdir', 'logs'])
-
-
-@mkdir('annotation')
+@mkdir('logs/time')
+@mkdir('analyses/annotation')
 @transform(options.fasta,
-           regex(r"(.*)"),
-           r"annotation/" + options.tag + ".gbk.gz")
+           regex(r"(.*).scaffolds.fasta.gz"),
+           r"analyses/annotation/" + options.tag + ".faa.gz")
 @time_job(TIME_LOG, new_stream=True)
 def annotate(input_file, output_file):
-    """ Annotate using PROKKA. """
-    annotation.run_prokka(input_file, 'annotation/', options.tag,
-                          'annotation/annotation', str(options.processors))
+    """Annotate using PROKKA."""
+    annotation.run_prokka(input_file, 'analyses/annotation/', options.tag,
+                          str(options.processors))
+
+@follows(annotate)
+@mkdir('blastdb')
+@transform(annotate,
+           regex(r"(.*)"),
+           r"blastdb/proteins.nin")
+@time_job(TIME_LOG)
+def makeblastdb(faa, output):
+    """Make a blast database of the Spades assembly."""
+    output_prefix = output.replace(".nin", "")
+    annotation.makeblastdb(faa, 'Predicted proteins from Prokka',
+                           output_prefix)
 
 # -----------------------------------------------------------------------------
 pipeline_run(exceptions_terminate_immediately=True, verbose=5)
