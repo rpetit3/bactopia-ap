@@ -15,6 +15,7 @@ total number of downloads.
   * Version 2.25.0
   * Original download link: https://github.com/arq5x/bedtools2/releases/download/v2.25.0/bedtools-2.25.0.tar.gz
 - **[BLAST+](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download)**
+  * *Used for gene annotation (Prokka) and MLST prediction*
   * Version 2.3.0
   * Original download link: ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.3.0/ncbi-blast-2.3.0+-x64-linux.tar.gz
 - **[Bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml)**
@@ -48,14 +49,6 @@ total number of downloads.
   * *Used to predict the MLST of a sample*
   * Version 0.1 mnodified for Staphopia use
   * Original download link: https://github.com/staphopia/srst2/archive/0.1.tar.gz
-
-
-### Perl Modules `perl-modules`
-
-- [JSON.pm](http://search.cpan.org/~makamaka/JSON-2.90/lib/JSON.pm)
-  * *Used to output assemblathon2-stats.pl results in JSON format*
-  * Version 2.9
-  * Original download link: http://search.cpan.org/CPAN/authors/id/M/MA/MAKAMAKA/JSON-2.90.tar.gz
 
 
 ### Python Modules `python-modules`
