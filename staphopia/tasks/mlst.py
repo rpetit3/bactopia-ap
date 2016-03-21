@@ -14,7 +14,7 @@ def srst2(fastq, out_dir, num_cpu):
     shared.run_command(
         [BIN['srst2'], '--input_se', fastq, '--mlst_db',
          MLST['mlst_db'], '--mlst_definitions', MLST['mlst_definitions'],
-         '--other', n_cpu, '--output', prefix],
+         '--mlst_delimiter', '_', '--other', n_cpu, '--output', prefix],
         stdout='logs/mlst-srst2.stdout',
         stderr='logs/mlst-srst2.stderr'
     )
@@ -30,7 +30,7 @@ def blast_alleles(input_file, blastn_results, num_cpu):
     shared.run_command(['gunzip', '-k', '-f', input_file])
     input_file = input_file.replace(".gz", "")
     outfmt = "6 sseqid bitscore slen length gaps mismatch pident evalue"
-    alleles = ['arcc', 'aroe', 'glpf', 'gmk_', 'pta_', 'tpi_', 'yqil']
+    alleles = ['arcC', 'aroE', 'glpF', 'gmk', 'pta', 'tpi', 'yqiL']
     results = OrderedDict()
 
     for allele in alleles:
@@ -45,7 +45,7 @@ def blast_alleles(input_file, blastn_results, num_cpu):
         # Did not return a hit
         if not top_hit[0]:
             top_hit = ['0'] * 9
-            top_hit[0] = '{0}-0'.format(allele)
+            top_hit[0] = '{0}_0'.format(allele)
 
         results[allele] = OrderedDict((
             ('sseqid', top_hit[0]),
@@ -62,4 +62,3 @@ def blast_alleles(input_file, blastn_results, num_cpu):
         json.dump(results, fh, indent=4, separators=(',', ': '))
 
     shared.run_command(['rm', input_file])
-
