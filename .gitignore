@@ -24,6 +24,7 @@ tools/*/build
 tools/aspera-connect/
 tools/assemblathon-stats/
 tools/barrnap/
+tools/bbmap/
 tools/bedtools/
 tools/blast+/
 tools/bowtie2/
@@ -39,4 +40,5 @@ tools/samtools-0.1.18/
 tools/samtools/
 tools/spades/
 tools/srst2/
+tools/trimmomatic/
 tools/vcf-annotator/

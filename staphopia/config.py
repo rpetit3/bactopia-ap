@@ -68,6 +68,11 @@ BIN = {
     'manage': '/staphopia/ebs/staphopia.com/manage.py'.format(PATH),
 }
 
+FASTQ = {
+    'phix': '{0}/fastq-qc/phiX-NC_001422.fasta',
+    'adapters': '{0}/fastq-qc/adapters.fasta'
+}
+
 MLST = {
     'mlst_db': '{0}/mlst/Staphylococcus_aureus.fasta'.format(TOOL_DATA),
     'mlst_definitions': '{0}/mlst/saureus.txt'.format(TOOL_DATA),
@@ -75,14 +80,14 @@ MLST = {
 }
 
 SCCMEC = {
-    'primers': '{0}/sccmec_primers.fasta'.format(TOOL_DATA),
-    'proteins': '{0}/sccmec_proteins.fasta'.format(TOOL_DATA),
+    'primers': '{0}/sccmec/sccmec_primers.fasta'.format(TOOL_DATA),
+    'proteins': '{0}/sccmec/sccmec_proteins.fasta'.format(TOOL_DATA),
     'cassettes': '{0}/sccmec/sccmec_cassettes'.format(TOOL_DATA),
 }
 
 SNP = {
-    'reference': '{0}/snp/n315.fasta'.format(TOOL_DATA),
-    'ref_genbank': '{0}/snp/n315.gb'.format(TOOL_DATA),
+    'reference': '{0}/variants/n315.fasta'.format(TOOL_DATA),
+    'ref_genbank': '{0}/variants/n315.gb'.format(TOOL_DATA),
 }
 
 ANNOTATION = {
