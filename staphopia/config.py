@@ -4,7 +4,7 @@ Static variables used throughout the analysis pipeline.
 
 Please note, the Makefile should update BASE_DIR, but if not you will need to.
 """
-BASE_DIR = CHANGE_ME
+BASE_DIR = "/home/rpetit/staphopia/analysis-pipeline"
 
 # PATH
 PATH = '{0}/bin'.format(BASE_DIR)
@@ -17,8 +17,11 @@ PYTHON_REQS = '{0}/libs/python'.format(BASE_DIR)
 BIN = {
     # FASTQ related
     'fastq_cleanup': '{0}/fastq_cleanup'.format(PATH),
+    'fastq_interleave': '{0}/fastq-interleave'.format(PATH),
     'fastq_stats': '{0}/fastq-stats'.format(PATH),
     'fastq_validator': '{0}/fastq-validator'.format(PATH),
+    'bbduk': '{0}/bbduk.sh'.format(PATH),
+    'trimmomatic': '{0}/trimmomatic.jar'.format(PATH),
 
     # Assembly related
     'kmergenie': '{0}/kmergenie'.format(PATH),
@@ -69,8 +72,8 @@ BIN = {
 }
 
 FASTQ = {
-    'phix': '{0}/fastq-qc/phiX-NC_001422.fasta',
-    'adapters': '{0}/fastq-qc/adapters.fasta'
+    'phix': '{0}/fastq-qc/phiX-NC_001422.fasta'.format(TOOL_DATA),
+    'adapters': '{0}/fastq-qc/adapters.fasta'.format(TOOL_DATA)
 }
 
 MLST = {

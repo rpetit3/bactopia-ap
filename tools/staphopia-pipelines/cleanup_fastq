@@ -8,16 +8,24 @@ from staphopia.helpers.time_job import time_job
 from staphopia.tasks import fastq, shared
 
 parser = cmdline.get_argparse(description='Cleanup FASTQ files')
-parser.add_argument("-f", "--fastq", dest="fastq", required=True,
+parser.add_argument("fastq", help="Compressed FASTQ file (*.tar.gz)",)
+parser.add_argument("-f2", "--fastq2", dest="fastq2",
                     help="Compressed FASTQ file (*.tar.gz)",)
+parser.add_argument('-p', '--processors', metavar="INT", type=int, default=1,
+                    help='Number of processors to use. (Default 1)')
 parser.add_argument('--paired', action='store_true', default=False,
                     help='Input is interleaved paired end reads.', )
 parser.add_argument('--miseq', action='store_true', default=False,
                     help='Input is Illumina MiSeq reads.', )
+parser.add_argument('--sample_tag', dest='sample_tag', default='sample_tag',
+                    help='Optional: Sample tag of input. (Default sample_tag)')
 parser.add_argument('--log_times', action='store_true', default=False,
                     help='Write task run times to file (Default: STDERR).', )
 options = parser.parse_args()
 
+NUM_CPU = str(options.processors)
+OUT_DIR = 'analyses/fastq-qc/'
+BBDUK_LOG = 'logs/fastq_cleanup-bbduk.txt'
 TIME_LOG = sys.stderr
 if options.log_times:
     TIME_LOG = 'logs/time/fastq_cleanup.txt'
@@ -26,24 +34,38 @@ if options.log_times:
 
 @mkdir('logs/time')
 @mkdir('analyses/fastq-stats')
-@transform(options.fastq, regex(r"(.*).fastq.gz"),
-                                r"analyses/fastq-stats/\1.original.fastq.json")
+@transform(
+    options.fastq, regex(r"(.*)"),
+    "analyses/fastq-stats/{0}.original.fastq.json".format(options.sample_tag)
+)
 @time_job(TIME_LOG, new_stream=True)
 def raw_stats(input_file, output_file):
     """Calculate sequence stats of the input FASTQ."""
-    fastq.stats(input_file, output_file)
+    fastq.stats(input_file, output_file, fastq2=options.fastq2)
 
 
 @follows(raw_stats)
-@transform(options.fastq,
-           regex(r"(.*).fastq.gz"),
-           r"\1.cleanup.fastq.gz",
-           r"analyses/fastq-stats/\1.original.fastq.json")
+@transform(raw_stats, regex(r"(.*)"),
+           '{0}.cleanup.fastq.gz'.format(options.sample_tag))
 @time_job(TIME_LOG)
-def cleanup(input_file, output_file, stats_file):
+def cleanup(input_file, output_file):
     """Clean up FASTQ based on statistics."""
-    fastq.cleanup(input_file, stats_file, options.paired, options.miseq,
-                  output_file)
+    shared.run_command(['rm', '-rf', OUT_DIR])
+    shared.run_command(['mkdir', '-p', OUT_DIR])
+
+    # Filter out phiX and adapter sequences
+    nophix = fastq.filter_phix(options.fastq, NUM_CPU, OUT_DIR, BBDUK_LOG,
+                               fastq2=options.fastq2)
+    noadapter = fastq.filter_adapters(nophix['fastq'], NUM_CPU, OUT_DIR,
+                                      fastq2=nophix['fastq2'])
+
+    stats_file = '{0}.stats'.format(noadapter['fastq'])
+    fastq.stats(noadapter['fastq'], stats_file, fastq2=noadapter['fastq2'],
+                compressed=False)
+    fastq.cleanup(noadapter['fastq'], stats_file, options.paired,
+                  options.miseq, output_file, fastq2=noadapter['fastq2'])
+
+    shared.run_command(['rm', '-rf', OUT_DIR])
 
 
 @follows(cleanup)

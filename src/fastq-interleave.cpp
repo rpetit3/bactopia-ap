@@ -6,8 +6,10 @@
 using namespace std;
 
 int main(int argc,char **argv) {
-    ifstream fastq1(argv[1],ios::in);
-    ifstream fastq2(argv[2],ios::in);
+    ifstream fastq1;
+    fastq1.open(argv[1]);
+    ifstream fastq2;
+    fastq2.open(argv[2]);
     string id1, seq1, plus1, qual1;
     string id2, seq2, plus2, qual2;
     while(true) {
