@@ -253,8 +253,8 @@ $(BIN)/GenomeAnalysisTK.jar: ;
 $(BIN)/vcf-annotator: ;
 	$(eval VCF_BUILD=$(TOOLS)/vcf-annotator/build)
 	rm -rf $(VCF_BUILD) && mkdir -p $(VCF_BUILD)
-	tar -C $(VCF_BUILD) -xzvf $(TOOLS)/vcf-annotator/vcf-annotator-0.1.tar.gz
-	mv $(VCF_BUILD)/vcf-annotator-0.1 $(VCF_BUILD)/vcf-annotator
+	tar -C $(VCF_BUILD) -xzvf $(TOOLS)/vcf-annotator/vcf-annotator-0.2.tar.gz
+	mv $(VCF_BUILD)/vcf-annotator-0.2 $(VCF_BUILD)/vcf-annotator
 	ln -s $(VCF_BUILD)/vcf-annotator/vcfannotator $(LIBS)/python/vcfannotator
 	ln -s $(VCF_BUILD)/vcf-annotator/bin/vcf-annotator $@
 

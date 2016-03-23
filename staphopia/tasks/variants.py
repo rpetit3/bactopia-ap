@@ -22,7 +22,7 @@ def create_sequence_dictionary(reference):
     """Index the reference FASTA file."""
     dictionary = reference.replace('fasta', 'dict')
     shared.run_command([
-        BIN['java8'], '-Xmx8g', '-jar', BIN['picardtools'],
+        BIN['java8'], '-Xmx4g', '-jar', BIN['picardtools'],
         'CreateSequenceDictionary',
         'REFERENCE=' + reference,
         'OUTPUT=' + dictionary,
@@ -57,7 +57,7 @@ def add_or_replace_read_groups(input_sam, sorted_bam):
     informative if there are multiple samples.
     """
     shared.run_command([
-        BIN['java8'], '-Xmx8g', '-jar', BIN['picardtools'],
+        BIN['java8'], '-Xmx4g', '-jar', BIN['picardtools'],
         'AddOrReplaceReadGroups',
         'INPUT=' + input_sam,
         'OUTPUT=' + sorted_bam,
@@ -79,7 +79,7 @@ def mark_duplicates(sorted_bam, deduped_bam):
     for GATK to ignore.
     """
     shared.run_command([
-        BIN['java8'], '-Xmx8g', '-jar', BIN['picardtools'],
+        BIN['java8'], '-Xmx4g', '-jar', BIN['picardtools'],
         'MarkDuplicates',
         'INPUT=' + sorted_bam,
         'OUTPUT=' + deduped_bam,
@@ -97,7 +97,7 @@ def build_bam_index(bam):
     Index the BAM file..
     """
     shared.run_command([
-        BIN['java8'], '-Xmx8g', '-jar', BIN['picardtools'],
+        BIN['java8'], '-Xmx4g', '-jar', BIN['picardtools'],
         'BuildBamIndex',
         'INPUT=' + bam,
     ])
@@ -111,7 +111,7 @@ def realigner_target_creator(deduped_bam, intervals, reference):
     realigned.
     """
     shared.run_command([
-        BIN['java7'], '-Xmx8g', '-jar', BIN['gatk'],
+        BIN['java7'], '-Xmx4g', '-jar', BIN['gatk'],
         '-T', 'RealignerTargetCreator',
         '-R', reference,
         '-I', deduped_bam,
@@ -126,7 +126,7 @@ def indel_realigner(intervals, deduped_bam, realigned_bam, reference):
     GATK - IndelRealigner: Realign InDel regions.
     """
     shared.run_command([
-        BIN['java7'], '-Xmx8g', '-jar', BIN['gatk'],
+        BIN['java7'], '-Xmx4g', '-jar', BIN['gatk'],
         '-T', 'IndelRealigner',
         '-R', reference,
         '-I', deduped_bam,
@@ -142,7 +142,7 @@ def haplotype_caller(realigned_bam, output_vcf, num_cpu, reference):
     GATK - HaplotypeCaller: Call variants (SNPs and InDels)
     """
     shared.run_command([
-        BIN['java7'], '-Xmx8g', '-jar', BIN['gatk'],
+        BIN['java7'], '-Xmx4g', '-jar', BIN['gatk'],
         '-T', 'HaplotypeCaller',
         '-R', reference,
         '-I', realigned_bam,
@@ -158,7 +158,7 @@ def haplotype_caller(realigned_bam, output_vcf, num_cpu, reference):
 def variant_filtration(input_vcf, filtered_vcf, reference):
     """Apply filters to the input VCF."""
     shared.run_command([
-        BIN['java7'], '-Xmx8g', '-jar', BIN['gatk'],
+        BIN['java7'], '-Xmx4g', '-jar', BIN['gatk'],
         '-T', 'VariantFiltration',
         '-R', reference,
         '-V', input_vcf,
@@ -177,8 +177,6 @@ def variant_filtration(input_vcf, filtered_vcf, reference):
 def vcf_annotator(filtered_vcf, annotated_vcf, genbank):
     """Annotate called SNPs/InDel."""
     shared.run_command(
-        [BIN['vcf_annotator'],
-         '--gb', genbank,
-         '--vcf', filtered_vcf],
+        [BIN['vcf_annotator'], filtered_vcf, genbank],
         stdout=annotated_vcf
     )
