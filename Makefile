@@ -26,8 +26,8 @@ $(LIBS)/python/easy_install.py: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-download-tools: $(PWD)/tools.tar.gz $(TOOLS)/spades/SPAdes-3.7.1-Linux.tar.gz ;
-$(PWD)/tools.tar.gz: ;
+download-tools: $(PWD)/tools.tar $(TOOLS)/spades/SPAdes-3.7.1-Linux.tar.gz ;
+$(PWD)/tools.tar: ;
 	wget https://www.dropbox.com/s/b3tkucnm3tvoe9z/tools.tar
 
 $(TOOLS)/spades/SPAdes-3.7.1-Linux.tar.gz: $(PWD)/tools.tar ;
@@ -78,7 +78,7 @@ $(LIBS)/python/staphopia: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-fastq: $(BIN)/fastq-validator $(BIN)/fastq-stats $(BIN)/fastq-interleave ;
+fastq: $(BIN)/fastq-validator $(BIN)/fastq-stats $(BIN)/fastq-interleave $(BIN)/bbduk.sh $(BIN)/trimmomatic.jar;
 $(BIN)/fastq-validator: ;
 	$(eval FASTQ_BUILD=$(TOOLS)/fastq-validator/build)
 	rm -rf $(FASTQ_BUILD) && mkdir -p $(FASTQ_BUILD)
@@ -95,6 +95,19 @@ $(BIN)/fastq-stats: ;
 
 $(BIN)/fastq-interleave: ;
 	g++ -Wall -O3 -o $@ $(PWD)/src/fastq-interleave.cpp
+
+$(BIN)/bbduk.sh: ;
+	$(eval BB_BUILD=$(TOOLS)/bbmap/build)
+	rm -rf $(BB_BUILD) && mkdir -p $(BB_BUILD)
+	tar -C $(BB_BUILD) -xzvf $(TOOLS)/bbmap/BBMap_35-85.tar.gz
+	ln -s $(BB_BUILD)/bbmap/bbduk.sh $@
+
+$(BIN)/trimmomatic.jar: ;
+	$(eval TRIM_BUILD=$(TOOLS)/trimmomatic/build)
+	rm -rf $(TRIM_BUILD) && mkdir -p $(TRIM_BUILD)
+	unzip $(TOOLS)/trimmomatic/Trimmomatic-0.35.zip -d $(TRIM_BUILD)/
+	mv $(TRIM_BUILD)/Trimmomatic-0.35 $(TRIM_BUILD)/trimmomatic
+	ln -s $(TRIM_BUILD)/trimmomatic/trimmomatic-0.35.jar $@
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

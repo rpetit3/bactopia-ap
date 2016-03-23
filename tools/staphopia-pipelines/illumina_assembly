@@ -56,8 +56,8 @@ def makeblastdb(fastq, output, scaffolds):
 @follows(makeblastdb)
 @transform(options.fastq,
            regex(r"(.*).cleanup.fastq.gz"),
-           r"analyses/assembly/results/\1.contigs.json",
-           r"analyses/assembly/results/\1.scaffolds.json")
+           r"analyses/assembly/\1.contigs.json",
+           r"analyses/assembly/\1.scaffolds.json")
 @time_job(TIME_LOG)
 def assembly_stats(fastq, contig_stats, scaffold_stats):
     """Calculate assembly statistics."""

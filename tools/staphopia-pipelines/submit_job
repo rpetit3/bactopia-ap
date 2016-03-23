@@ -9,8 +9,9 @@ from staphopia.helpers.time_job import time_job
 from staphopia.tasks import shared
 
 parser = cmdline.get_argparse(description='Submit a ruffus pipeline')
-parser.add_argument("-i", "--input_file", dest="input_file", help="Input file",
-                    required=True)
+parser.add_argument("fastq", help="Input file")
+parser.add_argument("-f2", "--fastq2", dest="fastq2", default='',
+                    help="Optional paired end compressed FASTQ file",)
 parser.add_argument('--paired', action='store_true', default=False,
                     help='Input is interleaved paired end reads.', )
 parser.add_argument('--miseq', action='store_true', default=False,
@@ -28,10 +29,8 @@ args = parser.parse_args()
 IS_PAIRED = '--paired' if args.paired else ''
 IS_MISEQ = '--miseq' if args.miseq else ''
 BLASTDB = "blastdb/scaffolds"
-CLEAN_FASTQ = args.input_file.replace('.fastq.gz', '.cleanup.fastq.gz')
-ASSEMBLY = 'analyses/assembly/{0}'.format(
-    args.input_file.replace('.fastq.gz', '.scaffolds.fasta.gz')
-)
+CLEAN_FASTQ = '{0}.cleanup.fastq.gz'.format(args.sample_tag)
+ASSEMBLY = 'analyses/assembly/{0}.scaffolds.fasta.gz'.format(args.sample_tag)
 
 TIME_LOG = 'logs/time/submit_job.txt' if args.log_times else sys.stderr
 LOG_TIMES = '--log_times' if args.log_times else ''
@@ -46,7 +45,11 @@ def fastq_cleanup():
     """Clean up FASTQ file."""
     out, err = shared.run_command(
         [BIN['fastq_cleanup_pipeline'],
-         '-f', args.input_file,
+         args.fastq,
+         '--fastq2' if args.fastq2 else '',
+         args.fastq2 if args.fastq2 else '',
+         '--sample_tag', args.sample_tag,
+         '-p', str(args.processors),
          IS_PAIRED,
          IS_MISEQ,
          LOG_TIMES],
@@ -60,8 +63,8 @@ def fastq_cleanup():
 def illumina_assembly():
     """Run Illumina specific assembly."""
     out, err = shared.run_command(
-        [BIN['illumina_assembly'], '-f', CLEAN_FASTQ, '-p',
-         str(args.processors), IS_PAIRED, LOG_TIMES],
+        [BIN['illumina_assembly'], '-f', CLEAN_FASTQ,
+         '-p', str(args.processors), IS_PAIRED, LOG_TIMES],
         stdout='logs/illumina_assembly.stdout',
         stderr='logs/illumina_assembly.stderr',
     )
