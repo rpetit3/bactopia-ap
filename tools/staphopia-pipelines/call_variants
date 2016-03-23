@@ -49,6 +49,7 @@ if not options.read_length:
         # Unknown read length, set to 0 and use BWA aln/samse
         read_length = 0
 
+
 @mkdir('logs/time')
 @transform(options.fastq,
            regex(r"(.*).cleanup.fastq.gz"),
@@ -84,8 +85,10 @@ def call_variants(ref, final_vcf):
     intervals = '{0}/deduped.intervals'.format(GATK_DIR)
     realigned_bam = '{0}/realigned.bam'.format(GATK_DIR)
     variants.mark_duplicates(sorted_bam, deduped_bam)
+    variants.build_bam_index(deduped_bam)
     variants.realigner_target_creator(deduped_bam, intervals, REFERENCE)
     variants.indel_realigner(intervals, deduped_bam, realigned_bam, REFERENCE)
+    variants.build_bam_index(realigned_bam)
 
     # Call variants
     raw_vcf = '{0}/raw.vcf'.format(GATK_DIR)
