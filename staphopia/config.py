@@ -53,6 +53,7 @@ BIN = {
 
     # Annotation related
     'prokka': '{0}/prokka'.format(PATH),
+    'blastp': '{0}/blastp'.format(PATH),
 
     # Pipelines
     'fastq_cleanup_pipeline': '{0}/cleanup_fastq'.format(PATH),
@@ -93,7 +94,9 @@ SNP = {
     'ref_genbank': '{0}/variants/n315.gb'.format(TOOL_DATA),
 }
 
+PROKKA = '{0}/tools/prokka/build/prokka'.format(BASE_DIR)
 ANNOTATION = {
     'genus': 'Staphylococcus-uniref50',
-    'proteins': '{0}/annotation/uniref50-saureus.prokka'.format(TOOL_DATA)
+    'proteins': '{0}/annotation/uniref50-saureus.prokka'.format(TOOL_DATA),
+    'kingdom': '{0}/db/kingdom/Bacteria/sprot'.format(PROKKA)
 }

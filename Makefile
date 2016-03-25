@@ -34,7 +34,7 @@ $(TOOLS)/spades/SPAdes-3.7.1-Linux.tar.gz: $(PWD)/tools.tar ;
 	tar -xvf $^
 	touch $@
 
-download-uniref50: staphopia $(PWD)/data/annotation/uniref50-bacteria.prokka $(PWD)/data/annotation/bacteria-uniref90.tab;
+download-uniref50: staphopia $(PWD)/data/annotation/uniref50-bacteria.prokka $(PWD)/data/annotation/uniref50-bacteria.tab;
 $(PWD)/data/annotation/uniref50-bacteria.prokka: ;
 	wget -O $(PWD)/data/annotation/uniref50-bacteria.prokka.gz https://www.dropbox.com/s/86wy0dg8rfh9r2s/uniref50-bacteria.prokka.gz
 	gunzip $(PWD)/data/annotation/uniref50-bacteria.prokka.gz
@@ -64,7 +64,7 @@ $(BIN)/ascp : ;
 staphopia: staphopia-scripts staphopia-pipelines staphopia-python;
 staphopia-scripts: $(BIN)/unprocessed_ena ;
 $(BIN)/unprocessed_ena: ;
-	ls $(TOOLS)/staphopia | xargs -I {} ln -f -s $(TOOLS)/staphopia/{} $(BIN)/{}
+	ls $(TOOLS)/staphopia | xargs -I {} ln -s $(TOOLS)/staphopia/{} $(BIN)/{}
 
 staphopia-pipelines: $(BIN)/submit_job ;
 $(BIN)/submit_job: ;

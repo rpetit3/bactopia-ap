@@ -21,16 +21,18 @@ options = parser.parse_args()
 TIME_LOG = 'logs/time/annotation.txt' if options.log_times else sys.stderr
 # Pipeline --------------------------------------------------------------------
 
+
 @mkdir('logs/time')
 @mkdir('analyses/annotation')
 @transform(options.fasta,
-           regex(r"(.*).scaffolds.fasta.gz"),
+           regex(r"(.*)"),
            r"analyses/annotation/" + options.tag + ".faa.gz")
 @time_job(TIME_LOG, new_stream=True)
 def annotate(input_file, output_file):
     """Annotate using PROKKA."""
     annotation.run_prokka(input_file, 'analyses/annotation/', options.tag,
                           str(options.processors))
+
 
 @follows(annotate)
 @mkdir('blastdb')
@@ -43,6 +45,17 @@ def makeblastdb(faa, output):
     output_prefix = output.replace(".nin", "")
     annotation.makeblastdb(faa, 'Predicted proteins from Prokka',
                            output_prefix)
+
+
+@follows(makeblastdb)
+@mkdir('blastdb')
+@transform(annotate,
+           regex(r"(.*).faa.gz"),
+           r"\1.blastp.json.gz")
+@time_job(TIME_LOG)
+def get_blast_results(faa, output):
+    """Get BLASTP results in JSON format."""
+    annotation.get_blast_results(faa, output, str(options.processors))
 
 # -----------------------------------------------------------------------------
 pipeline_run(exceptions_terminate_immediately=True, verbose=5)
