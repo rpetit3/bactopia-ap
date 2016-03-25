@@ -94,6 +94,6 @@ SNP = {
 }
 
 ANNOTATION = {
-    'genus': 'Staphylococcus-uniref90',
-    'proteins': '{0}/annotation/sa-uniref90-reviewed.prokka'.format(TOOL_DATA)
+    'genus': 'Staphylococcus-uniref50',
+    'proteins': '{0}/annotation/uniref50-saureus.prokka'.format(TOOL_DATA)
 }

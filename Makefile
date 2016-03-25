@@ -11,7 +11,7 @@ all: config python staphopia download tools;
 config: ;
 	sed -i 's#^BASE_DIR.*#BASE_DIR = "$(PWD)"#' staphopia/config.py
 
-download: download-tools download-uniref90
+download: download-tools download-uniref50
 
 tools: download aspera staphopia fastq assembly mlst sccmec jellyfish variants annotation ;
 
@@ -34,13 +34,13 @@ $(TOOLS)/spades/SPAdes-3.7.1-Linux.tar.gz: $(PWD)/tools.tar ;
 	tar -xvf $^
 	touch $@
 
-download-uniref90: staphopia $(PWD)/data/annotation/bacteria-uniref90.prokka $(PWD)/data/annotation/bacteria-uniref90.tab;
-$(PWD)/data/annotation/bacteria-uniref90.prokka: ;
-	wget -O $(PWD)/data/annotation/bacteria-uniref90.prokka.bz2 https://www.dropbox.com/s/du49as5bu3fxwt8/bacteria-uniref90.prokka.bz2
-	bunzip2 $(PWD)/data/annotation/bacteria-uniref90.prokka.bz2
+download-uniref50: staphopia $(PWD)/data/annotation/uniref50-bacteria.prokka $(PWD)/data/annotation/bacteria-uniref90.tab;
+$(PWD)/data/annotation/uniref50-bacteria.prokka: ;
+	wget -O $(PWD)/data/annotation/uniref50-bacteria.prokka.gz https://www.dropbox.com/s/86wy0dg8rfh9r2s/uniref50-bacteria.prokka.gz
+	gunzip $(PWD)/data/annotation/uniref50-bacteria.prokka.gz
 	touch $@
 
-$(PWD)/data/annotation/bacteria-uniref90.tab: $(PWD)/data/annotation/bacteria-uniref90.prokka ;
+$(PWD)/data/annotation/uniref50-bacteria.tab: $(PWD)/data/annotation/uniref50-bacteria.prokka ;
 	$(BIN)/fasta-to-tab $^ > $@
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -64,7 +64,7 @@ $(BIN)/ascp : ;
 staphopia: staphopia-scripts staphopia-pipelines staphopia-python;
 staphopia-scripts: $(BIN)/unprocessed_ena ;
 $(BIN)/unprocessed_ena: ;
-	ls $(TOOLS)/staphopia | xargs -I {} ln -s $(TOOLS)/staphopia/{} $(BIN)/{}
+	ls $(TOOLS)/staphopia | xargs -I {} ln -f -s $(TOOLS)/staphopia/{} $(BIN)/{}
 
 staphopia-pipelines: $(BIN)/submit_job ;
 $(BIN)/submit_job: ;
@@ -269,9 +269,9 @@ $(BIN)/prokka: ;
 	rm -rf $(PROKKA_BUILD) && mkdir -p $(PROKKA_BUILD)
 	tar -C $(PROKKA_BUILD) -xzvf $(TOOLS)/prokka/prokka-1.11.1.tar.gz
 	mv $(PROKKA_BUILD)/prokka-1.11.1 $(PROKKA_BUILD)/prokka
-	ln -s $(PWD)/data/annotation/staphylococcus-uniref90.prokka $(PROKKA_BUILD)/prokka/db/genus/Staphylococcus-uniref90
+	ln -s $(PWD)/data/annotation/uniref50-staphylococcus.prokka $(PROKKA_BUILD)/prokka/db/genus/Staphylococcus-uniref50
 	rm $(PROKKA_BUILD)/prokka/db/kingdom/Bacteria/sprot
-	ln -s $(PWD)/data/annotation/bacteria-uniref90.prokka $(PROKKA_BUILD)/prokka/db/kingdom/Bacteria/sprot
+	ln -s $(PWD)/data/annotation/uniref50-bacteria.prokka $(PROKKA_BUILD)/prokka/db/kingdom/Bacteria/sprot
 	ls $(PROKKA_BUILD)/prokka/bin | xargs -I {} ln -s $(PROKKA_BUILD)/prokka/bin/{} $(BIN)/{}
 
 prokka-setupdb: $(TOOLS)/prokka/build/prokka/db/kingdom/Bacteria/sprot.psq ;
@@ -313,7 +313,7 @@ clean: clean-config ;
 
 extra-clean: clean ;
 	rm $(PWD)/tools.tar
-	rm $(PWD)/data/annotation/bacteria-uniref90.*
+	rm $(PWD)/data/annotation/uniref50-bacteria.*
 
 clean-config: ;
 	sed -i 's#^BASE_DIR.*#BASE_DIR = CHANGE_ME#' staphopia/config.py
