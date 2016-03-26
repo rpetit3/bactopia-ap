@@ -37,7 +37,7 @@ def get_blast_results(fasta, output_file, num_cpu):
     shared.pipe_commands(
         ['zcat', fasta],
         [BIN['blastp'], '-db', ANNOTATION['kingdom'], '-outfmt', '15',
-         '-max_target_seqs', '1', '-num_threads', num_cpu, '-evalue', '10000']
+         '-max_target_seqs', '1', '-num_threads', num_cpu, '-evalue', '10000'],
         ['gzip', '--best', '-'],
         stdout=output_file
     )

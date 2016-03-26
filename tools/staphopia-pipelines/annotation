@@ -46,16 +46,5 @@ def makeblastdb(faa, output):
     annotation.makeblastdb(faa, 'Predicted proteins from Prokka',
                            output_prefix)
 
-
-@follows(makeblastdb)
-@mkdir('blastdb')
-@transform(annotate,
-           regex(r"(.*).faa.gz"),
-           r"\1.blastp.json.gz")
-@time_job(TIME_LOG)
-def get_blast_results(faa, output):
-    """Get BLASTP results in JSON format."""
-    annotation.get_blast_results(faa, output, str(options.processors))
-
 # -----------------------------------------------------------------------------
 pipeline_run(exceptions_terminate_immediately=True, verbose=5)
