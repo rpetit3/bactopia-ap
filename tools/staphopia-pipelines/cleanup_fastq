@@ -60,6 +60,7 @@ def cleanup(input_file, output_file):
                                       fastq2=nophix['fastq2'])
 
     stats_file = '{0}.stats'.format(noadapter['fastq'])
+    # TODO: SPAdes read correction
     fastq.stats(noadapter['fastq'], stats_file, fastq2=noadapter['fastq2'],
                 compressed=False)
     fastq.cleanup(noadapter['fastq'], stats_file, options.paired,
