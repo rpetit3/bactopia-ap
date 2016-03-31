@@ -14,4 +14,3 @@ Staphopia's analysis pipeline is primarily written in Python. There are however 
 
 ### Contact
 robert.petit@emory.edu
- 
