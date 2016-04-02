@@ -27,20 +27,9 @@ def run_prokka(fasta, output_dir, tag, num_cpu):
     log_file = '{0}/{1}.log'.format(output_dir, tag)
     shared.run_command(['rm', fasta])
     shared.run_command(['mv', log_file, 'logs/prokka.log'])
-    shared.pipe_command(['find', output_dir],
+    shared.pipe_command(['find', output_dir, '-not', '-name', '*.txt'],
                         ['xargs', '-I', '{}', 'gzip', '{}'])
     return prokka
-
-
-def get_blast_results(fasta, output_file, num_cpu):
-    """BLAST predicted genes against the Bacteria database."""
-    shared.pipe_commands(
-        ['zcat', fasta],
-        [BIN['blastp'], '-db', ANNOTATION['kingdom'], '-outfmt', '15',
-         '-max_target_seqs', '1', '-num_threads', num_cpu, '-evalue', '10000'],
-        ['gzip', '--best', '-'],
-        stdout=output_file
-    )
 
 
 def makeblastdb(fasta, title, output_prefix):

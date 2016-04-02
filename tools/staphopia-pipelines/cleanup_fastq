@@ -15,8 +15,8 @@ parser.add_argument('-p', '--processors', metavar="INT", type=int, default=1,
                     help='Number of processors to use. (Default 1)')
 parser.add_argument('--paired', action='store_true', default=False,
                     help='Input is interleaved paired end reads.', )
-parser.add_argument('--miseq', action='store_true', default=False,
-                    help='Input is Illumina MiSeq reads.', )
+parser.add_argument('--no_length_filter', action='store_true', default=False,
+                    help='Do not filter reads based on read lengths.', )
 parser.add_argument('--sample_tag', dest='sample_tag', default='sample_tag',
                     help='Optional: Sample tag of input. (Default sample_tag)')
 parser.add_argument('--log_times', action='store_true', default=False,
@@ -59,11 +59,14 @@ def cleanup(input_file, output_file):
     noadapter = fastq.filter_adapters(nophix['fastq'], NUM_CPU, OUT_DIR,
                                       fastq2=nophix['fastq2'])
 
-    stats_file = '{0}.stats'.format(noadapter['fastq'])
+    stats_file = "analyses/fastq-stats/{0}.post-adapter.fastq.json".format(
+        options.sample_tag
+    )
     fastq.stats(noadapter['fastq'], stats_file, fastq2=noadapter['fastq2'],
                 compressed=False)
     fastq.cleanup(noadapter['fastq'], stats_file, options.paired,
-                  options.miseq, output_file, fastq2=noadapter['fastq2'])
+                  options.no_length_filter, output_file,
+                  fastq2=noadapter['fastq2'])
 
     shared.run_command(['rm', '-rf', OUT_DIR])
 

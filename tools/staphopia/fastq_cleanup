@@ -29,11 +29,11 @@ def define_min_quality(stats):
 
 def define_min_read(stats):
     """Determine minimum read length to filter reads on."""
-    if stats['coverage'] >= 225:
+    if stats['coverage'] >= 150:
         return int(stats['read_median'])
-    elif stats['coverage'] >= 150:
-        return int(stats['read_25th'])
     elif stats['coverage'] >= 100:
+        return int(stats['read_25th'])
+    elif stats['coverage'] >= 75:
         return int(stats['read_mean'] - (2 * stats['read_std']))
     elif stats['read_mean'] - (2 * stats['read_std']) >= 70:
         return 70
@@ -69,8 +69,9 @@ if __name__ == '__main__':
                         help='Trim reads to a certain length.', default=False)
     group1.add_argument('--paired', action='store_true', default=False,
                         help='Input is interleaved paired end reads.', )
-    group1.add_argument('--miseq', action='store_true', default=False,
-                        help='Input Il;lumina MiSeq reads.', )
+    group1.add_argument('--no_length_filter', action='store_true',
+                        default=False,
+                        help='Do not filter reads based on read lengths.', )
     group1.add_argument('--min_mean_quality', metavar="INT", type=int,
                         help='Minimum mean read quality cutoff. (Default: 20)',
                         default=20)
@@ -104,7 +105,8 @@ if __name__ == '__main__':
         args.min_mean_quality = define_min_quality(stats)
         args.total_read_count = stats['read_total']
         args.coverage = 50
-        if args.miseq:
+
+        if not args.no_length_filter:
             args.min_read_length = define_min_read(stats)
 
     subsample = args.coverage * args.genome_size if args.coverage else False

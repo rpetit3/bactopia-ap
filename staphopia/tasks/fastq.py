@@ -28,6 +28,7 @@ def stats(fastq, output_file, fastq2='', compressed=True):
     )
     return fastq_stats
 
+
 def filter_phix(fastq, num_cpu, out_dir, log, fastq2=None):
     """Use BBDuk to filter out phiX sequences from Illumina reads."""
     in2 = 'in2={0}'.format(fastq2) if fastq2 else ''
@@ -40,7 +41,8 @@ def filter_phix(fastq, num_cpu, out_dir, log, fastq2=None):
         'stats={0}'.format(log),
         'ref={0}'.format(FASTQ['phix']),
         'k=31',
-        'hdist=1'
+        'hdist=1',
+        'overwrite=t'
     ])
 
     return {
@@ -62,7 +64,7 @@ def filter_adapters(fastq, num_cpu, out_dir, fastq2=''):
         '{0}/noadapter_se1.fastq'.format(out_dir),
         out2, out2_se,
         'ILLUMINACLIP:{0}:2:20:10:8:true'.format(FASTQ['adapters']),
-        'LEADING:3', 'TRAILING:3'
+        'LEADING:3', 'TRAILING:3', 'MINLEN:36'
     ])
 
     return {
@@ -73,19 +75,19 @@ def filter_adapters(fastq, num_cpu, out_dir, fastq2=''):
     }
 
 
-def cleanup(fastq, stats_file, is_paired, is_miseq, output_file, fastq2=None):
+def cleanup(fastq, stats_file, is_paired, no_length, output_file, fastq2=None):
     """Read stats_file, and remove low quality reads and reduce coverage."""
     paired = '--paired' if is_paired else ''
-    miseq = '--miseq' if is_miseq else ''
+    no_length_filter = '--no_length_filter' if no_length else ''
     cmd = []
-    if paired and fastq2:
+    if is_paired and fastq2:
         cmd = [BIN['fastq_interleave'], fastq, fastq2]
     else:
         cmd = ['cat', fastq]
-
     fastq_cleanup = shared.pipe_commands(
         cmd,
-        [BIN['fastq_cleanup'], '--stats', stats_file, paired, miseq],
+        [BIN['fastq_cleanup'], '--stats', stats_file, paired,
+         no_length_filter],
         ['gzip', '-'],
         stdout=output_file
     )
