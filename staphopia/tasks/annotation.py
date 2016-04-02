@@ -28,7 +28,7 @@ def run_prokka(fasta, output_dir, tag, num_cpu):
     shared.run_command(['rm', fasta])
     shared.run_command(['mv', log_file, 'logs/prokka.log'])
     shared.pipe_command(['find', output_dir, '-not', '-name', '*.txt'],
-                        ['xargs', '-I', '{}', 'gzip', '{}'])
+                        ['xargs', '-I', '{}', 'gzip', '--best', '{}'])
     return prokka
 
 
