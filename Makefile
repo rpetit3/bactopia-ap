@@ -235,6 +235,7 @@ $(BIN)/java8: ;
 	rm -rf $(JAVA8_BUILD) && mkdir -p $(JAVA8_BUILD)
 	tar -C $(JAVA8_BUILD) -xzvf $(TOOLS)/java8/jdk-8u73-linux-x64.tar.gz
 	mv $(JAVA8_BUILD)/jdk1.8.0_73 $(JAVA8_BUILD)/jdk
+	ln -s $(JAVA8_BUILD)/jdk/bin/java $(BIN)/java
 	ln -s $(JAVA8_BUILD)/jdk/bin/java $@
 
 $(BIN)/picard.jar: ;
