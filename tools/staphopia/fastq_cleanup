@@ -13,15 +13,17 @@ Example Usage: zcat SOME.fastq.gz | fastq_cleanup --total_read_count 836846
 """
 
 
-def define_min_quality(stats):
+def define_min_quality(stats, paired):
     """Determine minimum quality score to filter reads on."""
-    if stats['coverage'] >= 225:
+    # Make it a little more relaxed for paired reads
+    x = 2 if paired else 1
+    if stats['coverage'] >= 225 * x:
         return int(stats['qual_75th'])
-    elif stats['coverage'] >= 112.5:
+    elif stats['coverage'] >= 112.5 * x:
         return int(stats['qual_median'])
-    elif stats['coverage'] >= 75:
+    elif stats['coverage'] >= 75 * x:
         return int(stats['qual_25th'])
-    elif stats['qual_mean'] - 2 * stats['qual_std'] >= 20:
+    elif (stats['qual_mean'] - 2 * stats['qual_std']) * x >= 20:
         return int(stats['qual_mean'] - 2 * stats['qual_std'])
     else:
         return 20
@@ -102,12 +104,15 @@ if __name__ == '__main__':
             json_data = json.load(f)
 
         stats = json_data["qc_stats"]
-        args.min_mean_quality = define_min_quality(stats)
+        args.min_mean_quality = define_min_quality(stats, args.paired)
         args.total_read_count = stats['read_total']
+        args.min_read_length = stats['read_total']
         args.coverage = 50
 
         if not args.no_length_filter:
-            args.min_read_length = define_min_read(stats)
+            suggested_min = define_min_read(stats)
+            if suggested_min <= stats['read_max']:
+                args.min_read_length = suggested_min
 
     subsample = args.coverage * args.genome_size if args.coverage else False
 
