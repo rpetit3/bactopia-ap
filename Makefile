@@ -268,8 +268,8 @@ prokka: $(BIN)/prokka ;
 $(BIN)/prokka: ;
 	$(eval PROKKA_BUILD=$(TOOLS)/prokka/build)
 	rm -rf $(PROKKA_BUILD) && mkdir -p $(PROKKA_BUILD)
-	tar -C $(PROKKA_BUILD) -xzvf $(TOOLS)/prokka/prokka-1.11.2.tar.gz
-	mv $(PROKKA_BUILD)/prokka-1.11.2 $(PROKKA_BUILD)/prokka
+	tar -C $(PROKKA_BUILD) -xzvf $(TOOLS)/prokka/prokka-1.11.3.tar.gz
+	mv $(PROKKA_BUILD)/prokka-1.11.3 $(PROKKA_BUILD)/prokka
 	ln -s $(PWD)/data/annotation/uniref50-staphylococcus.prokka $(PROKKA_BUILD)/prokka/db/genus/Staphylococcus-uniref50
 	rm $(PROKKA_BUILD)/prokka/db/kingdom/Bacteria/sprot
 	ln -s $(PWD)/data/annotation/uniref50-bacteria.prokka $(PROKKA_BUILD)/prokka/db/kingdom/Bacteria/sprot
