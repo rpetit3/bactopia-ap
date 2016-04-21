@@ -1,14 +1,6 @@
 ### Staphopia Analysis Pipeline
 Staphopia's analysis pipeline is primarily written in Python. There are however a few programs written in C++.
 
-### Requirements
-    python-dev
-    pip 
-    gcc
-    make
-    ncurses
-    libsqlite3-dev
-
 ### Installation
 [Fresh Ubuntu Server 14.04](https://github.com/Read-Lab-Confederation/staphopia-analysis-pipeline/wiki/%5BWIP%5D-Setting-up-Staphopia-on-a-fresh-Ubuntu-Server-14.04-install)
 
