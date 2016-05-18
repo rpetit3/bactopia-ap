@@ -23,19 +23,21 @@ def define_min_quality(stats, paired):
         return int(stats['qual_median'])
     elif stats['coverage'] >= 75 * x:
         return int(stats['qual_25th'])
-    elif (stats['qual_mean'] - 2 * stats['qual_std']) * x >= 20:
+    elif stats['qual_mean'] - 2 * stats['qual_std'] >= 20:
         return int(stats['qual_mean'] - 2 * stats['qual_std'])
     else:
         return 20
 
 
-def define_min_read(stats):
+def define_min_read(stats, paired):
     """Determine minimum read length to filter reads on."""
-    if stats['coverage'] >= 150:
+    # Make it a little more relaxed for paired reads
+    x = 2 if paired else 1
+    if stats['coverage'] >= 150 * x:
         return int(stats['read_median'])
-    elif stats['coverage'] >= 100:
+    elif stats['coverage'] >= 100 * x:
         return int(stats['read_25th'])
-    elif stats['coverage'] >= 75:
+    elif stats['coverage'] >= 75 * x:
         return int(stats['read_mean'] - (2 * stats['read_std']))
     elif stats['read_mean'] - (2 * stats['read_std']) >= 70:
         return 70
@@ -110,7 +112,7 @@ if __name__ == '__main__':
         args.coverage = 50
 
         if not args.no_length_filter:
-            suggested_min = define_min_read(stats)
+            suggested_min = define_min_read(stats, args.paired)
             if suggested_min <= stats['read_max']:
                 args.min_read_length = suggested_min
 
@@ -122,12 +124,7 @@ if __name__ == '__main__':
                             args.min_read_length)
 
     # If large fastq reduce to random subset of 750x coverage
-    if stats['coverage'] > 750:
-        fraction = (2814816.0 * 750) / stats['total_bp']
-        fq.read_large_fastq(sys.stdin, fraction)
-        args.total_read_count = len(fq.fastq) / 4
-    else:
-        fq.fastq = [line.rstrip() for line in sys.stdin.readlines()]
+    fq.fastq = [line.rstrip() for line in sys.stdin.readlines()]
 
     fq.generate_order(args.total_read_count)
     fq.clean_up_fastq()
