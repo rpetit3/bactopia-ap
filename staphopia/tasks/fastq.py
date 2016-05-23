@@ -55,14 +55,14 @@ def filter_adapters(fastq, num_cpu, out_dir, fastq2=''):
     """Use Trimmomatic to filter out adapter sequences from Illumina reads."""
     paired = 'PE' if fastq2 else 'SE'
     out2 = '{0}/noadapter_pe2.fastq'.format(out_dir) if fastq2 else ''
+    out1_se = '{0}/noadapter_se2.fastq'.format(out_dir) if fastq2 else ''
     out2_se = '{0}/noadapter_se2.fastq'.format(out_dir) if fastq2 else ''
     shared.run_command([
         BIN['java7'], '-jar', BIN['trimmomatic'], paired,
         '-threads', num_cpu,
         fastq, fastq2,
         '{0}/noadapter_pe1.fastq'.format(out_dir),
-        '{0}/noadapter_se1.fastq'.format(out_dir),
-        out2, out2_se,
+        out1_se, out2, out2_se,
         'ILLUMINACLIP:{0}:2:20:10:8:true'.format(FASTQ['adapters']),
         'LEADING:3', 'TRAILING:3', 'MINLEN:36'
     ])
