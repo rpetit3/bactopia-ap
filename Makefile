@@ -13,7 +13,7 @@ config: ;
 
 download: download-tools download-uniref50
 
-tools: download sra staphopia fastq assembly mlst sccmec jellyfish variants annotation ;
+tools: download aspera staphopia fastq assembly mlst sccmec jellyfish variants annotation ;
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
