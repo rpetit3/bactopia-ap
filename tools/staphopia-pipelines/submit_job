@@ -142,5 +142,17 @@ def annotation():
         stderr='logs/annotation.stderr',
     )
 
+
+@follows(annotation)
+@time_job(TIME_LOG)
+def plasmid_assembly():
+    """Run Illumina specific assembly."""
+    out, err = shared.run_command(
+        [BIN['plasmid-assembly'], '-f', CLEAN_FASTQ,
+         '-p', str(args.processors), IS_PAIRED, LOG_TIMES],
+        stdout='logs/plasmid-assembly.stdout',
+        stderr='logs/plasmid-assembly.stderr',
+    )
+
 # -----------------------------------------------------------------------------
 pipeline_run(exceptions_terminate_immediately=True, verbose=5)

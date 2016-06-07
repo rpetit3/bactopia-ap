@@ -58,6 +58,7 @@ BIN = {
     # Pipelines
     'fastq_cleanup_pipeline': '{0}/cleanup_fastq'.format(PATH),
     'illumina_assembly': '{0}/illumina_assembly'.format(PATH),
+    'plasmid-assembly': '{0}/plasmid-assembly'.format(PATH),
     'predict_mlst': '{0}/predict_mlst'.format(PATH),
     'predict_sccmec': '{0}/predict_sccmec'.format(PATH),
     'call_variants': '{0}/call_variants'.format(PATH),
@@ -66,6 +67,8 @@ BIN = {
 
     # Staphopia related
     'download_ena': '{0}/download_ena'.format(PATH),
+    'prefetch': '{0}/prefetch'.format(PATH),
+    'fastq-dump': '{0}/fastq-dump'.format(PATH),
     'ascp': '{0}/ascp'.format(PATH),
     'aspera_key': '{0}/asperaweb_id_dsa.openssh'.format(PATH),
     'fastq_interleave': '{0}/fastq-interleave'.format(PATH),

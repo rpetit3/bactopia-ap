@@ -6,13 +6,18 @@ from staphopia.config import BIN
 from staphopia.tasks import shared
 
 
-def spades(fastq, output_dir, num_cpu, is_paired):
+def spades(fastq, output_dir, num_cpu, is_paired, plasmid=False):
     """Assemble using Spades."""
+    plasmid_spades = ''
+    log = 'logs/spades.stderr'
+    if plasmid:
+        plasmid_spades = '--plasmid'
+        log = 'logs/plasmid-spades.stderr'
     paired = '--12' if is_paired else '-s'
     shared.run_command(
         [BIN['spades'], paired, fastq, '--careful', '-t', num_cpu,
-         '-o', output_dir],
-        stderr='logs/spades.stderr'
+         '-o', output_dir, plasmid_spades],
+        stderr=log
     )
 
 

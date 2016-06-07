@@ -61,6 +61,46 @@ def get_unprocessed_ena(args):
     return json.loads(stdout)
 
 
+def get_runs_by_study(study, manage):
+    """Return a dictionary of runs associated with a study."""
+    cmd = ['python', manage, 'ena_info', '--study', study]
+    stdout, stderr = shared.run_command(cmd, verbose=False)
+
+    return json.loads(stdout)
+
+
+def get_runs_by_experiment(experiment, manage):
+    """Return a dictionary of runs associated with a experiment."""
+    cmd = ['python', manage, 'ena_info', '--experiment', experiment]
+    stdout, stderr = shared.run_command(cmd, verbose=False)
+
+    return json.loads(stdout)
+
+
+def get_experiment_by_run(run, manage):
+    """Return a dictionary with an experiment associated with a run."""
+    cmd = ['python', manage, 'ena_info', '--run', run]
+    stdout, stderr = shared.run_command(cmd, verbose=False)
+
+    return json.loads(stdout)
+
+
+def download_sra(run):
+    """Download .sra from using SRA Toolkit prefetch and Apera Connect."""
+    ascp ='{0}|{1}'.format(BIN['ascp'], BIN['aspera_key'])
+    ascp_opts = "-T -l 200m"
+    cmd = [BIN['prefetch'], '-a', ascp, '--ascp-options', ascp_opts, run]
+    stdout, stderr = shared.run_command(cmd, verbose=False)
+    failed_statement = 'failed to download {0}'.format(run)
+    if stderr.rstrip().endswith(failed_statement):
+        return False
+    else:
+        return True
+
+
+def convert_sra_to_fastq(sra):
+    pass
+
 def download_fastq(fasp, outdir, fastq):
     """Download FASTQ from ENA using Apera Connect."""
     if not os.path.isdir(outdir):

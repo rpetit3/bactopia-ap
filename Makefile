@@ -13,7 +13,7 @@ config: ;
 
 download: download-tools download-uniref50
 
-tools: download aspera staphopia fastq assembly mlst sccmec jellyfish variants annotation ;
+tools: download sra staphopia fastq assembly mlst sccmec jellyfish variants annotation ;
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
@@ -26,11 +26,11 @@ $(LIBS)/python/easy_install.py: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-download-tools: $(PWD)/tools.tar $(TOOLS)/spades/SPAdes-3.7.1-Linux.tar.gz ;
+download-tools: $(PWD)/tools.tar $(TOOLS)/spades/SPAdes-3.8.0-Linux.tar.gz ;
 $(PWD)/tools.tar: ;
 	wget https://www.dropbox.com/s/b3tkucnm3tvoe9z/tools.tar
 
-$(TOOLS)/spades/SPAdes-3.7.1-Linux.tar.gz: $(PWD)/tools.tar ;
+$(TOOLS)/spades/SPAdes-3.8.0-Linux.tar.gz: $(PWD)/tools.tar ;
 	tar -xvf $^
 	touch $@
 
@@ -46,6 +46,7 @@ $(PWD)/data/annotation/uniref50-bacteria.tab: $(PWD)/data/annotation/uniref50-ba
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sra: aspera sra-toolkit ;
 aspera: $(BIN)/ascp ;
 $(BIN)/ascp : ;
 	$(eval ASCP_BUILD=$(TOOLS)/aspera-connect/build)
@@ -57,6 +58,14 @@ $(BIN)/ascp : ;
 	ln -s $(ASCP_BUILD)/aspera/etc/asperaweb_id_dsa.openssh $(BIN)/asperaweb_id_dsa.openssh
 	ln -s $(ASCP_BUILD)/aspera/etc/asperaweb_id_dsa.putty $(BIN)/asperaweb_id_dsa.putty
 
+sra-toolkit: $(BIN)/prefetch ;
+$(BIN)/prefetch: ;
+	$(eval SRA_BUILD=$(TOOLS)/sra-toolkit/build)
+	rm -rf $(SRA_BUILD) && mkdir -p $(SRA_BUILD)
+	tar -C $(SRA_BUILD) -xzvf $(TOOLS)/sra-toolkit/sratoolkit.2.6.2-ubuntu64.tar.gz
+	mv $(SRA_BUILD)/sratoolkit.2.6.2-ubuntu64 $(SRA_BUILD)/sra-toolkit
+	ln -s $(SRA_BUILD)/sra-toolkit/bin/fastq-dump $(BIN)/fastq-dump
+	ln -s $(SRA_BUILD)/sra-toolkit/bin/prefetch $@
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
@@ -117,8 +126,8 @@ assembly: $(BIN)/spades.py $(BIN)/assemblathon-stats.pl ;
 $(BIN)/spades.py: ;
 	$(eval SPADES_BUILD=$(TOOLS)/spades/build)
 	rm -rf $(SPADES_BUILD) && mkdir -p $(SPADES_BUILD)
-	tar -C $(SPADES_BUILD) -xzvf $(TOOLS)/spades/SPAdes-3.7.1-Linux.tar.gz
-	mv $(SPADES_BUILD)/SPAdes-3.7.1-Linux $(SPADES_BUILD)/spades
+	tar -C $(SPADES_BUILD) -xzvf $(TOOLS)/spades/SPAdes-3.8.0-Linux.tar.gz
+	mv $(SPADES_BUILD)/SPAdes-3.8.0-Linux $(SPADES_BUILD)/spades
 	ln -s $(SPADES_BUILD)/spades/bin/spades.py $@
 
 $(BIN)/assemblathon-stats.pl: ;
