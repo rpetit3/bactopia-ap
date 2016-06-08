@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/env python
 """
 Filter low quality reads, and reduce the read count to a given coverage.
 
