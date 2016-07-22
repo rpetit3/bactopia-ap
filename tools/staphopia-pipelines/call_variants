@@ -101,7 +101,10 @@ def call_variants(ref, final_vcf):
     variants.vcf_annotator(filtered_vcf, annotated_vcf, options.genbank)
 
     # Move final vcf and cleanup
-    shared.run_command(['gzip', '-c', annotated_vcf], stdout=final_vcf)
+    shared.run_command(
+        ['gzip', '--best', '-c', annotated_vcf],
+        stdout=final_vcf
+    )
     shared.run_command(['rm', '-rf', GATK_DIR])
 
 # -----------------------------------------------------------------------------

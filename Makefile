@@ -109,6 +109,7 @@ $(BIN)/bbduk.sh: ;
 	$(eval BB_BUILD=$(TOOLS)/bbmap/build)
 	rm -rf $(BB_BUILD) && mkdir -p $(BB_BUILD)
 	tar -C $(BB_BUILD) -xzvf $(TOOLS)/bbmap/BBMap_35-85.tar.gz
+	ln -s $(BB_BUILD)/bbmap/ecc.sh $(BIN)/ecc.sh
 	ln -s $(BB_BUILD)/bbmap/bbduk.sh $@
 
 $(BIN)/trimmomatic.jar: ;

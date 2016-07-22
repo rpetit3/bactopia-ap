@@ -87,11 +87,11 @@ if __name__ == '__main__':
                             else:
                                 runs['r1'].append(fastq)
                         else:
-                            print(('\t\tMD5s do not match... sleeping for 60s'
+                            print(('\t\tMD5s do not match... sleeping for 10s'
                                    ', {0}\t{1}').format(
                                 fastq_md5, dl_md5
                             ))
-                            time.sleep(60)
+                            time.sleep(10)
 
         # Merge Runs to Exp
         if runs['is_paired'] and len(runs['r1']) and len(runs['r2']):

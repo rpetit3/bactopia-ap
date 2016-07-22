@@ -55,9 +55,9 @@ class CleanUpFASTQ(object):
         qual_stats = np.array([ord(j) for j in qual])
         return np.mean(qual_stats) - 33
 
-    def __test_read(self, index):
+    def __test_read(self, index, append=''):
         """Test if the read passes quality filters."""
-        head = self.fastq[index]
+        head = "{0}{1}".format(self.fastq[index].split()[0], append)
         seq = self.fastq[index + 1]
         length = 0
         qual = self.fastq[index + 3]
@@ -68,6 +68,7 @@ class CleanUpFASTQ(object):
                 qual = qual[:self.read_length_cutoff]
 
             if (self.__mean_quality(qual) >= self.min_mean_quality):
+                head
                 self.__temp_read.append('{0}\n{1}\n+\n{2}'.format(
                     head,
                     seq,
@@ -93,9 +94,9 @@ class CleanUpFASTQ(object):
             self.__temp_read[:] = []
             if self.is_paired:
                 index = self.__read_order[i] * 8 - 8
-                read1 = self.__test_read(index)
+                read1 = self.__test_read(index, append="/1")
                 index = self.__read_order[i] * 8 - 4
-                read2 = self.__test_read(index)
+                read2 = self.__test_read(index, append="/2")
                 if read1 > 0 and read2 > 0:
                     print('\n'.join(self.__temp_read))
                     basepair_count += (read1 + read2)

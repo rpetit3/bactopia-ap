@@ -24,7 +24,6 @@ def blast_primers(blastdb, output_file):
     )
 
 
-
 def bwa_mem(fastq, output_sam, num_cpu, is_paired):
     """Align reads (mean length < 70bp) against reference genome."""
     p = '-p' if is_paired else ''
@@ -71,6 +70,6 @@ def genome_coverage_bed(input_bam, output_coverage):
     """Calculate coverage of the alignment."""
     shared.pipe_command(
         [BIN['genomeCoverageBed'], '-ibam', input_bam, '-d'],
-        ['gzip', '-'],
+        ['gzip', '--best', '-'],
         stdout=output_coverage
     )

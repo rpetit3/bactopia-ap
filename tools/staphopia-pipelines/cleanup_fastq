@@ -13,6 +13,8 @@ parser.add_argument("-f2", "--fastq2", dest="fastq2",
                     help="Compressed FASTQ file (*.tar.gz)",)
 parser.add_argument('-p', '--processors', metavar="INT", type=int, default=1,
                     help='Number of processors to use. (Default 1)')
+parser.add_argument('--coverage', metavar="INT", type=int, default=50,
+                    help='Coverage to subsample to.')
 parser.add_argument('--paired', action='store_true', default=False,
                     help='Input is interleaved paired end reads.', )
 parser.add_argument('--no_length_filter', action='store_true', default=False,
@@ -25,7 +27,9 @@ options = parser.parse_args()
 
 NUM_CPU = str(options.processors)
 OUT_DIR = 'analyses/fastq-qc/'
-BBDUK_LOG = 'logs/fastq_cleanup-bbduk.txt'
+BBDUK_PHIX = 'logs/fastq_cleanup-bbduk-phix.txt'
+BBDUK_ADAPTER = 'logs/fastq_cleanup-bbduk-adapter.txt'
+BBDUK_ECC = 'logs/fastq_cleanup-bbduk-ecc.txt'
 TIME_LOG = sys.stderr
 if options.log_times:
     TIME_LOG = 'logs/time/fastq_cleanup.txt'
@@ -54,19 +58,32 @@ def cleanup(input_file, output_file):
     shared.run_command(['mkdir', '-p', OUT_DIR])
 
     # Filter out phiX and adapter sequences
-    nophix = fastq.filter_phix(options.fastq, NUM_CPU, OUT_DIR, BBDUK_LOG,
+    nophix = fastq.filter_phix(options.fastq, NUM_CPU, OUT_DIR, BBDUK_PHIX,
                                fastq2=options.fastq2)
-    noadapter = fastq.filter_adapters(nophix['fastq'], NUM_CPU, OUT_DIR,
-                                      fastq2=nophix['fastq2'])
+    noadapter = fastq.filter_adapters(
+        nophix['fastq'], NUM_CPU, OUT_DIR, BBDUK_ADAPTER,
+        fastq2=nophix['fastq2']
+    )
 
     stats_file = "analyses/fastq-stats/{0}.post-adapter.fastq.json".format(
         options.sample_tag
     )
     fastq.stats(noadapter['fastq'], stats_file, fastq2=noadapter['fastq2'],
                 compressed=False)
-    fastq.cleanup(noadapter['fastq'], stats_file, options.paired,
+
+    ecc = fastq.error_correct(
+        noadapter['fastq'], NUM_CPU, OUT_DIR, fastq2=noadapter['fastq2']
+    )
+
+    stats_file = "analyses/fastq-stats/{0}.post-ecc.fastq.json".format(
+        options.sample_tag
+    )
+    fastq.stats(ecc['fastq'], stats_file, fastq2=ecc['fastq2'],
+                compressed=False)
+    fastq.cleanup(ecc['fastq'], stats_file, options.paired,
                   options.no_length_filter, output_file,
-                  fastq2=noadapter['fastq2'])
+                  fastq2=ecc['fastq2'],
+                  coverage=options.coverage)
 
     shared.run_command(['rm', '-rf', OUT_DIR])
 

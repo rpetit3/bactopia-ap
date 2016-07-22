@@ -16,7 +16,7 @@ def spades(fastq, output_dir, num_cpu, is_paired, plasmid=False):
     paired = '--12' if is_paired else '-s'
     shared.run_command(
         [BIN['spades'], paired, fastq, '--careful', '-t', num_cpu,
-         '-o', output_dir, plasmid_spades],
+         '-o', output_dir, '--only-assembler', plasmid_spades],
         stderr=log
     )
 
@@ -24,22 +24,22 @@ def spades(fastq, output_dir, num_cpu, is_paired, plasmid=False):
 def cleanup_spades(spades_dir, contigs, scaffolds, assembly_graph):
     """Move final assembly to project root."""
     gzip_contigs = shared.run_command(
-        ['gzip', '-c', spades_dir + '/contigs.fasta'],
+        ['gzip', '--best', '-c', spades_dir + '/contigs.fasta'],
         stdout=contigs
     )
 
     gzip_scaffolds = shared.run_command(
-        ['gzip', '-c', spades_dir + '/scaffolds.fasta'],
+        ['gzip', '--best', '-c', spades_dir + '/scaffolds.fasta'],
         stdout=scaffolds
     )
 
     gzip_graph = shared.run_command(
-        ['gzip', '-c', spades_dir + '/assembly_graph.fastg'],
+        ['gzip', '--best', '-c', spades_dir + '/assembly_graph.fastg'],
         stdout=assembly_graph
     )
 
     if (os.path.isfile(contigs) and os.path.isfile(scaffolds) and
-             os.path.isfile(assembly_graph)):
+            os.path.isfile(assembly_graph)):
         shared.run_command(['rm', '-rf', spades_dir])
 
     return [gzip_contigs, gzip_scaffolds, gzip_graph]

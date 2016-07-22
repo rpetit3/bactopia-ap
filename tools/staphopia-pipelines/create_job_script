@@ -25,6 +25,8 @@ if __name__ == '__main__':
                         help="Compressed input FASTQ file")
     group1.add_argument('--fastq2', metavar="STR", type=str, default=False,
                         help="Optional paired end compressed FASTQ file",)
+    parser.add_argument('--coverage', metavar="INT", type=int, default=50,
+                        help='Coverage to subsample to.')
     group1.add_argument('--working_dir', metavar="STR", type=str, default='./',
                         help='Working directory to execute script from.')
     group1.add_argument('--processors', metavar="INT", type=int, default=1,
@@ -55,6 +57,7 @@ if __name__ == '__main__':
     NO_LENGTH_FILTER = '--no_length_filter' if args.no_length_filter else ''
     SAMPLE_TAG = '--sample_tag ' + args.sample_tag if args.sample_tag else ''
     LOG_TIMES = '--log_times' if args.log_times else ''
+    COVERAGE = '--coverage {0}'.format(args.coverage)
     fastq2 = '--fastq2 {0}'.format(args.fastq2) if args.fastq2 else ''
 
     JOB_SCRIPT = '\n'.join([
@@ -72,7 +75,7 @@ if __name__ == '__main__':
         'export PYTHONPATH={0}:$PYTHONPATH'.format(PYTHON_REQS),
         '',
         '# Command',
-        '{0}/submit_job {1} {2} -p {3} {4} {5} {6} {7}'.format(
+        '{0}/submit_job {1} {2} -p {3} {4} {5} {6} {7} {8}'.format(
             PATH,
             args.fastq,
             fastq2,
@@ -80,7 +83,8 @@ if __name__ == '__main__':
             IS_PAIRED,
             NO_LENGTH_FILTER,
             SAMPLE_TAG,
-            LOG_TIMES
+            LOG_TIMES,
+            COVERAGE
         ),
         '',
     ])

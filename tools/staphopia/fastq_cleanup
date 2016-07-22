@@ -13,15 +13,15 @@ Example Usage: zcat SOME.fastq.gz | fastq_cleanup --total_read_count 836846
 """
 
 
-def define_min_quality(stats, paired):
+def define_min_quality(stats, cutoff, paired):
     """Determine minimum quality score to filter reads on."""
     # Make it a little more relaxed for paired reads
     x = 2 if paired else 1
-    if stats['coverage'] >= 225 * x:
+    if stats['coverage'] >= (cutoff * 3 * x):
         return int(stats['qual_75th'])
-    elif stats['coverage'] >= 112.5 * x:
+    elif stats['coverage'] >= (cutoff * 2 * x):
         return int(stats['qual_median'])
-    elif stats['coverage'] >= 75 * x:
+    elif stats['coverage'] >= (cutoff * 1.5 * x):
         return int(stats['qual_25th'])
     elif stats['qual_mean'] - 2 * stats['qual_std'] >= 20:
         return int(stats['qual_mean'] - 2 * stats['qual_std'])
@@ -29,15 +29,15 @@ def define_min_quality(stats, paired):
         return 20
 
 
-def define_min_read(stats, paired):
+def define_min_read(stats, cutoff, paired):
     """Determine minimum read length to filter reads on."""
     # Make it a little more relaxed for paired reads
     x = 2 if paired else 1
-    if stats['coverage'] >= 150 * x:
+    if cutoff * 3 * x:
         return int(stats['read_median'])
-    elif stats['coverage'] >= 100 * x:
+    elif stats['coverage'] >= (cutoff * 2 * x):
         return int(stats['read_25th'])
-    elif stats['coverage'] >= 75 * x:
+    elif stats['coverage'] >= (cutoff * 1.5 * x):
         return int(stats['read_mean'] - (2 * stats['read_std']))
     elif stats['read_mean'] - (2 * stats['read_std']) >= 70:
         return 70
@@ -61,9 +61,9 @@ if __name__ == '__main__':
     group1.add_argument('--stats', metavar="STR", type=str,
                         help='Read statisitcs from fastq_stats',
                         default=False)
-    group1.add_argument('--coverage', metavar="FLOAT", type=float,
+    group1.add_argument('--coverage', metavar="INT", type=int,
                         help='Subsample coverage. (Default: Take all)',
-                        default=False)
+                        default=50)
     group1.add_argument('--genome_size', metavar="INT", type=int,
                         help='Estimated genome size. (Default: 2814816)',
                         default=2814816)
@@ -106,13 +106,14 @@ if __name__ == '__main__':
             json_data = json.load(f)
 
         stats = json_data["qc_stats"]
-        args.min_mean_quality = define_min_quality(stats, args.paired)
+        args.min_mean_quality = define_min_quality(
+            stats, args.coverage, args.paired
+        )
         args.total_read_count = stats['read_total']
         args.min_read_length = stats['read_total']
-        args.coverage = 50
 
         if not args.no_length_filter:
-            suggested_min = define_min_read(stats, args.paired)
+            suggested_min = define_min_read(stats, args.coverage, args.paired)
             if suggested_min <= stats['read_max']:
                 args.min_read_length = suggested_min
 

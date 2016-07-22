@@ -21,6 +21,7 @@ BIN = {
     'fastq_stats': '{0}/fastq-stats'.format(PATH),
     'fastq_validator': '{0}/fastq-validator'.format(PATH),
     'bbduk': '{0}/bbduk.sh'.format(PATH),
+    'bbnorm-ecc': '{0}/ecc.sh'.format(PATH),
     'trimmomatic': '{0}/trimmomatic.jar'.format(PATH),
 
     # Assembly related
