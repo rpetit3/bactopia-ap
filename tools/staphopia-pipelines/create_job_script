@@ -25,7 +25,7 @@ if __name__ == '__main__':
                         help="Compressed input FASTQ file")
     group1.add_argument('--fastq2', metavar="STR", type=str, default=False,
                         help="Optional paired end compressed FASTQ file",)
-    parser.add_argument('--coverage', metavar="INT", type=int, default=50,
+    parser.add_argument('--coverage', metavar="INT", type=int, default=100,
                         help='Coverage to subsample to.')
     group1.add_argument('--working_dir', metavar="STR", type=str, default='./',
                         help='Working directory to execute script from.')

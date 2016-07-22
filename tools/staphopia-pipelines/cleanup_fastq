@@ -13,7 +13,7 @@ parser.add_argument("-f2", "--fastq2", dest="fastq2",
                     help="Compressed FASTQ file (*.tar.gz)",)
 parser.add_argument('-p', '--processors', metavar="INT", type=int, default=1,
                     help='Number of processors to use. (Default 1)')
-parser.add_argument('--coverage', metavar="INT", type=int, default=50,
+parser.add_argument('--coverage', metavar="INT", type=int, default=100,
                     help='Coverage to subsample to.')
 parser.add_argument('--paired', action='store_true', default=False,
                     help='Input is interleaved paired end reads.', )

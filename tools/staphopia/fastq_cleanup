@@ -63,7 +63,7 @@ if __name__ == '__main__':
                         default=False)
     group1.add_argument('--coverage', metavar="INT", type=int,
                         help='Subsample coverage. (Default: Take all)',
-                        default=50)
+                        default=100)
     group1.add_argument('--genome_size', metavar="INT", type=int,
                         help='Estimated genome size. (Default: 2814816)',
                         default=2814816)

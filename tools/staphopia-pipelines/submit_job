@@ -14,7 +14,7 @@ parser.add_argument("-f2", "--fastq2", dest="fastq2", default='',
                     help="Optional paired end compressed FASTQ file",)
 parser.add_argument('--paired', action='store_true', default=False,
                     help='Input is interleaved paired end reads.', )
-parser.add_argument('--coverage', metavar="INT", type=int, default=50,
+parser.add_argument('--coverage', metavar="INT", type=int, default=100,
                     help='Coverage to subsample to.')
 parser.add_argument('--miseq', action='store_true', default=False,
                     help='Input is Illumina MiSeq reads.', )
