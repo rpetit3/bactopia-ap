@@ -142,7 +142,7 @@ def cleanup(fastq, stats_file, is_paired, no_length, output_file, fastq2=None,
     paired = '--paired' if is_paired else ''
     no_length_filter = '--no_length_filter' if no_length else ''
     cmd = []
-    if is_paired and fastq2:
+    if fastq2:
         cmd = [BIN['fastq_interleave'], fastq, fastq2]
     else:
         cmd = ['cat', fastq]

@@ -40,6 +40,8 @@ if __name__ == '__main__':
                         help='Do not filter reads based on read lengths.', )
     group1.add_argument('--log_times', action='store_true', default=False,
                         help='Write task run times to file (Default: STDERR).')
+    group1.add_argument('--ena', action='store_true', default=False,
+                        help='Update ENA status.')
     group3 = parser.add_argument_group('Help', '')
     group3.add_argument('-h', '--help', action='help',
                         help='Show this help message and exit')
@@ -59,6 +61,8 @@ if __name__ == '__main__':
     LOG_TIMES = '--log_times' if args.log_times else ''
     COVERAGE = '--coverage {0}'.format(args.coverage)
     fastq2 = '--fastq2 {0}'.format(args.fastq2) if args.fastq2 else ''
+    is_running = '{0} update_status {1} running'.format(BIN['manage'], args.sample_tag) if args.ena else ''
+    is_completed = '{0} update_status {1} completed'.format(BIN['manage'], args.sample_tag) if args.ena else ''
 
     JOB_SCRIPT = '\n'.join([
         '#! /bin/bash',
@@ -66,7 +70,7 @@ if __name__ == '__main__':
         '#$ -V',
         '#$ -N j{0}'.format(args.sample_tag),
         '#$ -S /bin/bash',
-        '#$ -pe orte {0}'.format(args.processors),
+        '#$ -pe orte {0}'.format(args.processors - 3 if args.processors >= 4 else args.processors),
         '#$ -o {0}/submit_job.stdout'.format(args.working_dir),
         '#$ -e {0}/submit_job.stderr'.format(args.working_dir),
         '',
@@ -75,6 +79,7 @@ if __name__ == '__main__':
         'export PYTHONPATH={0}:$PYTHONPATH'.format(PYTHON_REQS),
         '',
         '# Command',
+        is_running,
         '{0}/submit_job {1} {2} -p {3} {4} {5} {6} {7} {8}'.format(
             PATH,
             args.fastq,
@@ -86,6 +91,7 @@ if __name__ == '__main__':
             LOG_TIMES,
             COVERAGE
         ),
+        is_completed,
         '',
     ])
 

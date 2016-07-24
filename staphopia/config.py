@@ -65,6 +65,7 @@ BIN = {
     'call_variants': '{0}/call_variants'.format(PATH),
     'kmer_analysis': '{0}/kmer_analysis'.format(PATH),
     'annotation': '{0}/annotation'.format(PATH),
+    'create_job_script': '{0}/create_job_script'.format(PATH),
 
     # Staphopia related
     'download_ena': '{0}/download_ena'.format(PATH),
@@ -73,7 +74,7 @@ BIN = {
     'ascp': '{0}/ascp'.format(PATH),
     'aspera_key': '{0}/asperaweb_id_dsa.openssh'.format(PATH),
     'fastq_interleave': '{0}/fastq-interleave'.format(PATH),
-    'manage': '/staphopia/ebs/staphopia.com/manage.py'.format(PATH),
+    'manage': '/staphopia/apps/staphopia.com/manage.py'.format(PATH),
 }
 
 FASTQ = {

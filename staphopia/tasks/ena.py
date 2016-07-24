@@ -57,8 +57,20 @@ def get_unprocessed_ena(args):
     """Retreive a list of unprocessed samples avalible from ENA."""
     cmd = build_command(args)
     stdout, stderr = shared.run_command(cmd, verbose=False)
+    print(' '.join(cmd))
 
     return json.loads(stdout)
+
+
+def get_ena_info(manage, experiment=None):
+    """Retreive a list of unprocessed samples avalible from ENA."""
+    if experiment:
+        stdout, stderr = shared.run_command(
+            ['python', manage, 'ena_info', '--experiment', experiment],
+            verbose=False)
+        return json.loads(stdout)
+    else:
+        return None
 
 
 def get_runs_by_study(study, manage):

@@ -93,7 +93,9 @@ class ENA(object):
         '''
         '''
         cmd = self.build_command(args)
+        print(cmd)
         stdout, stderr = shared.run_command(cmd, verbose=False)
+        print(stderr)
 
         self.enainfo = json.loads(stdout)
 
