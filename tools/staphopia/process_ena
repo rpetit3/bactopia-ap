@@ -134,4 +134,4 @@ if __name__ == '__main__':
         stdout, stderr = shared.run_command(['qsub', job_script])
         update_status(sample, 'queued', server, path)
         print(stdout)
-        time.sleep(601)
+        time.sleep(60)
