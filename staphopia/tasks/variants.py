@@ -30,7 +30,7 @@ def create_sequence_dictionary(reference):
 
 
 def bwa_mem(fastq, output_sam, num_cpu, reference, is_paired):
-    """Align reads (mean length < 70bp) against reference genome."""
+    """Align reads (mean length > 70bp) against reference genome."""
     p = '-p' if is_paired else ''
     shared.run_command(
         [BIN['bwa'], 'mem', '-M', p, '-t', num_cpu, reference, fastq],
@@ -38,7 +38,7 @@ def bwa_mem(fastq, output_sam, num_cpu, reference, is_paired):
     )
 
 
-def bwa_aln(fastq, sai, output_sam, num_cpu, reference,):
+def bwa_aln(fastq, sai, output_sam, num_cpu, reference):
     """Align reads (mean length < 70bp) against reference genome."""
     shared.run_command([
         BIN['bwa'], 'aln', '-f', sai, '-t', num_cpu, reference, fastq

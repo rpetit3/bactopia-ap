@@ -125,7 +125,14 @@ if __name__ == '__main__':
                     raise
 
             # Copy or symlink the renamed fastq
-            os.symlink(fastq, new_fastq)
+            try:
+                os.symlink(fastq, new_fastq)
+            except OSError, e:
+                if e.errno == errno.EEXIST:
+                    os.remove(new_fastq)
+                    os.symlink(fastq, new_fastq)
+                else:
+                    raise e
 
         # Create Job Script
         job_script = create_job_script(fastq_files, path, sample)

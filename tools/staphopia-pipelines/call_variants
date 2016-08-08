@@ -20,6 +20,8 @@ parser.add_argument("-o", "--output", dest="output", type=str,
 parser.add_argument("-r", "--read_length", dest="read_length", type=int,
                     help="Mean read length of input FASTQ file", metavar="INT",
                     default=0)
+parser.add_argument("--stats", type=str, metavar="STR",
+                    help="Location to FASTQ stats json file.")
 parser.add_argument('-p', '--processors', metavar="INT", type=int, default=1,
                     help='Number of processors to use. (Default 1)')
 parser.add_argument('--paired', action='store_true', default=False,
@@ -41,10 +43,9 @@ read_length = options.read_length
 if not options.read_length:
     # Try to read a stats file
     try:
-        stats = options.fastq.replace('gz', 'stats')
-        with open(stats, 'r') as f:
-            json_data = json.loads(f.readline().rstrip())
-            read_length = json_data['mean_read_length']
+        with open(options.stats, 'r') as f:
+            json_data = json.load(f)
+            read_length = json_data['qc_stats']['read_mean']
     except:
         # Unknown read length, set to 0 and use BWA aln/samse
         read_length = 0

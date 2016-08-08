@@ -25,7 +25,15 @@ def run_prokka(fasta, output_dir, tag, num_cpu):
         ]
     )
     log_file = '{0}/{1}.log'.format(output_dir, tag)
+
+    # Remove unused files.
     shared.run_command(['rm', fasta])
+    shared.run_command(['rm', '{0}/{1}.fna'.format(output_dir, tag)])
+    shared.run_command(['rm', '{0}/{1}.fsa'.format(output_dir, tag)])
+    shared.run_command(['rm', '{0}/{1}.gbf'.format(output_dir, tag)])
+    shared.run_command(['rm', '{0}/{1}.sqn'.format(output_dir, tag)])
+    shared.run_command(['rm', '{0}/{1}.tbl'.format(output_dir, tag)])
+
     shared.run_command(['mv', log_file, 'logs/prokka.log'])
     shared.pipe_command(['find', output_dir, '-not', '-name', '*.txt'],
                         ['xargs', '-I', '{}', 'gzip', '--best', '{}'])
