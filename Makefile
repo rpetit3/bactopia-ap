@@ -1,5 +1,5 @@
 .PHONY: all test clean
-PWD := $(shell pwd)
+PWD := $(PWD)
 BIN=$(PWD)/bin
 PATH := $(BIN):$(PATH)
 LIBS=$(PWD)/libs
