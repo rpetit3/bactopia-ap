@@ -141,4 +141,6 @@ if __name__ == '__main__':
         stdout, stderr = shared.run_command(['qsub', job_script])
         update_status(sample, 'queued', server, path)
         print(stdout)
-        time.sleep(60)
+
+        if len(samples) > 1:
+            time.sleep(60)
