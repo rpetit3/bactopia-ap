@@ -2,14 +2,14 @@
 """ Process ENA experiments. """
 
 import os
-import sys
+import errno
 import socket
 
 from staphopia.config import BIN
 from staphopia.tasks import shared
 
 
-def create_job_script(fastq_files, working_dir, sample_tag):
+def create_job_script(fastq_files, working_dir, sample_tag, num_cpu):
     job_script = '{0}/{1}.sh'.format(working_dir, sample_tag)
     input2 = '--fastq2' if len(fastq_files) == 2 else ''
     fastq2 = fastq_files[1] if len(fastq_files) == 2 else ''
@@ -18,7 +18,7 @@ def create_job_script(fastq_files, working_dir, sample_tag):
          fastq_files[0],
          input2, fastq2,
          '--working_dir', working_dir,
-         '--processors', '8',
+         '--processors', num_cpu,
          '--sample_tag', sample,
          '--ena', '--log_times'],
         stdout=job_script
@@ -54,7 +54,6 @@ def get_samples(limit, technology, coverage, min_read_length):
 
 if __name__ == '__main__':
     import argparse as ap
-    import socket
     import glob
     import time
     server = socket.gethostname()
@@ -76,6 +75,8 @@ if __name__ == '__main__':
                         default=100, help='Minimum coverage.')
     parser.add_argument('--min_read_length', metavar="INT", type=int,
                         default=90, help='Minimum read length.')
+    parser.add_argument('--cpu', metavar="INT", type=int,
+                        default=8, help='Number of CPUs to use.')
 
     args = parser.parse_args()
 
@@ -127,7 +128,7 @@ if __name__ == '__main__':
             # Copy or symlink the renamed fastq
             try:
                 os.symlink(fastq, new_fastq)
-            except OSError, e:
+            except OSError as e:
                 if e.errno == errno.EEXIST:
                     os.remove(new_fastq)
                     os.symlink(fastq, new_fastq)
@@ -135,7 +136,8 @@ if __name__ == '__main__':
                     raise e
 
         # Create Job Script
-        job_script = create_job_script(fastq_files, path, sample)
+        job_script = create_job_script(fastq_files, path, sample,
+                                       str(args.cpu))
 
         # Qsub Job
         stdout, stderr = shared.run_command(['qsub', job_script])
@@ -143,4 +145,4 @@ if __name__ == '__main__':
         print(stdout)
 
         if len(samples) > 1:
-            time.sleep(60)
+            time.sleep(5)

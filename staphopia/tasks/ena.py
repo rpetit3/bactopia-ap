@@ -97,33 +97,23 @@ def get_experiment_by_run(run, manage):
     return json.loads(stdout)
 
 
-def download_sra(run):
-    """Download .sra from using SRA Toolkit prefetch and Apera Connect."""
-    ascp ='{0}|{1}'.format(BIN['ascp'], BIN['aspera_key'])
-    ascp_opts = "-T -l 200m"
-    cmd = [BIN['prefetch'], '-a', ascp, '--ascp-options', ascp_opts, run]
-    stdout, stderr = shared.run_command(cmd, verbose=False)
-    failed_statement = 'failed to download {0}'.format(run)
-    if stderr.rstrip().endswith(failed_statement):
-        return False
-    else:
-        return True
-
-
-def convert_sra_to_fastq(sra):
-    pass
-
-def download_fastq(fasp, outdir, fastq):
+def download_fastq(url, outdir, fastq, ftp=False):
     """Download FASTQ from ENA using Apera Connect."""
     if not os.path.isdir(outdir):
         shared.run_command(['mkdir', '-p', outdir], verbose=False)
 
     if not os.path.exists(fastq):
-        shared.run_command(
-            [BIN['ascp'], '-T', '-l', '300m', '-i', BIN['aspera_key'],
-             'era-fasp@{0}'.format(fasp), outdir],
-            verbose=False
-        )
+        if ftp:
+            shared.run_command(
+                ['wget', '-O', fastq, url],
+                verbose=False
+            )
+        else:
+            shared.run_command(
+                [BIN['ascp'], '-T', '-l', '300m', '-i', BIN['aspera_key'],
+                 'era-fasp@{0}'.format(url), outdir],
+                verbose=False
+            )
 
     return shared.get_md5sum(fastq)
 
