@@ -38,15 +38,17 @@ def update_status(experiment, status, server, path):
     )
 
 
-def get_samples(limit, technology, coverage, min_read_length):
+def get_samples(limit, technology, coverage, min_read_length, published=False):
     import json
+    pubs_only = '--published' if published else ''
 
     stdout, stderr = shared.run_command(
         ['python', BIN['manage'], 'unprocessed_ena',
          '--limit', str(limit),
          '--technology', technology,
          '--coverage', str(coverage),
-         '--min_read_length', str(min_read_length)],
+         '--min_read_length', str(min_read_length),
+         pubs_only],
         verbose=False
     )
     return json.loads(stdout).keys()
@@ -77,12 +79,14 @@ if __name__ == '__main__':
                         default=90, help='Minimum read length.')
     parser.add_argument('--cpu', metavar="INT", type=int,
                         default=8, help='Number of CPUs to use.')
+    parser.add_argument('--published', action='store_true',
+                        help='Filter published samples.')
 
     args = parser.parse_args()
 
     # Get samples to Process
     samples = get_samples(args.limit, args.technology, args.coverage,
-                          args.min_read_length)
+                          args.min_read_length, published=args.published)
 
     for sample in samples:
         path = "{0}/{1}".format(args.working_dir, sample)

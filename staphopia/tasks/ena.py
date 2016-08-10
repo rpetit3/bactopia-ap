@@ -50,6 +50,9 @@ def build_command(args):
         cmd.append('--accessions')
         cmd.append(args.accessions)
 
+    if args.published:
+        cmd.append('--published')
+
     return cmd
 
 
