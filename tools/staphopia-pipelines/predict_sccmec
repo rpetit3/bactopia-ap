@@ -59,6 +59,14 @@ def blast_primers(blastdb, output_file):
 
 
 @follows(blast_primers)
+@transform(blastdb_exists, regex(r"(.*)"), r"analyses/sccmec/subtypes.json")
+@time_job(TIME_LOG)
+def blast_subtypes(blastdb, output_file):
+    """Blast SCCmec related primers against given blast database."""
+    sccmec.blast_subtypes(options.blastdb, output_file)
+
+
+@follows(blast_subtypes)
 @transform(options.fastq,
            regex(r"(.*)"),
            r"analyses/sccmec/cassette-coverages.gz")

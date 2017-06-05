@@ -4,7 +4,7 @@ Static variables used throughout the analysis pipeline.
 
 Please note, the Makefile should update BASE_DIR, but if not you will need to.
 """
-BASE_DIR = CHANGE_ME
+BASE_DIR = "/home/rpetit/staphopia/apps/analysis-pipeline"
 
 # PATH
 PATH = '{0}/bin'.format(BASE_DIR)
@@ -90,6 +90,9 @@ MLST = {
 
 SCCMEC = {
     'primers': '{0}/sccmec/sccmec_primers.fasta'.format(TOOL_DATA),
+    'subtype_primers': '{0}/sccmec/sccmec_subtype_primers.fasta'.format(
+        TOOL_DATA
+    ),
     'proteins': '{0}/sccmec/sccmec_proteins.fasta'.format(TOOL_DATA),
     'cassettes': '{0}/sccmec/sccmec_cassettes'.format(TOOL_DATA),
 }

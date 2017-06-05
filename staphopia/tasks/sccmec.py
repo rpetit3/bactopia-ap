@@ -24,6 +24,16 @@ def blast_primers(blastdb, output_file):
     )
 
 
+def blast_subtypes(blastdb, output_file):
+    """BLAST SCCmec subtype related primers against given blast database."""
+    shared.run_command(
+        [BIN['blastn'], '-max_target_seqs', '1', '-dust', 'no',
+         '-word_size', '7', '-perc_identity', '100', '-db', blastdb,
+         '-outfmt', '15', '-query', SCCMEC['subtype_primers']],
+        stdout=output_file,
+    )
+
+
 def bwa_mem(fastq, output_sam, num_cpu, is_paired):
     """Align reads (mean length < 70bp) against reference genome."""
     p = '-p' if is_paired else ''
