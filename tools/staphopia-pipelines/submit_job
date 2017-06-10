@@ -14,8 +14,8 @@ parser.add_argument("-f2", "--fastq2", dest="fastq2", default='',
                     help="Optional paired end compressed FASTQ file",)
 parser.add_argument('--coverage', metavar="INT", type=int, default=100,
                     help='Coverage to subsample to.')
-parser.add_argument('--miseq', action='store_true', default=False,
-                    help='Input is Illumina MiSeq reads.', )
+parser.add_argument('--no_length_filter', action='store_true', default=False,
+                    help='Do not filter based on read lengths (MiSeq Data).', )
 parser.add_argument('-p', '--processors', metavar="INT", type=int, default=1,
                     help='Number of processors to use. (Default 1)')
 parser.add_argument('--sample_tag', dest='sample_tag', default='sample_tag',
@@ -27,7 +27,7 @@ args = parser.parse_args()
 
 # Configuration ---------------------------------------------------------------
 IS_PAIRED = '--paired' if args.fastq2 else ''
-IS_MISEQ = '--miseq' if args.miseq else ''
+NO_LENGTH_FILTER = '--no_length_filter' if args.no_length_filter else ''
 BLASTDB = "blastdb/scaffolds"
 CLEAN_FASTQ = '{0}.cleanup.fastq.gz'.format(args.sample_tag)
 FASTQ_STATS = 'analyses/fastq-stats/{0}.cleanup.fastq.json'.format(args.sample_tag)
@@ -54,7 +54,7 @@ def fastq_cleanup():
          '--coverage', str(args.coverage),
          '-p', str(args.processors),
          IS_PAIRED,
-         IS_MISEQ,
+         NO_LENGTH_FILTER,
          LOG_TIMES],
         stdout='logs/fastq_cleanup.stdout',
         stderr='logs/fastq_cleanup.stderr',
