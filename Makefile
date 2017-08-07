@@ -28,7 +28,7 @@ $(LIBS)/python/easy_install.py: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 download-tools: $(PWD)/tools.tar $(TOOLS)/spades/SPAdes-3.8.0-Linux.tar.gz ;
 $(PWD)/tools.tar: ;
-	wget https://www.dropbox.com/s/rwn7j7iebwuox0r/tools.tar
+	wget --no-verbose https://www.dropbox.com/s/rwn7j7iebwuox0r/tools.tar
 
 $(TOOLS)/spades/SPAdes-3.8.0-Linux.tar.gz: $(PWD)/tools.tar ;
 	tar -xvf $^
@@ -36,7 +36,7 @@ $(TOOLS)/spades/SPAdes-3.8.0-Linux.tar.gz: $(PWD)/tools.tar ;
 
 download-uniref50: staphopia $(PWD)/data/annotation/uniref50-bacteria.prokka $(PWD)/data/annotation/uniref50-bacteria.tab;
 $(PWD)/data/annotation/uniref50-bacteria.prokka: ;
-	wget -O $(PWD)/data/annotation/uniref50-bacteria.prokka.gz https://www.dropbox.com/s/86wy0dg8rfh9r2s/uniref50-bacteria.prokka.gz
+	wget --no-verbose -O $(PWD)/data/annotation/uniref50-bacteria.prokka.gz https://www.dropbox.com/s/86wy0dg8rfh9r2s/uniref50-bacteria.prokka.gz
 	gunzip $(PWD)/data/annotation/uniref50-bacteria.prokka.gz
 	touch $@
 
