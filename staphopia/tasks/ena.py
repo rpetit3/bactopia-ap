@@ -113,7 +113,7 @@ def download_fastq(url, outdir, fastq, ftp=False):
             )
         else:
             shared.run_command(
-                [BIN['ascp'], '-T', '-l', '300m', '-i', BIN['aspera_key'],
+                [BIN['ascp'], '-T', '-l', '300m', '-P33001', '-i', BIN['aspera_key'],
                  'era-fasp@{0}'.format(url), outdir],
                 verbose=False
             )
