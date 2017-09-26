@@ -57,7 +57,11 @@ class CleanUpFASTQ(object):
 
     def __test_read(self, index, append=''):
         """Test if the read passes quality filters."""
-        head = "{0}{1}".format(self.fastq[index].split()[0], append)
+        head = self.fastq[index].split()[0]
+        if append:
+            if not head.endswith(append):
+                head = "{0}{1}".format(self.fastq[index].split()[0], append)
+
         seq = self.fastq[index + 1]
         length = 0
         qual = self.fastq[index + 3]

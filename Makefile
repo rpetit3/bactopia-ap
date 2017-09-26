@@ -28,7 +28,7 @@ $(LIBS)/python/easy_install.py: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 download-tools: $(PWD)/tools.tar $(TOOLS)/spades/SPAdes-3.8.0-Linux.tar.gz ;
 $(PWD)/tools.tar: ;
-	wget https://www.dropbox.com/s/rwn7j7iebwuox0r/tools.tar
+	wget --no-verbose https://www.dropbox.com/s/rwn7j7iebwuox0r/tools.tar
 
 $(TOOLS)/spades/SPAdes-3.8.0-Linux.tar.gz: $(PWD)/tools.tar ;
 	tar -xvf $^
@@ -36,7 +36,7 @@ $(TOOLS)/spades/SPAdes-3.8.0-Linux.tar.gz: $(PWD)/tools.tar ;
 
 download-uniref50: staphopia $(PWD)/data/annotation/uniref50-bacteria.prokka $(PWD)/data/annotation/uniref50-bacteria.tab;
 $(PWD)/data/annotation/uniref50-bacteria.prokka: ;
-	wget -O $(PWD)/data/annotation/uniref50-bacteria.prokka.gz https://www.dropbox.com/s/86wy0dg8rfh9r2s/uniref50-bacteria.prokka.gz
+	wget --no-verbose -O $(PWD)/data/annotation/uniref50-bacteria.prokka.gz https://www.dropbox.com/s/86wy0dg8rfh9r2s/uniref50-bacteria.prokka.gz
 	gunzip $(PWD)/data/annotation/uniref50-bacteria.prokka.gz
 	touch $@
 
@@ -78,6 +78,7 @@ $(BIN)/unprocessed_ena: ;
 staphopia-pipelines: $(BIN)/submit_job ;
 $(BIN)/submit_job: ;
 	ls $(TOOLS)/staphopia-pipelines | xargs -I {} ln -s $(TOOLS)/staphopia-pipelines/{} $(BIN)/{}
+	ln -s $(BIN)/submit_job $(BIN)/staphopia
 
 staphopia-python: $(LIBS)/python/staphopia
 $(LIBS)/python/staphopia: ;
@@ -87,7 +88,7 @@ $(LIBS)/python/staphopia: ;
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-fastq: $(BIN)/fastq-validator $(BIN)/fastq-stats $(BIN)/fastq-interleave $(BIN)/bbduk.sh $(BIN)/trimmomatic.jar;
+fastq: $(BIN)/fastq-validator $(BIN)/fastq-stats $(BIN)/fastq-interleave $(BIN)/bbduk.sh;
 $(BIN)/fastq-validator: ;
 	$(eval FASTQ_BUILD=$(TOOLS)/fastq-validator/build)
 	rm -rf $(FASTQ_BUILD) && mkdir -p $(FASTQ_BUILD)
@@ -111,14 +112,6 @@ $(BIN)/bbduk.sh: ;
 	tar -C $(BB_BUILD) -xzvf $(TOOLS)/bbmap/BBMap_35-85.tar.gz
 	ln -s $(BB_BUILD)/bbmap/ecc.sh $(BIN)/ecc.sh
 	ln -s $(BB_BUILD)/bbmap/bbduk.sh $@
-
-$(BIN)/trimmomatic.jar: ;
-	$(eval TRIM_BUILD=$(TOOLS)/trimmomatic/build)
-	rm -rf $(TRIM_BUILD) && mkdir -p $(TRIM_BUILD)
-	unzip $(TOOLS)/trimmomatic/Trimmomatic-0.35.zip -d $(TRIM_BUILD)/
-	mv $(TRIM_BUILD)/Trimmomatic-0.35 $(TRIM_BUILD)/trimmomatic
-	ln -s $(TRIM_BUILD)/trimmomatic/trimmomatic-0.35.jar $@
-
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
@@ -155,6 +148,7 @@ $(BIN)/makeblastdb: ;
 	ln -s $(BLAST_BUILD)/blast/bin/tblastn $(BIN)/tblastn
 	ln -s $(BLAST_BUILD)/blast/bin/tblastx $(BIN)/tblastx
 	ln -s $(BLAST_BUILD)/blast/bin/makeblastdb $@
+
 
 $(BIN)/srst2.py: ;
 	$(eval SRST_BUILD=$(TOOLS)/srst2/build)
@@ -325,6 +319,49 @@ clean: clean-config ;
 extra-clean: clean ;
 	rm $(PWD)/tools.tar
 	rm $(PWD)/data/annotation/uniref50-bacteria.*
+
+docker-clean: ;
+	rm -f $(PWD)/tools.tar
+	rm -f $(PWD)/data/annotation/uniref50-bacteria.*
+	rm -f $(TOOLS)/aspera-connect/aspera-connect-3.6.2.117442-linux-64.tar.gz
+	rm -f $(TOOLS)/sra-toolkit/sratoolkit.2.6.2-ubuntu64.tar.gz
+	rm -f $(TOOLS)/fastq-validator/libStatGen-0.0.1.tar.gz
+	rm -f $(TOOLS)/fastq-validator/fastQValidator-0.1.tar.gz
+	rm -f $(TOOLS)/bbmap/BBMap_35-85.tar.gz
+	rm -rf $(TOOLS)/trimmomatic/
+	rm -f $(TOOLS)/spades/SPAdes-3.8.0-Linux.tar.gz
+	rm -f $(TOOLS)/assemblathon-stats/assemblathon-stats-0.2.tar.gz
+	rm -f $(TOOLS)/blast+/ncbi-blast-2.3.0+-x64-linux.tar.gz
+	rm -f $(TOOLS)/srst2/srst2-0.1.tar.gz
+	rm -f $(TOOLS)/bowtie2/bowtie2-2.2.4-linux-x86_64.zip
+	rm -f $(TOOLS)/samtools-0.1.18/samtools-0.1.18.tar.bz2
+	rm -f $(TOOLS)/samtools/samtools-1.3.tar.bz2
+	rm -f $(TOOLS)/bedtools/bedtools-2.25.0.tar.gz
+	rm -f $(TOOLS)/jellyfish/jellyfish-2.2.4.tar.gz
+	rm -f $(TOOLS)/bwa/bwa-0.7.13.tar.gz
+	rm -f $(TOOLS)/java7/jdk-7u79-linux-x64.tar.gz
+	rm -f $(TOOLS)/java8/jdk-8u73-linux-x64.tar.gz
+	rm -f $(TOOLS)/picard-tools/picard-tools-2.1.1.tar.gz
+	rm -f $(TOOLS)/gatk/GenomeAnalysisTK-3.5.tar.bz2
+	rm -f $(TOOLS)/vcf-annotator/vcf-annotator-0.3.tar.gz
+	rm -f $(TOOLS)/prokka/prokka-1.11.5.tar.gz
+	rm -f $(TOOLS)/barrnap/barrnap-0.7.tar.gz
+	rm -f $(TOOLS)/blast+/build/blast/bin/blastdb_aliastool
+	rm -f $(TOOLS)/blast+/build/blast/bin/blastdbcheck
+	rm -f $(TOOLS)/blast+/build/blast/bin/blastdbcmd
+	rm -f $(TOOLS)/blast+/build/blast/bin/blast_formatter
+	rm -f $(TOOLS)/blast+/build/blast/bin/convert2blastmask
+	rm -f $(TOOLS)/blast+/build/blast/bin/deltablast
+	rm -f $(TOOLS)/blast+/build/blast/bin/dustmasker
+	rm -f $(TOOLS)/blast+/build/blast/bin/legacy_blast.pl
+	rm -f $(TOOLS)/blast+/build/blast/bin/makembindex
+	rm -f $(TOOLS)/blast+/build/blast/bin/makeprofiledb
+	rm -f $(TOOLS)/blast+/build/blast/bin/psiblast
+	rm -f $(TOOLS)/blast+/build/blast/bin/rpsblast
+	rm -f $(TOOLS)/blast+/build/blast/bin/rpstblastn
+	rm -f $(TOOLS)/blast+/build/blast/bin/segmasker
+	rm -f $(TOOLS)/blast+/build/blast/bin/update_blastdb.pl
+	rm -f $(TOOLS)/blast+/build/blast/bin/windowmasker
 
 clean-config: ;
 	sed -i 's#^BASE_DIR.*#BASE_DIR = CHANGE_ME#' staphopia/config.py

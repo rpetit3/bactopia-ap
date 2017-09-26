@@ -10,7 +10,7 @@ def gziplines(fname):
         yield line
 
 
-def run_command(cmd, stdout=False, stderr=False, verbose=True):
+def run_command(cmd, stdout=False, stderr=False, verbose=True, shell=False):
     """
     Execute a single command and return STDOUT and STDERR.
 
@@ -21,7 +21,7 @@ def run_command(cmd, stdout=False, stderr=False, verbose=True):
         print ' '.join(cmd)
     stdout = open(stdout, 'w') if stdout else subprocess.PIPE
     stderr = open(stderr, 'w') if stderr else subprocess.PIPE
-    p = subprocess.Popen(cmd, stdout=stdout, stderr=stderr)
+    p = subprocess.Popen(cmd, stdout=stdout, stderr=stderr, shell=shell)
 
     return p.communicate()
 
