@@ -5,7 +5,6 @@ CleanUpFASTQ, a class for the clean up of FASTQ files.
 Disclaimer: This has only been tested on Illumina reads.
 """
 import random
-import re
 import numpy as np
 
 
@@ -26,6 +25,12 @@ class CleanUpFASTQ(object):
         self.__phred64 = 0
         self.__phred33 = 0
         self.__phredunk = 0
+        self.__contains_ns = 0
+        self.__total_ns = 0
+        self.__read_length = 0
+        self.__bad_quality = 0
+        self.__n_lengths = 0
+        self.__missed_ns = 0
 
     def read_large_fastq(self, file, fraction):
         """Reduce a large (2 GB+) file to a subset before cleanup."""
@@ -38,6 +43,7 @@ class CleanUpFASTQ(object):
             plus = file.readline().rstrip()
             qual = file.readline().rstrip()
 
+            random.seed(123456)
             if random.random() <= fraction:
                 self.fastq.append(head)
                 self.fastq.append(seq)
@@ -55,6 +61,55 @@ class CleanUpFASTQ(object):
         qual_stats = np.array([ord(j) for j in qual])
         return np.mean(qual_stats) - 33
 
+    def __get_nonambiguous_sequence(self, seq, qual):
+        """Return the longest non-ambiguous sequence."""
+        seqs = []
+        new_seq = []
+        quals = []
+        new_qual = []
+        for index, base in enumerate(seq):
+            if base == 'N' and len(new_seq):
+                seqs.append(''.join(new_seq))
+                quals.append(''.join(new_qual))
+                new_seq = []
+                new_qual = []
+            else:
+                new_seq.append(base)
+                new_qual.append(qual[index])
+
+        if len(new_seq):
+            seqs.append(''.join(new_seq))
+            quals.append(''.join(new_qual))
+
+        # Get the largest chunk
+        new_seq = ''
+        new_qual = ''
+        for index, chunk in enumerate(seqs):
+            if len(chunk) > len(new_seq):
+                new_seq = chunk
+                new_qual = quals[index]
+            elif len(chunk) == len(new_seq):
+                random.seed(123456)
+                if random.random() <= 0.5:
+                    new_seq = chunk
+                    new_qual = quals[index]
+
+        return [new_seq, new_qual]
+
+    def __quality_trim(self, seq, qual):
+        """Remove bases below minimum quality."""
+        new_seq = []
+        new_qual = []
+        for index, base in enumerate(seq):
+            q = ord(qual[index]) - 33
+            if q < self.min_mean_quality and index >= self.min_read_length:
+                break
+            else:
+                new_seq.append(base)
+                new_qual.append(qual[index])
+
+        return [''.join(new_seq), ''.join(new_qual)]
+
     def __test_read(self, index, append=''):
         """Test if the read passes quality filters."""
         head = self.fastq[index].split()[0]
@@ -66,19 +121,33 @@ class CleanUpFASTQ(object):
         length = 0
         qual = self.fastq[index + 3]
 
-        if (not re.search('N', seq) and len(seq) >= self.min_read_length):
+        # If ambiguous nucleotides, get largest subsequence without
+        # ambiguous nucleotides.
+        if seq.count('N') > 0:
+            seq, qual = self.__get_nonambiguous_sequence(seq, qual)
+            self.__n_lengths += len(seq)
+            self.__total_ns += seq.count('N')
+            self.__contains_ns += 1
+
+        if (seq.count('N') == 0 and len(seq) >= self.min_read_length):
             if (self.read_length_cutoff and length > self.read_length_cutoff):
                 seq = seq[:self.read_length_cutoff]
                 qual = qual[:self.read_length_cutoff]
+            else:
+                if (self.read_length_cutoff):
+                    self.__read_length += 1
 
             if (self.__mean_quality(qual) >= self.min_mean_quality):
-                head
                 self.__temp_read.append('{0}\n{1}\n+\n{2}'.format(
                     head,
                     seq,
                     qual
                 ))
                 length = len(seq)
+            else:
+                self.__bad_quality += 1
+        else:
+            self.__missed_ns += 1
 
         return length
 
@@ -113,3 +182,10 @@ class CleanUpFASTQ(object):
 
             if self.subsample and basepair_count >= self.subsample:
                 break
+        '''
+        print('Ns: {0} ({3}, {5}) \tLength: {1}\tQual: {2}\tReads Saved: {4}'.format(
+            self.__contains_ns, self.__read_length, self.__bad_quality,
+            self.__total_ns, self.__n_lengths / float(self.__contains_ns),
+            self.__missed_ns
+        ))
+        '''

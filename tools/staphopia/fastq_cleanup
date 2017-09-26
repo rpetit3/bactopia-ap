@@ -110,7 +110,7 @@ if __name__ == '__main__':
             stats, args.coverage, args.paired
         )
         args.total_read_count = stats['read_total']
-        args.min_read_length = stats['read_total']
+        args.min_read_length = stats['read_min']
 
         if not args.no_length_filter:
             suggested_min = define_min_read(stats, args.coverage, args.paired)

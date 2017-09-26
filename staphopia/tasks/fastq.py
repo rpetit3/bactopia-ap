@@ -110,34 +110,8 @@ def error_correct(fastq, num_cpu, out_dir, fastq2=''):
     }
 
 
-'''
-def filter_adapters(fastq, num_cpu, out_dir, logm fastq2=''):
-    """Use Trimmomatic to filter out adapter sequences from Illumina reads."""
-    paired = 'PE' if fastq2 else 'SE'
-    out2 = '{0}/noadapter_pe2.fastq'.format(out_dir) if fastq2 else ''
-    out1_se = '{0}/noadapter_se2.fastq'.format(out_dir) if fastq2 else ''
-    out2_se = '{0}/noadapter_se2.fastq'.format(out_dir) if fastq2 else ''
-    shared.run_command([
-        BIN['java7'], '-jar', BIN['trimmomatic'], paired,
-        '-threads', num_cpu,
-        fastq, fastq2,
-        '{0}/noadapter_pe1.fastq'.format(out_dir),
-        out1_se, out2, out2_se,
-        'ILLUMINACLIP:{0}:2:20:10:8:true'.format(FASTQ['adapters']),
-        'LEADING:3', 'TRAILING:3', 'MINLEN:36'
-    ])
-
-    return {
-        'fastq': '{0}/noadapter_pe1.fastq'.format(out_dir),
-        'fastq_se': '{0}/noadapter_se1.fastq'.format(out_dir),
-        'fastq2': out2,
-        'fastq2_se': out2_se
-    }
-'''
-
-
 def cleanup(fastq, stats_file, is_paired, no_length, output_file, fastq2=None,
-            coverage=50):
+            coverage=100):
     """Read stats_file, and remove low quality reads and reduce coverage."""
     paired = '--paired' if is_paired else ''
     no_length_filter = '--no_length_filter' if no_length else ''
