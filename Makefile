@@ -78,7 +78,7 @@ $(BIN)/unprocessed_ena: ;
 staphopia-pipelines: $(BIN)/submit_job ;
 $(BIN)/submit_job: ;
 	ls $(TOOLS)/staphopia-pipelines | xargs -I {} ln -s $(TOOLS)/staphopia-pipelines/{} $(BIN)/{}
-	ln -s $(BIN)/submit_job $(BIN)/staphopia
+	ln -s $(TOOLS)/staphopia-pipelines/submit_job $(BIN)/staphopia-job
 
 staphopia-python: $(LIBS)/python/staphopia
 $(LIBS)/python/staphopia: ;
