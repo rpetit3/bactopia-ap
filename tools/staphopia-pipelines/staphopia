@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
     parser.add_argument("fastq", help="Input file")
     parser.add_argument(
-        "sample", dest="sample",
+        "sample",
         help="Sample name and alse the output directory to use"
     )
     parser.add_argument("-f2", "--fastq2", dest="fastq2", default='',
