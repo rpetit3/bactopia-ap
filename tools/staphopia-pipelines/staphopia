@@ -27,7 +27,7 @@ def get_fastq_path(fastq):
 
 if __name__ == '__main__':
     import argparse as ap
-    from staphopia.tasks.shared import run_command, pipe_command
+    from staphopia.tasks.shared import run_command
 
     parser = ap.ArgumentParser(
         prog='staphopia',
@@ -86,11 +86,4 @@ if __name__ == '__main__':
         stdout='staphopia-log.txt',
         stderr='staphopia-error.txt',
         verbose=False
-    )
-
-    # Clean up JRE usage folder
-    pipe_command(
-        ['find', '.', '-name', '*oracle_jre_usage*',
-         '-exec', 'dirname', '{}', '+'],
-        ['xargs', '-I', '{}', 'rm', '-rf', '{}']
     )

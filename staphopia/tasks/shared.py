@@ -18,7 +18,7 @@ def run_command(cmd, stdout=False, stderr=False, verbose=True, shell=False):
     """
     cmd = filter(None, cmd)
     if verbose:
-        print ' '.join(cmd)
+        print(' '.join(cmd))
     stdout = open(stdout, 'w') if stdout else subprocess.PIPE
     stderr = open(stderr, 'w') if stderr else subprocess.PIPE
     p = subprocess.Popen(cmd, stdout=stdout, stderr=stderr, shell=shell)
@@ -26,7 +26,7 @@ def run_command(cmd, stdout=False, stderr=False, verbose=True, shell=False):
     return p.communicate()
 
 
-def pipe_command(cmd_1, cmd_2, stdout=False, stderr=False):
+def pipe_command(cmd_1, cmd_2, stdout=False, stderr=False, verbose=False):
     """
     Pipe two commands and return STDOUT and STDERR.
 
@@ -34,7 +34,8 @@ def pipe_command(cmd_1, cmd_2, stdout=False, stderr=False):
     """
     cmd_1 = filter(None, cmd_1)
     cmd_2 = filter(None, cmd_2)
-    print '{0} | {1}'.format(' '.join(cmd_1), ' '.join(cmd_2))
+    if verbose:
+        print('{0} | {1}'.format(' '.join(cmd_1), ' '.join(cmd_2)))
 
     stdout = open(stdout, 'w') if stdout else subprocess.PIPE
     stderr = open(stderr, 'w') if stderr else subprocess.PIPE
@@ -55,9 +56,9 @@ def pipe_commands(cmd_1, cmd_2, cmd_3, stdout=False, stderr=False):
     cmd_1 = filter(None, cmd_1)
     cmd_2 = filter(None, cmd_2)
     cmd_3 = filter(None, cmd_3)
-    print '{0} | {1} | {2}'.format(
+    print('{0} | {1} | {2}'.format(
         ' '.join(cmd_1), ' '.join(cmd_2), ' '.join(cmd_3)
-    )
+    ))
     p1 = subprocess.Popen(cmd_1, stdout=subprocess.PIPE)
     p2 = subprocess.Popen(cmd_2, stdin=p1.stdout, stdout=subprocess.PIPE)
     p3 = subprocess.Popen(cmd_3, stdin=p2.stdout, stdout=stdout, stderr=stderr)
