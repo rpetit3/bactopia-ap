@@ -68,12 +68,12 @@ if __name__ == '__main__':
     cwd = os.getcwd()
     FQ1 = get_fastq_path(args.fastq)
     FQ2 = get_fastq_path(args.fastq2) if args.fastq2 else ''
-    if not args.outdir == "./":
-        run_command(["mkdir", "-p", args.outdir], verbose=False)
-        os.chdir(args.outdir)
-    elif args.compress:
+    if args.compress:
         run_command(["mkdir", "-p", args.sample], verbose=False)
         os.chdir(args.sample)
+    elif not args.outdir == "./":
+        run_command(["mkdir", "-p", args.outdir], verbose=False)
+        os.chdir(args.outdir)
 
     # Run Staphopia Pipeline
     run_command(
