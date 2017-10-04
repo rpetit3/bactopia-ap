@@ -4,7 +4,7 @@ A wrapper for Staphopia's analysis pipeline.
 
 usage: staphopia [-h] [-f2 FASTQ2] [-o OUTDIR] [--coverage INT]
                  [--no_length_filter] [-p INT] [--sample_tag SAMPLE_TAG]
-                 [--log_times]
+                 [--log_times] [--compress]
                  fastq
 
 Example Usage: staphopia INPUT_R1.fastq.gz -f2 INPUT_R2.fastq.gz -p 12
@@ -56,6 +56,8 @@ if __name__ == '__main__':
     )
     parser.add_argument('--log_times', action='store_true', default=False,
                         help='Write task run times to file (Default: STDERR).')
+    parser.add_argument('--compress', action='store_true', default=False,
+                        help='Write all output to SAMPLE.tar.gz.')
 
     if len(sys.argv) == 1:
         parser.print_usage()
@@ -67,8 +69,11 @@ if __name__ == '__main__':
     FQ1 = get_fastq_path(args.fastq)
     FQ2 = get_fastq_path(args.fastq2) if args.fastq2 else ''
     if not args.outdir == "./":
-        run_command(["mkdir", "-p", args.outdir])
+        run_command(["mkdir", "-p", args.outdir], verbose=False)
         os.chdir(args.outdir)
+    elif args.compress:
+        run_command(["mkdir", "-p", args.sample], verbose=False)
+        os.chdir(args.sample)
 
     # Run Staphopia Pipeline
     run_command(
@@ -87,3 +92,16 @@ if __name__ == '__main__':
         stderr='staphopia-error.txt',
         verbose=False
     )
+
+    if args.compress:
+        os.chdir("../")
+        run_command(
+            [
+                "tar",
+                "-zcvf",
+                "{0}.tar.gz".format(args.sample),
+                "{0}/".format(args.sample)
+            ],
+            verbose=False
+        )
+        run_command(["rm", "-rf", "{0}/".format(args.sample)], verbose=False)
