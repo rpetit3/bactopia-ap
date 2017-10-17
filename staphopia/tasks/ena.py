@@ -76,6 +76,21 @@ def get_ena_info(manage, experiment=None):
         return None
 
 
+def get_experiment_info_from_api(experiment):
+    """Retreive a list of unprocessed samples avalible from ENA."""
+    import requests
+    import json
+    r = requests.get(
+        'https://staphopia.emory.edu/api/ena/experiment/{0}/info/'.format(
+            experiment
+    ))
+
+    if r.status_code == requests.codes.ok:
+        return r.json()
+    else:
+        return False
+
+
 def get_runs_by_study(study, manage):
     """Return a dictionary of runs associated with a study."""
     cmd = ['python', manage, 'ena_info', '--study', study]
@@ -115,7 +130,7 @@ def download_fastq(url, outdir, fastq, ftp=False):
             shared.run_command(
                 [BIN['ascp'], '-T', '-l', '300m', '-P33001', '-i', BIN['aspera_key'],
                  'era-fasp@{0}'.format(url), outdir],
-                verbose=False
+                verbose=True
             )
 
     return shared.get_md5sum(fastq)
