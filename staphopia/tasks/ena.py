@@ -1,5 +1,6 @@
 """ENA related functions."""
 import os
+import time
 try:
     import ujson as json
 except ImportError:
@@ -115,26 +116,47 @@ def get_experiment_by_run(run, manage):
     return json.loads(stdout)
 
 
-def download_fastq(url, outdir, fastq, ftp=False):
+def download_fastq(fasp_url, ftp_url, outdir, md5sum, verbose=False, max_retry=10):
     """Download FASTQ from ENA using Apera Connect."""
-    if not os.path.isdir(outdir):
-        shared.run_command(['mkdir', '-p', outdir], verbose=False)
+    dl_md5sum = None
+    success = False
+    ftp = False
+    retries = 0
+    fastq = '{0}/{1}'.format(
+        outdir, format(os.path.basename(fasp_url))
+    )
 
     if not os.path.exists(fastq):
-        if ftp:
-            shared.run_command(
-                ['wget', '-O', fastq, url],
-                verbose=False
-            )
-        else:
-            shared.run_command(
-                [BIN['ascp'], '-T', '-l', '300m', '-P33001', '-i', BIN['aspera_key'],
-                 'era-fasp@{0}'.format(url), outdir],
-                verbose=True
-            )
+        if not os.path.isdir(outdir):
+            shared.run_command(['mkdir', '-p', outdir], verbose=False)
 
-    return shared.get_md5sum(fastq)
+        while not success:
+            if ftp:
+                shared.run_command(['wget', '-O', fastq, ftp_url],
+                                   verbose=verbose)
+            else:
+                shared.run_command(
+                    [BIN['ascp'], '-QT', '-l', '300m', '-P33001',
+                     '-i', BIN['aspera_key'], 'era-fasp@{0}'.format(fasp_url),
+                     outdir],
+                    verbose=verbose
+                )
+            if shared.get_md5sum(fastq) != md5sum:
+                retries += 1
+                os.remove(fastq)
+                if retries > max_retry:
+                    if not ftp:
+                        ftp = True
+                        retries = 0
+                    else:
+                        break
+                time.sleep(10)
+            else:
+                success = True
+    else:
+        success = True
 
+    return [success, fastq]
 
 def merge_runs(runs, output):
     """Merge runs from an experiment."""

@@ -1,5 +1,14 @@
 #! /usr/bin/env python
 """ Download ENA experiments. """
+from __future__ import print_function
+import sys
+
+
+def log_stdout(message, quiet=False):
+    if not quiet:
+        print(message, file=sys.stdout)
+
+
 if __name__ == '__main__':
     import os
     import time
@@ -15,86 +24,53 @@ if __name__ == '__main__':
                         help=('Download single experiment.'))
     group1.add_argument('output', metavar="OUTPUT_DIR", type=str,
                         help=('Directory to output downloads to.'))
+    group1.add_argument('--quiet', action='store_true', default=False,
+                        help='Do not print current status.')
 
     args = parser.parse_args()
     ena_json = ena.get_experiment_info_from_api(args.experiment)
-    print(ena_json)
     outdir = '{0}'.format(args.output)
-    print('Working on {0}'.format(args.experiment))
+    log_stdout('Working on {0}'.format(args.experiment), quiet=args.quiet)
 
     # FASTQ file names
     runs = {'r1': [], 'r2': [], 'is_paired': False, 'is_miseq': False}
     for run in ena_json['results']:
         run_accession = run['run']
-        print('\tWorking on {0}...'.format(run_accession))
+        log_stdout('\tWorking on {0}...'.format(run_accession),
+                   quiet=args.quiet)
         runs['is_paired'] = True if run['is_paired'] else False
-        runs['is_miseq'] = True if run['is_miseq'] else False
-        for i in xrange(len(run['aspera'])):
-            if run['md5'][i]:
-                fastq_md5 = run['md5'][i]
-                dl_md5 = None
-                prev_md5 = None
-                md5_same = 0
-                retries = 0
-                fasp = run['aspera'][i]
-                while (fastq_md5 != dl_md5):
-                    fastq = '{0}/{1}'.format(
-                        outdir, format(os.path.basename(fasp))
-                    )
-                    print('\t\tDownloading {0}...'.format(fastq))
-                    dl_md5 = ena.download_fastq(fasp, outdir, fastq)
-                    if dl_md5 == fastq_md5:
-                        print('\t\tMD5s match, {0}\t{1}'.format(
-                            fastq_md5, dl_md5
-                        ))
-                        if fastq.endswith("_1.fastq.gz"):
-                            runs['r1'].append(fastq)
-                        elif fastq.endswith("_2.fastq.gz"):
-                            runs['r2'].append(fastq)
-                        else:
-                            runs['r1'].append(fastq)
-                    else:
-                        if not prev_md5:
-                            prev_md5 = dl_md5
-                        else:
-                            if prev_md5 == dl_md5:
-                                md5_same += 1
-                                if md5_same == 5:
-                                    print('Downloaded MD5 has been the '
-                                          'same the last 5 tries, keeping '
-                                          'download and contining...')
-                                    dl_md5 = fastq_md5
-                                    if fastq.endswith("_1.fastq.gz"):
-                                        runs['r1'].append(fastq)
-                                    elif fastq.endswith("_2.fastq.gz"):
-                                        runs['r2'].append(fastq)
-                                    else:
-                                        runs['r1'].append(fastq)
-                            else:
-                                prev_md5 = dl_md5
+        for i in range(len(run['aspera'])):
+            # Download Run
+            success, fastq = ena.download_fastq(
+                run['aspera'][i], run['ftp'][i], outdir, run['md5'][i],
+                verbose=not args.quiet
+            )
 
-                        print(('\t\tMD5s do not match... sleeping for 10s'
-                               ', {0}\t{1}').format(
-                            fastq_md5, dl_md5
-                        ))
-                        retries += 1
-                        if retries >= 20:
-                            print('Retried 10 times, maybe try manually '
-                                  'downloading or try again later.')
-                            break
-                        time.sleep(5)
+            if success:
+                if i:
+                    runs['r2'].append(fastq)
+                else:
+                    runs['r1'].append(fastq)
+            else:
+                print("Failed to download matching files after 20 attempts "
+                      "(10 via Aspera Connect, and 10 via FTP). Please try "
+                      "again later or manually download from ENA.")
+                sys.exit()
 
     # Merge Runs to Exp
     if runs['is_paired'] and len(runs['r1']) and len(runs['r2']):
         # Not all runs labled as paired are actually paired...
-        print("\tMerging paired end runs to experiment...")
-        r1 = '{0}/{1}_R1.fastq.gz'.format(outdir, experiment_accession)
-        r2 = '{0}/{1}_R2.fastq.gz'.format(outdir, experiment_accession)
+        log_stdout("\tMerging paired end runs to experiment...",
+                   quiet=args.quiet)
+        r1 = '{0}/{1}_R1.fastq.gz'.format(outdir, args.experiment)
+        r2 = '{0}/{1}_R2.fastq.gz'.format(outdir, args.experiment)
         ena.merge_runs(runs['r1'], r1)
         ena.merge_runs(runs['r2'], r2)
     else:
-        print("\tMerging single end runs to experiment...")
-        fastq = '{0}/{1}.fastq.gz'.format(outdir, experiment_accession)
+        log_stdout("\tMerging single end runs to experiment...",
+                   quiet=args.quiet)
+        fastq = '{0}/{1}.fastq.gz'.format(outdir, args.experiment)
         ena.merge_runs(runs['r1'], fastq)
 
-    print(runs['is_miseq'])
+    print({'is_miseq': runs['is_miseq'], 'success': True},
+          file=sys.stderr)
