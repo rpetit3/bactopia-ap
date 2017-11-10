@@ -1,3 +1,22 @@
+### bioconda-nextflow-update Branch
+This is a branch to migrate Staphopia to only use tools within Bioconda or scripts from the Staphopia project. The goal of this branch is to minimize the efforts required to get the pipeline up an running. 
+
+As a consequence it will require that users have some form of conda installed to make use of Staphopia. But, this is more realistic then maintaining the 700mb tar ball of installations!
+
+
+### TODO (no real order)
+[] Add links to readme
+[] Update Makefile to include conda installs
+[] Remove Ruffus Scripts
+[] Clean up the config file
+[] Add script to verify all required programs are in the PATH
+[] Update database for PROKKA annotation
+
+
+
+
+
+
 ### Staphopia Analysis Pipeline
 Staphopia's analysis pipeline is primarily written in Python. There are however a few programs written in C++.
 
