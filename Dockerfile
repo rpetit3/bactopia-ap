@@ -3,48 +3,76 @@ FROM rpetit3/nextconda-base
 MAINTAINER robbie.petit@gmail.com
 
 # Install dependencies
-RUN apt-get -qq update \
-    && apt-get -qq -y install g++ gcc less \
-    && apt-get -qq -y autoremove \
-    && apt-get autoclean \
-    && rm -rf /var/lib/apt/lists/* /var/log/dpkg.log
-
-# Update Nextflow and Conda
-RUN nextflow self-update \
-    && conda upgrade conda \
-    && mkdir -p /opt/staphopia/data
-
 # Install via Bioconda
 # Program versions last update 11/2017
-RUN conda install -y python=3.5.4 \
-    && conda install -y ariba=2.10.1 \
+# Update Nextflow and Conda
+RUN apt-get -qq update \
+    && apt-get -qq -y --no-install-recommends install \
+        gcc \
+        g++ \
+        less \
+        libicu-dev \
+        libxml2-dev \
+        python3-tk \
+        wget \
+        zlib1g-dev \
+    && nextflow self-update \
+    && conda upgrade conda \
     && conda install -y bbmap=37.66 \
     && conda install -y bedtools=2.26.0gx \
-    && conda install -y blast=2.7.1 \
     && conda install -y bwa=0.7.17 \
     && conda install -y jellyfish=2.2.6 \
     && conda install -y picard=2.14.1 \
-    && conda install -y prokka=1.12 \
     && conda install -y samtools=1.6 \
     && conda install -y spades=3.11.1 \
-    && conda install -y wget \
+    && conda install -y mentalist=0.1.3 \
+    # ARIBA
+    && conda install -y bowtie2=2.3.3.1 \
+    && conda install -y cd-hit=4.6.8 \
+    && conda install -y mummer=3.23 \
+    # PROKKA
+    && conda install -y perl-bioperl=1.6.924 \
+    && conda install -y perl-xml-simple \
+    && conda install -y tbl2asn \
     && conda clean --all --yes \
-    && pip install --upgrade pip
+    && pip install --upgrade pip setuptools\
+    && pip install ariba \
+    && apt-get -qq -y autoremove \
+    && apt-get autoclean \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /var/log/dpkg.log /tmp/* /var/tmp/* \
+    && mkdir -p /opt/staphopia/data /data /tmp/install
 
-# GATK
-COPY --from=gatk /usr/GenomeAnalysisTK.jar /usr/local/bin/GenomeAnalysisTK.jar
-
+# Final Programs
+# Aspera Connect
+RUN cd /tmp/install \
+    && wget --quiet http://download.asperasoft.com/download/sw/connect/3.7.4/aspera-connect-3.7.4.147727-linux-64.tar.gz \
+    && tar -xzf aspera-connect-3.7.4.147727-linux-64.tar.gz \
+    && sed -i 's=INSTALL_DIR\=~/.aspera/connect=INSTALL_DIR\=/opt/aspera=' aspera-connect-3.7.4.147727-linux-64.sh \
+    && mkdir -p /opt/aspera \
+    && bash aspera-connect-3.7.4.147727-linux-64.sh \
 # Assembly Summary
-RUN cd /tmp/ \
+    && cd /tmp/install \
     && curl -sSL https://github.com/rpetit3/assembly-summary/archive/v0.1.tar.gz -o assembly-summary-0.1.tar.gz \
     && tar -xzf assembly-summary-0.1.tar.gz \
     && pip install -r assembly-summary-0.1/requirements.txt \
     && chmod 755 assembly-summary-0.1/assembly-summary.py \
     && mv assembly-summary-0.1/assembly-summary.py /usr/local/bin/ \
-    && rm -rf assembly-summary*
-
+# BLAST 2.7.1
+    && cd /tmp/install \
+    && curl -s ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.7.1/ncbi-blast-2.7.1+-x64-linux.tar.gz -o ncbi-blast-2.7.1+.tar.gz \
+    && tar -xzf ncbi-blast-2.7.1+.tar.gz \
+    && cd /tmp/install/ncbi-blast-2.7.1+/bin \
+    && mv blastn blastp makeblastdb tblastn /usr/local/bin \
+# ENA Downloader (ena-dl)
+    && cd /tmp/install \
+    && curl -sSL https://github.com/rpetit3/ena-dl/archive/v0.1.tar.gz -o ena-dl-0.1.tar.gz \
+    && tar -xzf ena-dl-0.1.tar.gz \
+    && pip install -r ena-dl-0.1/requirements.txt \
+    && chmod 755 ena-dl-0.1/ena-* \
+    && mv ena-dl-0.1/ena-* /usr/local/bin/ \
 # Illumina Cleanup
-RUN cd /tmp/ \
+    && cd /tmp/install \
     && curl -sSL https://github.com/rpetit3/illumina-cleanup/archive/v0.1.tar.gz -o illumina-cleanup-0.1.tar.gz \
     && tar -xzf illumina-cleanup-0.1.tar.gz \
     && pip install -r illumina-cleanup-0.1/requirements.txt \
@@ -54,45 +82,37 @@ RUN cd /tmp/ \
     && g++ -Wall -O3 -o /usr/local/bin/fastq-stats illumina-cleanup-0.1/src/fastq-stats.cpp \
     && mkdir -p /opt/staphopia/data/fastq \
     && mv illumina-cleanup-0.1/data/*.fasta /opt/staphopia/data/fastq \
-    && rm -rf illumina-cleanup*
-
+# PROKKA
+    && cd /tmp/install \
+    && curl -sSL https://github.com/rpetit3/prokka/archive/v1.12-staphopia.tar.gz -o prokka-1.12-staphopia.tar.gz \
+    && tar -xzf prokka-1.12-staphopia.tar.gz \
+    && mv prokka-1.12-staphopia/ /opt/prokka \
+    && export PATH=/opt/prokka/bin:$PATH \
 # VCF-Annotator
-RUN cd /tmp/ \
+    && cd /tmp/install \
     && curl -sSL https://github.com/rpetit3/vcf-annotator/archive/v0.4.tar.gz  -o vcf-annotator-0.4.tar.gz \
     && tar -xzf vcf-annotator-0.4.tar.gz \
     && pip install -r vcf-annotator-0.4/requirements.txt \
     && chmod 755 vcf-annotator-0.4/vcf-annotator.py \
     && mv vcf-annotator-0.4/vcf-annotator.py /usr/local/bin/ \
-    && rm -rf vcf-annotator*
-
-# ENA Downloader (ena-dl)
-RUN cd /tmp/ \
-    && curl -sSL https://github.com/rpetit3/ena-dl/archive/v0.1.tar.gz -o ena-dl-0.1.tar.gz \
-    && tar -xzf ena-dl-0.1.tar.gz \
-    && pip install -r ena-dl-0.1/requirements.txt \
-    && chmod 755 ena-dl-0.1/ena-* \
-    && mv ena-dl-0.1/ena-* /usr/local/bin/ \
-    && rm -rf ena-dl*
-
-# Aspera Connect
-RUN cd /tmp/ \
-    && wget --quiet http://download.asperasoft.com/download/sw/connect/3.7.4/aspera-connect-3.7.4.147727-linux-64.tar.gz \
-    && tar -xzf aspera-connect-3.7.4.147727-linux-64.tar.gz \
-    && sed -i 's=INSTALL_DIR\=~/.aspera/connect=INSTALL_DIR\=/opt/aspera=' aspera-connect-3.7.4.147727-linux-64.sh \
-    && mkdir -p /opt/aspera \
-    && bash aspera-connect-3.7.4.147727-linux-64.sh \
-    && rm -rf aspera-connect*
+    && rm -rf /tmp/install
 
 ENV ASCP /opt/aspera/bin/ascp
 ENV ASCP_KEY /opt/aspera/etc/asperaweb_id_dsa.openssh
+ENV PATH $PATH:/opt/prokka/bin
 
-# Copy Staphopia Workflows
-COPY scripts/staphopia.nf /usr/local/bin
-COPY scripts/staphopia-ena.nf /usr/local/bin
-COPY scripts/bwa-align.sh /usr/local/bin
-COPY scripts/mlst-blast.py /usr/local/bin
+# Final touches
+# GATK
+COPY --from=gatk /usr/GenomeAnalysisTK.jar /usr/local/bin/GenomeAnalysisTK.jar
 COPY data /opt/staphopia/data
-RUN chmod 755 /usr/local/bin/staphopia*.nf /usr/local/bin/bwa-align.sh /usr/local/bin/mlst-blast.py
-RUN mkdir /data
+COPY scripts /tmp/scripts
+RUN chmod 755 /tmp/scripts/* \
+    && mv /tmp/scripts/* /usr/local/bin \
+    && mkdir -p /opt/ariba /opt/mentalist/cgmlst /opt/mentalist/mlst \
+    && ariba pubmlstget "Staphylococcus aureus" /opt/ariba/mlst \
+    && mentalist download_pubmlst -o /opt/mentalist/mlst -s "Staphylococcus aureus" -k 31 --db /opt/mentalist/mlst/mlst_31.db \
+    && mentalist download_cgmlst -o /opt/mentalist/cgmlst -s "Staphylococcus aureus" -k 31 --db /opt/mentalist/cgmlst/cgmlst_31.db \
+    && prokka --setupdb \
+    && rm -rf /tmp/*
 
 WORKDIR /data
