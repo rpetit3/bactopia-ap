@@ -15,3 +15,4 @@ date > ${SAMPLE}/staphopia-date.txt
 
 # Tarball and delete directory
 tar cf - $SAMPLE/ | gzip --best > ${SAMPLE}.tar.gz && rm -rf $SAMPLE
+md5sum ${SAMPLE}.tar.gz > ${SAMPLE}.md5

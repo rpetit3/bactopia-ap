@@ -398,11 +398,11 @@ process sccmec_mapping {
     input:
         file fq from FASTQ_SCCMEC
     output:
-        file '*.gz'
+        file 'cassette-coverages.gz'
+        file '*.log'
     shell:
         p = is_paired ? '-p' : ''
         n = read_length <= 70 ? '-n 9999' : ''
-
         '''
         bwa-align.sh "!{fq}" !{staphopia_data}/sccmec/sccmec_cassettes !{read_length} !{cpu} "!{p}" "!{n}"
         samtools view -bS bwa.sam | samtools sort -o sccmec.bam -
