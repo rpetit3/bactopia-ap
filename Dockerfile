@@ -41,7 +41,7 @@ RUN apt-get -qq update \
     && apt-get autoclean \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /var/log/dpkg.log /tmp/* /var/tmp/* \
-    && mkdir -p /opt/staphopia/data /data /tmp/install
+    && mkdir -p /data /tmp/install
 
 # Final Programs
 # Aspera Connect
@@ -66,11 +66,11 @@ RUN cd /tmp/install \
     && mv blastn blastp makeblastdb tblastn /usr/local/bin \
 # ENA Downloader (ena-dl)
     && cd /tmp/install \
-    && curl -sSL https://github.com/rpetit3/ena-dl/archive/v0.1.tar.gz -o ena-dl-0.1.tar.gz \
-    && tar -xzf ena-dl-0.1.tar.gz \
-    && pip install -r ena-dl-0.1/requirements.txt \
-    && chmod 755 ena-dl-0.1/ena-* \
-    && mv ena-dl-0.1/ena-* /usr/local/bin/ \
+    && curl -sSL https://github.com/rpetit3/ena-dl/archive/v0.4.tar.gz -o ena-dl-0.4.tar.gz \
+    && tar -xzf ena-dl-0.4.tar.gz \
+    && pip install -r ena-dl-0.4/requirements.txt \
+    && chmod 755 ena-dl-0.4/ena-* \
+    && mv ena-dl-0.4/ena-* /usr/local/bin/ \
 # Illumina Cleanup
     && cd /tmp/install \
     && curl -sSL https://github.com/rpetit3/illumina-cleanup/archive/v0.1.tar.gz -o illumina-cleanup-0.1.tar.gz \
@@ -104,14 +104,15 @@ ENV PATH $PATH:/opt/prokka/bin
 # Final touches
 # GATK
 COPY --from=gatk /usr/GenomeAnalysisTK.jar /usr/local/bin/GenomeAnalysisTK.jar
-COPY data /opt/staphopia/data
+COPY data /tmp/data
 COPY scripts /tmp/scripts
 RUN chmod 755 /tmp/scripts/* \
     && mv /tmp/scripts/* /usr/local/bin \
-    && mkdir -p /opt/ariba /opt/mentalist/cgmlst /opt/mentalist/mlst \
-    && ariba pubmlstget "Staphylococcus aureus" /opt/ariba/mlst \
-    && mentalist download_pubmlst -o /opt/mentalist/mlst -s "Staphylococcus aureus" -k 31 --db /opt/mentalist/mlst/mlst_31.db \
-    && mentalist download_cgmlst -o /opt/mentalist/cgmlst -s "Staphylococcus aureus" -k 31 --db /opt/mentalist/cgmlst/cgmlst_31.db \
+    && mkdir -p /opt/staphopia/data \
+    && cd /tmp/data/ \
+    && ls *.tar.gz | xargs -I {} tar xzf {} \
+    && rm *.tar.gz \
+    && mv ./* /opt/staphopia/data/ \
     && prokka --setupdb \
     && rm -rf /tmp/*
 
