@@ -23,6 +23,7 @@ is_paired = params.fq1 && params.fq2 ? true : false
 is_miseq = params.is_miseq
 staphopia_data = params.staphopia_data
 cpu = params.cpu
+genome_size = 2814816
 
 // Output folders
 analysis_folder = outdir + "/analyses"
@@ -66,10 +67,10 @@ process illumina_cleanup {
         spades.py -1 bbduk-adapter-R1.fq -2 bbduk-adapter-R2.fq --only-error-correction \
                   --disable-gzip-output -t !{cpu} -o ./
 
-        zcat !{fq[0]} !{fq[1]} | fastq-stats > !{sample}.original.fastq.json
-        cat bbduk-adapter-R1.fq bbduk-adapter-R2.fq | fastq-stats > !{sample}.adapter.fastq.json
+        zcat !{fq[0]} !{fq[1]} | fastq-stats !{genome_size} > !{sample}.original.fastq.json
+        cat bbduk-adapter-R1.fq bbduk-adapter-R2.fq | fastq-stats !{genome_size} > !{sample}.adapter.fastq.json
         cat corrected/bbduk-adapter-R1.00.0_0.cor.fastq corrected/bbduk-adapter-R2.00.0_0.cor.fastq | \
-        fastq-stats > !{sample}.post-ecc.fastq.json
+        fastq-stats !{genome_size} > !{sample}.post-ecc.fastq.json
 
         fastq-interleave corrected/bbduk-adapter-R1.00.0_0.cor.fastq corrected/bbduk-adapter-R2.00.0_0.cor.fastq | \
         illumina-cleanup.py --paired --stats !{sample}.post-ecc.fastq.json --coverage !{params.coverage} \
@@ -77,7 +78,7 @@ process illumina_cleanup {
 
         reformat.sh in=cleanup.fastq out1=!{sample}_R1.cleanup.fastq out2=!{sample}_R2.cleanup.fastq
 
-        cat !{sample}_R1.cleanup.fastq !{sample}_R2.cleanup.fastq | fastq-stats > !{sample}.cleanup.fastq.json
+        cat !{sample}_R1.cleanup.fastq !{sample}_R2.cleanup.fastq | fastq-stats !{genome_size} > !{sample}.cleanup.fastq.json
 
         gzip --best !{sample}_R1.cleanup.fastq
         gzip --best !{sample}_R2.cleanup.fastq
@@ -98,14 +99,14 @@ process illumina_cleanup {
         spades.py -s bbduk-adapter-R1.fq --only-error-correction --disable-gzip-output \
                   -t !{cpu} -o ./
 
-        zcat !{fq} | fastq-stats > !{sample}.original.fastq.json
-        cat bbduk-adapter-R1.fq | fastq-stats > !{sample}.adapter.fastq.json
-        cat corrected/bbduk-adapter-R1.00.0_0.cor.fastq | fastq-stats > !{sample}.post-ecc.fastq.json
+        zcat !{fq} | fastq-stats !{genome_size} > !{sample}.original.fastq.json
+        cat bbduk-adapter-R1.fq | fastq-stats !{genome_size} > !{sample}.adapter.fastq.json
+        cat corrected/bbduk-adapter-R1.00.0_0.cor.fastq | fastq-stats !{genome_size} > !{sample}.post-ecc.fastq.json
 
         cat corrected/bbduk-adapter-R1.00.0_0.cor.fastq | illumina-cleanup.py --stats !{sample}.post-ecc.fastq.json \
         --coverage !{params.coverage} !{no_length_filter} | gzip --best - > !{sample}.cleanup.fastq.gz
 
-        zcat !{sample}.cleanup.fastq.gz | fastq-stats > !{sample}.cleanup.fastq.json
+        zcat !{sample}.cleanup.fastq.gz | fastq-stats !{genome_size} > !{sample}.cleanup.fastq.json
         cp .command.err illumina_cleanup-stderr.log
         cp .command.out illumina_cleanup-stdout.log
         '''
@@ -114,6 +115,12 @@ process illumina_cleanup {
 // Store median read length for downstream analysis
 slurp = new JsonSlurper()
 read_length = slurp.parseText(file(FINAL_STATS.getVal()).text).qc_stats.read_median
+spades_k = ''
+if (read_length <= 36) {
+    spades_k = '-k 17,19,21'
+} else if (read_length <= 75) {
+    spades_k = '-k 21,27,31'
+}
 /* ==== END FASTQ CLEANUP ==== */
 
 /* ==== BEGIN JELLYFISH 31-MER COUNT ==== */
@@ -148,7 +155,7 @@ process spades_assembly {
     shell:
         flag = is_paired ? '-1 ' + fq[0] + ' -2 ' + fq[1]: '-s ' + fq[0]
         '''
-        spades.py !{flag} --careful -t !{cpu} -o ./ --only-assembler
+        spades.py !{flag} --careful -t !{cpu} -o ./ --only-assembler !{spades_k}
         gzip --best -c contigs.fasta > !{sample}.contigs.fasta.gz
         gzip --best -c scaffolds.fasta > !{sample}.scaffolds.fasta.gz
         gzip --best -c assembly_graph.fastg > !{sample}.assembly_graph.fastg.gz
@@ -167,7 +174,7 @@ process assembly_stats {
     shell:
         stats = fasta.getName().replace("fasta.gz", "json")
         '''
-        zcat !{fasta} | assembly-summary.py --genome_size 2814816 > !{stats}
+        zcat !{fasta} | assembly-summary.py --genome_size !{genome_size} > !{stats}
         '''
 }
 
@@ -185,7 +192,7 @@ process spades_plasmid_assembly {
     shell:
         flag = is_paired ? '-1 ' + fq[0] + ' -2 ' + fq[1]: '-s ' + fq[0]
         '''
-        spades.py !{flag} --careful -t !{cpu} -o ./ --only-assembler --plasmid
+        spades.py !{flag} --careful -t !{cpu} -o ./ --only-assembler --plasmid !{spades_k}
         gzip --best -c contigs.fasta > !{sample}.contigs.fasta.gz
         gzip --best -c scaffolds.fasta > !{sample}.scaffolds.fasta.gz
         gzip --best -c assembly_graph.fastg > !{sample}.assembly_graph.fastg.gz
@@ -277,7 +284,7 @@ process mlst_ariba {
     shell:
         if (is_paired)
         '''
-        ariba run --threads !{cpu} !{staphopia_data}/ariba/mlst/ref_db !{fq} ariba
+        ariba run !{staphopia_data}/ariba/mlst/ref_db !{fq} ariba
         rm -rf ariba.tmp*
         '''
         else
@@ -314,7 +321,7 @@ process resistance_ariba {
     shell:
         if (is_paired)
         '''
-        ariba run --threads !{cpu} !{staphopia_data}/ariba/megares !{fq} resistance
+        ariba run !{staphopia_data}/ariba/megares !{fq} resistance
         rm -rf ariba.tmp*
         '''
         else
@@ -333,7 +340,7 @@ process virulence_ariba {
     shell:
         if (is_paired)
         '''
-        ariba run --threads !{cpu} !{staphopia_data}/ariba/vfdb !{fq} virulence
+        ariba run !{staphopia_data}/ariba/vfdb !{fq} virulence
         rm -rf ariba.tmp*
         '''
         else

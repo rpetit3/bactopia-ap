@@ -30,6 +30,7 @@ RUN apt-get -qq update \
     && conda install -y bowtie2=2.3.3.1 \
     && conda install -y cd-hit=4.6.8 \
     && conda install -y mummer=3.23 \
+    && conda install -y 'icu=56.*' \
     # PROKKA
     && conda install -y perl-bioperl=1.6.924 \
     && conda install -y perl-xml-simple \
@@ -66,22 +67,22 @@ RUN cd /tmp/install \
     && mv blastn blastp makeblastdb tblastn /usr/local/bin \
 # ENA Downloader (ena-dl)
     && cd /tmp/install \
-    && curl -sSL https://github.com/rpetit3/ena-dl/archive/v0.4.tar.gz -o ena-dl-0.4.tar.gz \
-    && tar -xzf ena-dl-0.4.tar.gz \
-    && pip install -r ena-dl-0.4/requirements.txt \
-    && chmod 755 ena-dl-0.4/ena-* \
-    && mv ena-dl-0.4/ena-* /usr/local/bin/ \
+    && curl -sSL https://github.com/rpetit3/ena-dl/archive/v0.5.tar.gz -o ena-dl-0.5.tar.gz \
+    && tar -xzf ena-dl-0.5.tar.gz \
+    && pip install -r ena-dl-0.5/requirements.txt \
+    && chmod 755 ena-dl-0.5/ena-* \
+    && mv ena-dl-0.5/ena-* /usr/local/bin/ \
 # Illumina Cleanup
     && cd /tmp/install \
-    && curl -sSL https://github.com/rpetit3/illumina-cleanup/archive/v0.1.tar.gz -o illumina-cleanup-0.1.tar.gz \
-    && tar -xzf illumina-cleanup-0.1.tar.gz \
-    && pip install -r illumina-cleanup-0.1/requirements.txt \
-    && chmod 755 illumina-cleanup-0.1/src/* \
-    && mv illumina-cleanup-0.1/src/*.py /usr/local/bin/ \
-    && g++ -Wall -O3 -o /usr/local/bin/fastq-interleave illumina-cleanup-0.1/src/fastq-interleave.cpp \
-    && g++ -Wall -O3 -o /usr/local/bin/fastq-stats illumina-cleanup-0.1/src/fastq-stats.cpp \
+    && curl -sSL https://github.com/rpetit3/illumina-cleanup/archive/v0.2.tar.gz -o illumina-cleanup-0.2.tar.gz \
+    && tar -xzf illumina-cleanup-0.2.tar.gz \
+    && pip install -r illumina-cleanup-0.2/requirements.txt \
+    && chmod 755 illumina-cleanup-0.2/src/* \
+    && mv illumina-cleanup-0.2/src/*.py /usr/local/bin/ \
+    && g++ -Wall -O3 -o /usr/local/bin/fastq-interleave illumina-cleanup-0.2/src/fastq-interleave.cpp \
+    && g++ -Wall -O3 -o /usr/local/bin/fastq-stats illumina-cleanup-0.2/src/fastq-stats.cpp \
     && mkdir -p /opt/staphopia/data/fastq \
-    && mv illumina-cleanup-0.1/data/*.fasta /opt/staphopia/data/fastq \
+    && mv illumina-cleanup-0.2/data/*.fasta /opt/staphopia/data/fastq \
 # PROKKA
     && cd /tmp/install \
     && curl -sSL https://github.com/rpetit3/prokka/archive/v1.12-staphopia.tar.gz -o prokka-1.12-staphopia.tar.gz \
@@ -105,15 +106,16 @@ ENV PATH $PATH:/opt/prokka/bin
 # GATK
 COPY --from=gatk /usr/GenomeAnalysisTK.jar /usr/local/bin/GenomeAnalysisTK.jar
 COPY data /tmp/data
-COPY scripts /tmp/scripts
-RUN chmod 755 /tmp/scripts/* \
-    && mv /tmp/scripts/* /usr/local/bin \
-    && mkdir -p /opt/staphopia/data \
+RUN mkdir -p /opt/staphopia/data \
     && cd /tmp/data/ \
     && ls *.tar.gz | xargs -I {} tar xzf {} \
     && rm *.tar.gz \
     && mv ./* /opt/staphopia/data/ \
-    && prokka --setupdb \
+    && prokka --setupdb
+
+COPY scripts /tmp/scripts
+RUN chmod 755 /tmp/scripts/* \
+    && mv /tmp/scripts/* /usr/local/bin \
     && rm -rf /tmp/*
 
 WORKDIR /data

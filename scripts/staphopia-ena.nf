@@ -22,6 +22,7 @@ is_miseq = null
 is_paired = null
 staphopia_data = params.staphopia_data
 cpu = params.cpu
+genome_size = 2814816
 
 // Output folders
 analysis_folder = outdir + "/analyses"
@@ -125,14 +126,14 @@ process illumina_cleanup {
         spades.py -s bbduk-adapter-R1.fq --only-error-correction --disable-gzip-output \
                   -t !{cpu} -o ./
 
-        zcat !{fq} | fastq-stats > !{sample}.original.fastq.json
-        cat bbduk-adapter-R1.fq | fastq-stats > !{sample}.adapter.fastq.json
-        cat corrected/bbduk-adapter-R1.00.0_0.cor.fastq | fastq-stats > !{sample}.post-ecc.fastq.json
+        zcat !{fq} | fastq-stats !{genome_size} > !{sample}.original.fastq.json
+        cat bbduk-adapter-R1.fq | fastq-stats !{genome_size} > !{sample}.adapter.fastq.json
+        cat corrected/bbduk-adapter-R1.00.0_0.cor.fastq | fastq-stats !{genome_size} > !{sample}.post-ecc.fastq.json
 
         cat corrected/bbduk-adapter-R1.00.0_0.cor.fastq | illumina-cleanup.py --stats !{sample}.post-ecc.fastq.json \
         --coverage !{params.coverage} !{no_length_filter} | gzip --best - > !{sample}.cleanup.fastq.gz
 
-        zcat !{sample}.cleanup.fastq.gz | fastq-stats > !{sample}.cleanup.fastq.json
+        zcat !{sample}.cleanup.fastq.gz | fastq-stats !{genome_size} > !{sample}.cleanup.fastq.json
         cp .command.err illumina_cleanup-stderr.log
         cp .command.out illumina_cleanup-stdout.log
         '''
@@ -194,7 +195,7 @@ process assembly_stats {
     shell:
         stats = fasta.getName().replace("fasta.gz", "json")
         '''
-        zcat !{fasta} | assembly-summary.py --genome_size 2814816 > !{stats}
+        zcat !{fasta} | assembly-summary.py --genome_size !{genome_size} > !{stats}
         '''
 }
 
@@ -304,7 +305,7 @@ process mlst_ariba {
     shell:
         if (is_paired)
         '''
-        ariba run --threads !{cpu} !{staphopia_data}/ariba/mlst/ref_db !{fq} ariba
+        ariba run !{staphopia_data}/ariba/mlst/ref_db !{fq} ariba
         rm -rf ariba.tmp*
         '''
         else
@@ -341,7 +342,7 @@ process resistance_ariba {
     shell:
         if (is_paired)
         '''
-        ariba run --threads !{cpu} !{staphopia_data}/ariba/megares !{fq} resistance
+        ariba run !{staphopia_data}/ariba/megares !{fq} resistance
         rm -rf ariba.tmp*
         '''
         else
@@ -360,7 +361,7 @@ process virulence_ariba {
     shell:
         if (is_paired)
         '''
-        ariba run --threads !{cpu} !{staphopia_data}/ariba/vfdb !{fq} virulence
+        ariba run !{staphopia_data}/ariba/vfdb !{fq} virulence
         rm -rf ariba.tmp*
         '''
         else
