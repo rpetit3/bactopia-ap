@@ -533,10 +533,6 @@ def check_input_params() {
     error = false
     if (!params.experiment) {
         log.info('An ENA experiment accession name is required to continue. Please use --experiment')
-        error = true
-    }
-
-    if (error) {
         log.info('See --help for more information')
         exit 1
     }

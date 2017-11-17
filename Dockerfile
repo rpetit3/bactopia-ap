@@ -74,15 +74,15 @@ RUN cd /tmp/install \
     && mv ena-dl-0.5/ena-* /usr/local/bin/ \
 # Illumina Cleanup
     && cd /tmp/install \
-    && curl -sSL https://github.com/rpetit3/illumina-cleanup/archive/v0.2.tar.gz -o illumina-cleanup-0.2.tar.gz \
-    && tar -xzf illumina-cleanup-0.2.tar.gz \
-    && pip install -r illumina-cleanup-0.2/requirements.txt \
-    && chmod 755 illumina-cleanup-0.2/src/* \
-    && mv illumina-cleanup-0.2/src/*.py /usr/local/bin/ \
-    && g++ -Wall -O3 -o /usr/local/bin/fastq-interleave illumina-cleanup-0.2/src/fastq-interleave.cpp \
-    && g++ -Wall -O3 -o /usr/local/bin/fastq-stats illumina-cleanup-0.2/src/fastq-stats.cpp \
+    && curl -sSL https://github.com/rpetit3/illumina-cleanup/archive/v0.3.tar.gz -o illumina-cleanup-0.3.tar.gz \
+    && tar -xzf illumina-cleanup-0.3.tar.gz \
+    && pip install -r illumina-cleanup-0.3/requirements.txt \
+    && chmod 755 illumina-cleanup-0.3/src/* \
+    && mv illumina-cleanup-0.3/src/*.py /usr/local/bin/ \
+    && g++ -Wall -O3 -o /usr/local/bin/fastq-interleave illumina-cleanup-0.3/src/fastq-interleave.cpp \
+    && g++ -Wall -O3 -o /usr/local/bin/fastq-stats illumina-cleanup-0.3/src/fastq-stats.cpp \
     && mkdir -p /opt/staphopia/data/fastq \
-    && mv illumina-cleanup-0.2/data/*.fasta /opt/staphopia/data/fastq \
+    && mv illumina-cleanup-0.3/data/*.fasta /opt/staphopia/data/fastq \
 # PROKKA
     && cd /tmp/install \
     && curl -sSL https://github.com/rpetit3/prokka/archive/v1.12-staphopia.tar.gz -o prokka-1.12-staphopia.tar.gz \
