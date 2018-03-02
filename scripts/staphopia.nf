@@ -325,7 +325,8 @@ process resistance_ariba {
     shell:
         if (is_paired)
         '''
-        ariba run !{staphopia_data}/ariba/megares !{fq} resistance
+        ariba run !{staphopia_data}/ariba/card !{fq} resistance
+        ariba summary summary report.tsv --preset all_no_filter
         rm -rf ariba.tmp*
         '''
         else
