@@ -268,8 +268,7 @@ process annotation {
         '''
         gunzip -f !{fasta}
         prokka --cpus !{cpu} --genus Staphylococcus --usegenus --outdir ./ \
-               --force --proteins !{staphopia_data}/annotation/saureus.prokka \
-               --prefix !{sample} --locustag !{sample} --centre STA --compliant --quiet \
+               --force --prefix !{sample} --locustag !{sample} --centre STA --compliant --quiet \
                !{gunzip_fa}
 
         rm -rf !{gunzip_fa} !{sample}.fna !{sample}.fsa !{sample}.gbf !{sample}.sqn !{sample}.tbl
@@ -291,7 +290,7 @@ process mlst_blast {
         file 'mlst-blastn.json'
     shell:
         '''
-        mlst-blast.py !{fasta} !{staphopia_data}/mlst/blastdb mlst-blastn.json --cpu !{cpu}
+        mlst-blast.py !{fasta} !{staphopia_data}/mlst-blastdb mlst-blastn.json --cpu !{cpu}
         '''
 }
 

@@ -39,7 +39,7 @@ blastdb_folder = outdir + "/blastdb"
 
 /* ==== BEGIN FASTQ CLEANUP ==== */
 process illumina_cleanup {
-    publishDir fastq_folder, overwrite: true, pattern: '*.{json,gz,log}'
+    publishDir fastq_folder, overwrite: true, pattern: '*.{json,gz,log,md5}'
 
     input:
         file fq from create_input_channel(params.fq1, params.fq2)
@@ -50,6 +50,7 @@ process illumina_cleanup {
                                       ARIBA_VFDB, ARIBA_MEGARES
         file '*.json'
         file '*.log'
+        file '*.md5'
         file {"${sample}.cleanup.fastq.json"} into FINAL_STATS
     shell:
         no_length_filter = is_miseq ? '--no_length_filter' : ''
@@ -79,6 +80,8 @@ process illumina_cleanup {
         reformat.sh in=cleanup.fastq out1=!{sample}_R1.cleanup.fastq out2=!{sample}_R2.cleanup.fastq
 
         cat !{sample}_R1.cleanup.fastq !{sample}_R2.cleanup.fastq | fastq-stats !{genome_size} > !{sample}.cleanup.fastq.json
+        cat !{sample}_R1.cleanup.fastq !{sample}_R2.cleanup.fastq | md5sum > !{sample}.cleanup.md5
+        zcat !{fq[0]} !{fq[1]} | md5sum > !{sample}.original.md5
 
         gzip --best !{sample}_R1.cleanup.fastq
         gzip --best !{sample}_R2.cleanup.fastq
@@ -107,6 +110,8 @@ process illumina_cleanup {
         --coverage !{params.coverage} !{no_length_filter} | gzip --best - > !{sample}.cleanup.fastq.gz
 
         zcat !{sample}.cleanup.fastq.gz | fastq-stats !{genome_size} > !{sample}.cleanup.fastq.json
+        zcat !{sample}.cleanup.fastq.gz | md5sum > !{sample}.cleanup.md5
+        zcat !{fq[0]} !{fq[1]} | md5sum > !{sample}.original.md5
         cp .command.err illumina_cleanup-stderr.log
         cp .command.out illumina_cleanup-stdout.log
         '''
@@ -247,8 +252,7 @@ process annotation {
         '''
         gunzip -f !{fasta}
         prokka --cpus !{cpu} --genus Staphylococcus --usegenus --outdir ./ \
-               --force --proteins !{staphopia_data}/annotation/saureus.prokka \
-               --prefix !{sample} --locustag !{sample} --centre STA --compliant --quiet \
+               --force --prefix !{sample} --locustag !{sample} --centre STA --compliant --quiet \
                !{gunzip_fa}
 
         rm -rf !{gunzip_fa} !{sample}.fna !{sample}.fsa !{sample}.gbf !{sample}.sqn !{sample}.tbl
@@ -270,7 +274,7 @@ process mlst_blast {
         file 'mlst-blastn.json'
     shell:
         '''
-        mlst-blast.py !{fasta} !{staphopia_data}/mlst/blastdb mlst-blastn.json --cpu !{cpu}
+        mlst-blast.py !{fasta} !{staphopia_data}/mlst-blastdb mlst-blastn.json --cpu !{cpu}
         '''
 }
 

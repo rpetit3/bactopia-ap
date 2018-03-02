@@ -67,11 +67,11 @@ RUN cd /tmp/install \
     && mv blastn blastp makeblastdb tblastn /usr/local/bin \
 # ENA Downloader (ena-dl)
     && cd /tmp/install \
-    && curl -sSL https://github.com/rpetit3/ena-dl/archive/v0.5.tar.gz -o ena-dl-0.5.tar.gz \
-    && tar -xzf ena-dl-0.5.tar.gz \
-    && pip install -r ena-dl-0.5/requirements.txt \
-    && chmod 755 ena-dl-0.5/ena-* \
-    && mv ena-dl-0.5/ena-* /usr/local/bin/ \
+    && curl -sSL https://github.com/rpetit3/ena-dl/archive/v0.1.tar.gz -o ena-dl-0.1.tar.gz \
+    && tar -xzf ena-dl-0.1.tar.gz \
+    && pip install -r ena-dl-0.1/requirements.txt \
+    && chmod 755 ena-dl-0.1/ena-* \
+    && mv ena-dl-0.1/ena-* /usr/local/bin/ \
 # Illumina Cleanup
     && cd /tmp/install \
     && curl -sSL https://github.com/rpetit3/illumina-cleanup/archive/v0.3.tar.gz -o illumina-cleanup-0.3.tar.gz \

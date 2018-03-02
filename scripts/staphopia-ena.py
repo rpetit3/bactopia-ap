@@ -93,6 +93,7 @@ if __name__ == '__main__':
     # Make directory and run pipeline
     run_command(['cp', '/usr/local/bin/nextflow.config', outdir])
     run_command(['cp', '/usr/local/bin/staphopia.nf', outdir])
+    run_command(['cp', '/opt/staphopia/data/staphopia-version.txt', outdir])
     staphopia_nf = generate_nextflow(args.sample, ena_out, str(args.cpu),
                                      args.resume)
     run_command(staphopia_nf, cwd=outdir)

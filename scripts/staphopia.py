@@ -98,6 +98,7 @@ if __name__ == '__main__':
     run_command(['mkdir', '-p', args.sample])
     run_command(['cp', '/usr/local/bin/nextflow.config', outdir])
     run_command(['cp', '/usr/local/bin/staphopia.nf', outdir])
+    run_command(['cp', '/opt/staphopia/data/staphopia-version.txt', outdir])
     staphopia_nf = generate_nextflow(
         args.sample, args.fq1, args.fq2, str(args.coverage), args.is_miseq,
         str(args.cpu), args.resume
