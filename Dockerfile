@@ -16,8 +16,8 @@ RUN apt-get -qq update \
         python3-tk \
         wget \
         zlib1g-dev \
-    && nextflow self-update \
     && conda upgrade conda \
+    && conda install -y nextflow=0.28.2 \
     && conda install -y bbmap=37.66 \
     && conda install -y bedtools=2.26.0gx \
     && conda install -y bwa=0.7.17 \
@@ -34,7 +34,7 @@ RUN apt-get -qq update \
     # PROKKA
     && conda install -y perl-bioperl=1.6.924 \
     && conda install -y perl-xml-simple \
-    && conda install -y tbl2asn \
+    && conda install -y tbl2asn=25.6 \
     && conda clean --all --yes \
     && pip install --upgrade pip setuptools\
     && pip install ariba \

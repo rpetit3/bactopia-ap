@@ -184,6 +184,7 @@ process assembly_stats {
 }
 
 process spades_plasmid_assembly {
+    time '30m'
     errorStrategy 'ignore'
     validExitStatus 0, 1, 255
     publishDir plasmid_folder, overwrite: true, pattern: '*.{gz,log}'
@@ -197,7 +198,7 @@ process spades_plasmid_assembly {
     shell:
         flag = is_paired ? '-1 ' + fq[0] + ' -2 ' + fq[1]: '-s ' + fq[0]
         '''
-        spades.py !{flag} --careful -t !{cpu} -o ./ --only-assembler --plasmid !{spades_k}
+        timeout -k 30m spades.py !{flag} --careful -t !{cpu} -o ./ --only-assembler --plasmid !{spades_k}
         gzip --best -c contigs.fasta > !{sample}.contigs.fasta.gz
         gzip --best -c scaffolds.fasta > !{sample}.scaffolds.fasta.gz
         gzip --best -c assembly_graph.fastg > !{sample}.assembly_graph.fastg.gz
@@ -325,8 +326,10 @@ process resistance_ariba {
     shell:
         if (is_paired)
         '''
-        ariba run !{staphopia_data}/ariba/card !{fq} resistance
-        ariba summary summary report.tsv --preset all_no_filter
+        ariba run !{staphopia_data}/ariba/megares !{fq} resistance
+        ariba summary resistance/summary resistance/report.tsv \
+              --cluster_cols assembled,match,known_var,pct_id,ctg_cov,novel_var \
+              --col_filter n --row_filter n
         rm -rf ariba.tmp*
         '''
         else
@@ -346,6 +349,9 @@ process virulence_ariba {
         if (is_paired)
         '''
         ariba run !{staphopia_data}/ariba/vfdb !{fq} virulence
+        ariba summary virulence/summary virulence/report.tsv \
+              --cluster_cols assembled,match,known_var,pct_id,ctg_cov,novel_var \
+              --col_filter n --row_filter n
         rm -rf ariba.tmp*
         '''
         else
