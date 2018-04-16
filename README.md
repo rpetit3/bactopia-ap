@@ -86,7 +86,7 @@ total 204M
 Below is a list of the software programs used in Staphopia's pipeline. We would like to thank the authors of these tools!
 
 | Tool        | Version           |
-| ------------- |:-------------:|
+| ------------- |-------------|
 |[Ariba](https://github.com/sanger-pathogens/ariba)|2.10.2|
 |[assembly-summary](https://github.com/rpetit3/assembly-summary)|0.1|
 |[BBDuk](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbduk-guide/)|37.66|
