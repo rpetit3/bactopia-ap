@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/54082104.svg)](https://zenodo.org/badge/latestdoi/54082104)
+
 # Staphopia Analysis Pipeline
 Staphopia's analysis pipeline is a set of open source tools wrapped in a Nextflow workflow. Once analysis is completed the results are stored into a database.
 
@@ -107,3 +109,4 @@ Below is a list of the software programs used in Staphopia's pipeline. We would 
 
 # Contact
 Robert Petit robert.petit@emory.edu
+
