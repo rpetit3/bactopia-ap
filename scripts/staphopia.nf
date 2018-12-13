@@ -68,10 +68,10 @@ process illumina_cleanup {
         spades.py -1 bbduk-adapter-R1.fq -2 bbduk-adapter-R2.fq --only-error-correction \
                   --disable-gzip-output -t !{cpu} -o ./
 
-        zcat !{fq[0]} !{fq[1]} | fastq-stats !{genome_size} > !{sample}.original.fastq.json
-        cat bbduk-adapter-R1.fq bbduk-adapter-R2.fq | fastq-stats !{genome_size} > !{sample}.adapter.fastq.json
+        zcat !{fq[0]} !{fq[1]} | fastq-scan -g !{genome_size} > !{sample}.original.fastq.json
+        cat bbduk-adapter-R1.fq bbduk-adapter-R2.fq | fastq-scan -g !{genome_size} > !{sample}.adapter.fastq.json
         cat corrected/bbduk-adapter-R1.00.0_0.cor.fastq corrected/bbduk-adapter-R2.00.0_0.cor.fastq | \
-        fastq-stats !{genome_size} > !{sample}.post-ecc.fastq.json
+        fastq-scan -g !{genome_size} > !{sample}.post-ecc.fastq.json
 
         fastq-interleave corrected/bbduk-adapter-R1.00.0_0.cor.fastq corrected/bbduk-adapter-R2.00.0_0.cor.fastq | \
         illumina-cleanup.py --paired --stats !{sample}.post-ecc.fastq.json --coverage !{params.coverage} \
@@ -79,7 +79,7 @@ process illumina_cleanup {
 
         reformat.sh in=cleanup.fastq out1=!{sample}_R1.cleanup.fastq out2=!{sample}_R2.cleanup.fastq
 
-        cat !{sample}_R1.cleanup.fastq !{sample}_R2.cleanup.fastq | fastq-stats !{genome_size} > !{sample}.cleanup.fastq.json
+        cat !{sample}_R1.cleanup.fastq !{sample}_R2.cleanup.fastq | fastq-scan -g !{genome_size} > !{sample}.cleanup.fastq.json
         cat !{sample}_R1.cleanup.fastq !{sample}_R2.cleanup.fastq | md5sum > !{sample}.cleanup.md5
         zcat !{fq[0]} !{fq[1]} | md5sum > !{sample}.original.md5
 
@@ -102,14 +102,14 @@ process illumina_cleanup {
         spades.py -s bbduk-adapter-R1.fq --only-error-correction --disable-gzip-output \
                   -t !{cpu} -o ./
 
-        zcat !{fq} | fastq-stats !{genome_size} > !{sample}.original.fastq.json
-        cat bbduk-adapter-R1.fq | fastq-stats !{genome_size} > !{sample}.adapter.fastq.json
-        cat corrected/bbduk-adapter-R1.00.0_0.cor.fastq | fastq-stats !{genome_size} > !{sample}.post-ecc.fastq.json
+        zcat !{fq} | fastq-scan -g !{genome_size} > !{sample}.original.fastq.json
+        cat bbduk-adapter-R1.fq | fastq-scan -g !{genome_size} > !{sample}.adapter.fastq.json
+        cat corrected/bbduk-adapter-R1.00.0_0.cor.fastq | fastq-scan -g !{genome_size} > !{sample}.post-ecc.fastq.json
 
         cat corrected/bbduk-adapter-R1.00.0_0.cor.fastq | illumina-cleanup.py --stats !{sample}.post-ecc.fastq.json \
         --coverage !{params.coverage} !{no_length_filter} | gzip --best - > !{sample}.cleanup.fastq.gz
 
-        zcat !{sample}.cleanup.fastq.gz | fastq-stats !{genome_size} > !{sample}.cleanup.fastq.json
+        zcat !{sample}.cleanup.fastq.gz | fastq-scan -g !{genome_size} > !{sample}.cleanup.fastq.json
         zcat !{sample}.cleanup.fastq.gz | md5sum > !{sample}.cleanup.md5
         zcat !{fq[0]} !{fq[1]} | md5sum > !{sample}.original.md5
         cp .command.err illumina_cleanup-stderr.log
@@ -179,7 +179,7 @@ process assembly_stats {
     shell:
         stats = fasta.getName().replace("fasta.gz", "json")
         '''
-        zcat !{fasta} | assembly-summary.py --genome_size !{genome_size} > !{stats}
+        assembly-scan !{fasta} > !{stats}
         '''
 }
 
@@ -219,7 +219,7 @@ process plasmid_stats {
     shell:
         stats = fasta.getName().replace("fasta.gz", "json")
         '''
-        zcat !{fasta} | assembly-summary.py --genome_size 2814816 > !{stats}
+        assembly-scan !{fasta} > !{stats}
         '''
 }
 
@@ -371,8 +371,8 @@ process sccmec_proteins {
         file '*.json'
     shell:
         '''
-        BLASTDB=$(echo "!{blastdb[0]}" | cut -f 1 -d '.')
-        tblastn -db $BLASTDB -query !{staphopia_data}/sccmec/proteins.fasta \
+        BLASTDB="!{blastdb[0]}"
+        tblastn -db ${BLASTDB%.*} -query !{staphopia_data}/sccmec/proteins.fasta \
                 -outfmt 15 -num_threads !{cpu} -evalue 0.0001 \
                 -max_target_seqs 1 > proteins.json
         '''
@@ -387,9 +387,9 @@ process sccmec_primers {
         file '*.json'
     shell:
         '''
-        BLASTDB=$(echo "!{blastdb[0]}" | cut -f 1 -d '.')
+        BLASTDB="!{blastdb[0]}"
         blastn -max_target_seqs 1 -dust no -word_size 7 -perc_identity 100 \
-               -db $BLASTDB -outfmt 15 \
+               -db ${BLASTDB%.*} -outfmt 15 \
                -query !{staphopia_data}/sccmec/primers.fasta > primers.json
         '''
 }
@@ -403,9 +403,9 @@ process sccmec_subtypes {
         file '*.json'
     shell:
         '''
-        BLASTDB=$(echo "!{blastdb[0]}" | cut -f 1 -d ".")
+        BLASTDB="!{blastdb[0]}"
         blastn -max_target_seqs 1 -dust no -word_size 7 -perc_identity 100 \
-               -db $BLASTDB -outfmt 15 \
+               -db ${BLASTDB%.*} -outfmt 15 \
                -query !{staphopia_data}/sccmec/subtypes.fasta > subtypes.json
         '''
 }
@@ -439,6 +439,7 @@ process call_variants {
         file fq from FASTQ_VARIANTS
     output:
         file '*.vcf.gz'
+        file '*.cov.gz'
         file '*.log'
     shell:
         p = is_paired ? '-p' : ''
@@ -475,6 +476,9 @@ process call_variants {
         java -Xmx4g -jar !{params.gatk} -T HaplotypeCaller -R ref.fasta -I realigned.bam \
                          -o raw.vcf -ploidy 1 -stand_call_conf 30.0 -rf BadCigar -nct !{cpu}
 
+        # Per-base coverage
+        genomeCoverageBed -ibam realigned.bam -d | gzip --best - > !{sample}.cov.gz
+
         # Filter and annotate variants
         java -Xmx4g -jar !{params.gatk} -T VariantFiltration -R ref.fasta -V raw.vcf \
                          -o filtered.vcf --clusterSize 3 --clusterWindowSize 10 \
@@ -482,7 +486,7 @@ process call_variants {
                          --filterExpression "DP > 9 && AF >= 0.95" --filterName SuperPass \
                          --genotypeFilterExpression "GQ < 20" --genotypeFilterName LowGQ
 
-        vcf-annotator.py filtered.vcf !{staphopia_data}/variants/n315.gb > annotated.vcf
+        vcf-annotator filtered.vcf !{staphopia_data}/variants/n315.gb > annotated.vcf
         gzip --best -c annotated.vcf > !{sample}.variants.vcf.gz
         cp .command.err call-variants-stderr.log
         cp .command.out call-variants-stdout.log

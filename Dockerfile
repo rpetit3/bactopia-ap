@@ -35,6 +35,10 @@ RUN apt-get -qq update \
     && conda install -y perl-bioperl=1.6.924 \
     && conda install -y perl-xml-simple \
     && conda install -y tbl2asn=25.6 \
+    # Other
+    && conda install -y fastq-scan=0.3 \
+    && conda install -y assembly-scan=0.2 \
+    && conda install -y vcf-annotator=0.5 \
     && conda clean --all --yes \
     && pip install --upgrade pip setuptools\
     && pip install ariba \
@@ -52,13 +56,6 @@ RUN cd /tmp/install \
     && sed -i 's=INSTALL_DIR\=~/.aspera/connect=INSTALL_DIR\=/opt/aspera=' aspera-connect-3.7.4.147727-linux-64.sh \
     && mkdir -p /opt/aspera \
     && bash aspera-connect-3.7.4.147727-linux-64.sh \
-# Assembly Summary
-    && cd /tmp/install \
-    && curl -sSL https://github.com/rpetit3/assembly-summary/archive/v0.1.tar.gz -o assembly-summary-0.1.tar.gz \
-    && tar -xzf assembly-summary-0.1.tar.gz \
-    && pip install -r assembly-summary-0.1/requirements.txt \
-    && chmod 755 assembly-summary-0.1/assembly-summary.py \
-    && mv assembly-summary-0.1/assembly-summary.py /usr/local/bin/ \
 # BLAST 2.7.1
     && cd /tmp/install \
     && curl -s ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.7.1/ncbi-blast-2.7.1+-x64-linux.tar.gz -o ncbi-blast-2.7.1+.tar.gz \
@@ -80,7 +77,6 @@ RUN cd /tmp/install \
     && chmod 755 illumina-cleanup-0.3/src/* \
     && mv illumina-cleanup-0.3/src/*.py /usr/local/bin/ \
     && g++ -Wall -O3 -o /usr/local/bin/fastq-interleave illumina-cleanup-0.3/src/fastq-interleave.cpp \
-    && g++ -Wall -O3 -o /usr/local/bin/fastq-stats illumina-cleanup-0.3/src/fastq-stats.cpp \
     && mkdir -p /opt/staphopia/data/fastq \
     && mv illumina-cleanup-0.3/data/*.fasta /opt/staphopia/data/fastq \
 # PROKKA
@@ -88,15 +84,7 @@ RUN cd /tmp/install \
     && curl -sSL https://github.com/rpetit3/prokka/archive/v1.12-staphopia.tar.gz -o prokka-1.12-staphopia.tar.gz \
     && tar -xzf prokka-1.12-staphopia.tar.gz \
     && mv prokka-1.12-staphopia/ /opt/prokka \
-    && export PATH=/opt/prokka/bin:$PATH \
-# VCF-Annotator
-    && cd /tmp/install \
-    && curl -sSL https://github.com/rpetit3/vcf-annotator/archive/v0.4.tar.gz  -o vcf-annotator-0.4.tar.gz \
-    && tar -xzf vcf-annotator-0.4.tar.gz \
-    && pip install -r vcf-annotator-0.4/requirements.txt \
-    && chmod 755 vcf-annotator-0.4/vcf-annotator.py \
-    && mv vcf-annotator-0.4/vcf-annotator.py /usr/local/bin/ \
-    && rm -rf /tmp/install
+    && export PATH=/opt/prokka/bin:$PATH
 
 ENV ASCP /opt/aspera/bin/ascp
 ENV ASCP_KEY /opt/aspera/etc/asperaweb_id_dsa.openssh
