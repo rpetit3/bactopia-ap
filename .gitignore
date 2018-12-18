@@ -1,6 +1,3 @@
-bin/*
-!bin/.gitignore
-
 data/annotation/uniref50-bacteria.*
 
 staphopia/*.pyc

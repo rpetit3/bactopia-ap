@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-# A wrapper for staphopia.nf, mainly for use on CGC.
+# A wrapper for bactopia.nf, mainly for use on CGC.
 import logging
 import os
 import subprocess
@@ -51,7 +51,7 @@ def run_command(cmd, cwd=os.getcwd(), stdout=False, stderr=False):
 
 
 def generate_nextflow(sample, fq1, fq2, coverage, is_miseq, cpu, resume):
-    cmd = ['./staphopia.nf', '--sample', sample, '--fq1', '../{0}'.format(fq1),
+    cmd = ['./bactopia.nf', '--sample', sample, '--fq1', '../{0}'.format(fq1),
            '--cpu', cpu, '--coverage', coverage]
 
     if fq2:
@@ -71,9 +71,9 @@ if __name__ == '__main__':
     import argparse as ap
 
     parser = ap.ArgumentParser(
-        prog='staphopia.py',
+        prog='bactopia.py',
         conflict_handler='resolve',
-        description=('A wrapper for executing Staphopia on CGC.'))
+        description=('A wrapper for executing Bactopia on CGC.'))
     parser.add_argument('--fq1', metavar="FASTQ", type=str, required=True,
                         help=('Input FASTQ file.'))
     parser.add_argument('--sample', metavar="SAMPLE", type=str, required=True,
@@ -92,20 +92,20 @@ if __name__ == '__main__':
     args = parser.parse_args()
     outdir = '{0}/{1}'.format(os.getcwd(), args.sample)
     # Setup logs
-    logging.basicConfig(filename='{0}-staphopia.txt'.format(args.sample),
+    logging.basicConfig(filename='{0}-bactopia.txt'.format(args.sample),
                         filemode='w', level=logging.INFO)
     # Make directory and run pipeline
     run_command(['mkdir', '-p', args.sample])
     run_command(['cp', '/usr/local/bin/nextflow.config', outdir])
-    run_command(['cp', '/usr/local/bin/staphopia.nf', outdir])
-    run_command(['cp', '/opt/staphopia/data/staphopia-version.txt', outdir])
-    staphopia_nf = generate_nextflow(
+    run_command(['cp', '/usr/local/bin/bactopia.nf', outdir])
+    run_command(['cp', '/opt/bactopia/data/bactopia-version.txt', outdir])
+    bactopia_nf = generate_nextflow(
         args.sample, args.fq1, args.fq2, str(args.coverage), args.is_miseq,
         str(args.cpu), args.resume
     )
 
-    run_command(staphopia_nf, cwd=outdir)
-    run_command(['date'], stdout='{0}/staphopia-date.txt'.format(outdir))
+    run_command(bactopia_nf, cwd=outdir)
+    run_command(['date'], stdout='{0}/bactopia-date.txt'.format(outdir))
 
     # Fix symlinks
     for subdir, dirs, files in os.walk('./{0}'.format(args.sample)):

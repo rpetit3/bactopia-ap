@@ -13,7 +13,7 @@ params.fq2 = null
 params.cpu = 1
 params.coverage = 100
 params.is_miseq = false
-params.staphopia_data = '/opt/staphopia/data'
+params.bactopia_data = '/opt/bactopia/data'
 params.gatk = '/usr/local/bin/GenomeAnalysisTK.jar'
 
 // Set some global variables
@@ -21,7 +21,7 @@ sample = params.sample
 outdir = params.output ? params.output : './'
 is_paired = params.fq1 && params.fq2 ? true : false
 is_miseq = params.is_miseq
-staphopia_data = params.staphopia_data
+bactopia_data = params.bactopia_data
 cpu = params.cpu
 genome_size = 2814816
 
@@ -58,12 +58,12 @@ process illumina_cleanup {
         '''
         bbduk.sh -Xmx2g threads=!{cpu} in=!{fq[0]} in2=!{fq[1]} out=bbduk-phix-R1.fq \
         out2=bbduk-phix-R2.fq stats=bbduk-phix.log hdist=1 k=31 overwrite=t \
-        ordered=t ref=!{staphopia_data}/fastq/phiX-NC_001422.fasta
+        ordered=t ref=!{bactopia_data}/fastq/phiX-NC_001422.fasta
 
         bbduk.sh -Xmx2g threads=!{cpu} in=bbduk-phix-R1.fq in2=bbduk-phix-R2.fq \
         out=bbduk-adapter-R1.fq out2=bbduk-adapter-R2.fq stats=bbduk-adapter.log \
         ktrim=r k=23 mink=11 hdist=1 tpe tbo qout=33 minlength=36  overwrite=t \
-        ordered=t ref=!{staphopia_data}/fastq/adapters.fasta
+        ordered=t ref=!{bactopia_data}/fastq/adapters.fasta
 
         spades.py -1 bbduk-adapter-R1.fq -2 bbduk-adapter-R2.fq --only-error-correction \
                   --disable-gzip-output -t !{cpu} -o ./
@@ -93,11 +93,11 @@ process illumina_cleanup {
         '''
         bbduk.sh -Xmx2g threads=!{cpu} in=!{fq} out=bbduk-phix-R1.fq \
         stats=bbduk-phix.txt hdist=1 k=31 overwrite=t ordered=t \
-        ref=!{staphopia_data}/fastq/phiX-NC_001422.fasta
+        ref=!{bactopia_data}/fastq/phiX-NC_001422.fasta
 
         bbduk.sh -Xmx2g threads=!{cpu} in=bbduk-phix-R1.fq out=bbduk-adapter-R1.fq \
         stats=bbduk-adapter.log ktrim=r k=23 mink=11 hdist=1 tpe tbo qout=33 \
-        ref=!{staphopia_data}/fastq/adapters.fasta minlength=36 overwrite=t ordered=t
+        ref=!{bactopia_data}/fastq/adapters.fasta minlength=36 overwrite=t ordered=t
 
         spades.py -s bbduk-adapter-R1.fq --only-error-correction --disable-gzip-output \
                   -t !{cpu} -o ./
@@ -275,7 +275,7 @@ process mlst_blast {
         file 'mlst-blastn.json'
     shell:
         '''
-        mlst-blast.py !{fasta} !{staphopia_data}/mlst-blastdb mlst-blastn.json --cpu !{cpu}
+        mlst-blast.py !{fasta} !{bactopia_data}/mlst-blastdb mlst-blastn.json --cpu !{cpu}
         '''
 }
 
@@ -289,7 +289,7 @@ process mlst_ariba {
     shell:
         if (is_paired)
         '''
-        ariba run !{staphopia_data}/ariba/mlst/ref_db !{fq} ariba
+        ariba run !{bactopia_data}/ariba/mlst/ref_db !{fq} ariba
         rm -rf ariba.tmp*
         '''
         else
@@ -298,6 +298,7 @@ process mlst_ariba {
         '''
 }
 
+/*
 process mlst_mentalist {
     errorStrategy 'ignore'
     publishDir mlst_folder + "/mentalist", overwrite: true, pattern: '*.txt'
@@ -308,10 +309,11 @@ process mlst_mentalist {
         file '*.txt'
     shell:
         '''
-        mentalist call -o mlst.txt -s !{sample} --db !{staphopia_data}/mentalist/mlst/mlst-31.db !{fq}
-        mentalist call -o cgmlst.txt -s !{sample} --db !{staphopia_data}/mentalist/cgmlst/cgmlst-31.db !{fq}
+        mentalist call -o mlst.txt -s !{sample} --db !{bactopia_data}/mentalist/mlst/mlst-31.db !{fq}
+        mentalist call -o cgmlst.txt -s !{sample} --db !{bactopia_data}/mentalist/cgmlst/cgmlst-31.db !{fq}
         '''
 }
+*/
 
 /* ==== END MLST ==== */
 
@@ -326,7 +328,7 @@ process resistance_ariba {
     shell:
         if (is_paired)
         '''
-        ariba run !{staphopia_data}/ariba/megares !{fq} resistance
+        ariba run !{bactopia_data}/ariba/megares !{fq} resistance
         ariba summary resistance/summary resistance/report.tsv \
               --cluster_cols assembled,match,known_var,pct_id,ctg_cov,novel_var \
               --col_filter n --row_filter n
@@ -348,7 +350,7 @@ process virulence_ariba {
     shell:
         if (is_paired)
         '''
-        ariba run !{staphopia_data}/ariba/vfdb !{fq} virulence
+        ariba run !{bactopia_data}/ariba/vfdb !{fq} virulence
         ariba summary virulence/summary virulence/report.tsv \
               --cluster_cols assembled,match,known_var,pct_id,ctg_cov,novel_var \
               --col_filter n --row_filter n
@@ -372,7 +374,7 @@ process sccmec_proteins {
     shell:
         '''
         BLASTDB="!{blastdb[0]}"
-        tblastn -db ${BLASTDB%.*} -query !{staphopia_data}/sccmec/proteins.fasta \
+        tblastn -db ${BLASTDB%.*} -query !{bactopia_data}/sccmec/proteins.fasta \
                 -outfmt 15 -num_threads !{cpu} -evalue 0.0001 \
                 -max_target_seqs 1 > proteins.json
         '''
@@ -390,7 +392,7 @@ process sccmec_primers {
         BLASTDB="!{blastdb[0]}"
         blastn -max_target_seqs 1 -dust no -word_size 7 -perc_identity 100 \
                -db ${BLASTDB%.*} -outfmt 15 \
-               -query !{staphopia_data}/sccmec/primers.fasta > primers.json
+               -query !{bactopia_data}/sccmec/primers.fasta > primers.json
         '''
 }
 
@@ -406,7 +408,7 @@ process sccmec_subtypes {
         BLASTDB="!{blastdb[0]}"
         blastn -max_target_seqs 1 -dust no -word_size 7 -perc_identity 100 \
                -db ${BLASTDB%.*} -outfmt 15 \
-               -query !{staphopia_data}/sccmec/subtypes.fasta > subtypes.json
+               -query !{bactopia_data}/sccmec/subtypes.fasta > subtypes.json
         '''
 }
 
@@ -422,7 +424,7 @@ process sccmec_mapping {
         p = is_paired ? '-p' : ''
         n = read_length <= 70 ? '-n 9999' : ''
         '''
-        bwa-align.sh "!{fq}" !{staphopia_data}/sccmec/sccmec_cassettes !{read_length} !{cpu} "!{p}" "!{n}"
+        bwa-align.sh "!{fq}" !{bactopia_data}/sccmec/sccmec_cassettes !{read_length} !{cpu} "!{p}" "!{n}"
         samtools view -bS bwa.sam | samtools sort -o sccmec.bam -
         genomeCoverageBed -ibam sccmec.bam -d | gzip --best - > cassette-coverages.gz
         cp .command.err sccmec-mapping-stderr.log
@@ -445,7 +447,7 @@ process call_variants {
         p = is_paired ? '-p' : ''
         '''
         # Build index will local copy of reference
-        cp !{staphopia_data}/variants/n315.fasta ref.fasta
+        cp !{bactopia_data}/variants/n315.fasta ref.fasta
         bwa index ref.fasta
         samtools faidx ref.fasta
         picard -Xmx4g CreateSequenceDictionary REFERENCE=ref.fasta OUTPUT=ref.dict
@@ -486,7 +488,7 @@ process call_variants {
                          --filterExpression "DP > 9 && AF >= 0.95" --filterName SuperPass \
                          --genotypeFilterExpression "GQ < 20" --genotypeFilterName LowGQ
 
-        vcf-annotator filtered.vcf !{staphopia_data}/variants/n315.gb > annotated.vcf
+        vcf-annotator filtered.vcf !{bactopia_data}/variants/n315.gb > annotated.vcf
         gzip --best -c annotated.vcf > !{sample}.variants.vcf.gz
         cp .command.err call-variants-stderr.log
         cp .command.out call-variants-stdout.log
@@ -524,7 +526,7 @@ def print_usage() {
     log.info '    --help          Show this message and exit'
     log.info ''
     log.info 'Usage:'
-    log.info '    nextflow staphopia.nf --fq1 input.fastq.gz --sample saureus [more options]'
+    log.info '    nextflow bactopia.nf --fq1 input.fastq.gz --sample saureus [more options]'
 }
 
 def check_input_params() {

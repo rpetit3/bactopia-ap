@@ -14,7 +14,6 @@ date > mentalist-updated.txt
 
 
 cd ariba
-ariba pubmlstget "Staphylococcus aureus" mlst
 ariba getref megares megares
 ariba prepareref -f megares.fa -m megares.tsv megares
 ariba getref vfdb_core vfdb

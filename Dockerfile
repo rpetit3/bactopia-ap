@@ -101,9 +101,9 @@ RUN mkdir -p /opt/staphopia/data \
     && mv ./* /opt/staphopia/data/ \
     && prokka --setupdb
 
-COPY scripts /tmp/scripts
-RUN chmod 755 /tmp/scripts/* \
-    && mv /tmp/scripts/* /usr/local/bin \
+COPY bin /tmp/bin
+RUN chmod 755 /tmp/bin/* \
+    && mv /tmp/bin/* /usr/local/bin \
     && rm -rf /tmp/*
 
 WORKDIR /data
