@@ -32,14 +32,15 @@ def blast_alleles(input_file, blastdb_dir, blastn_results, num_cpu,
     """Blast assembled contigs against MLST blast database."""
     # Decompress contigs
     from collections import OrderedDict
+    from os.path import basename
+    import glob
     import json
 
     outfmt = "6 sseqid bitscore slen length gaps mismatch pident evalue"
-    alleles = ['arcC', 'aroE', 'glpF', 'gmk', 'pta', 'tpi', 'yqiL']
     results = OrderedDict()
-
-    for allele in alleles:
-        blastdb = '{0}/{1}.tfa'.format(blastdb_dir, allele)
+    for tfa in glob.glob(f'{blastdb_dir}/*.tfa'):
+        blastdb = tfa.split('.')[0]
+        allele = basename(blastdb)
         blastn = pipe_command(
             ['zcat', input_file],
             ['blastn', '-db', blastdb, '-query', '-', '-outfmt', outfmt,

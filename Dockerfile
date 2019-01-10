@@ -77,8 +77,8 @@ RUN cd /tmp/install \
     && chmod 755 illumina-cleanup-0.3/src/* \
     && mv illumina-cleanup-0.3/src/*.py /usr/local/bin/ \
     && g++ -Wall -O3 -o /usr/local/bin/fastq-interleave illumina-cleanup-0.3/src/fastq-interleave.cpp \
-    && mkdir -p /opt/staphopia/data/fastq \
-    && mv illumina-cleanup-0.3/data/*.fasta /opt/staphopia/data/fastq \
+    && mkdir -p /opt/bactopia/data/fastq \
+    && mv illumina-cleanup-0.3/data/*.fasta /opt/bactopia/data/fastq \
 # PROKKA
     && cd /tmp/install \
     && curl -sSL https://github.com/rpetit3/prokka/archive/v1.12-staphopia.tar.gz -o prokka-1.12-staphopia.tar.gz \
@@ -94,11 +94,11 @@ ENV PATH $PATH:/opt/prokka/bin
 # GATK
 COPY --from=gatk /usr/GenomeAnalysisTK.jar /usr/local/bin/GenomeAnalysisTK.jar
 COPY data /tmp/data
-RUN mkdir -p /opt/staphopia/data \
+RUN mkdir -p /opt/bactopia/data \
     && cd /tmp/data/ \
     && ls *.tar.gz | xargs -I {} tar xzf {} \
     && rm *.tar.gz \
-    && mv ./* /opt/staphopia/data/ \
+    && mv ./* /opt/bactopia/data/ \
     && prokka --setupdb
 
 COPY bin /tmp/bin

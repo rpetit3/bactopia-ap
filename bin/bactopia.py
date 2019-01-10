@@ -50,9 +50,10 @@ def run_command(cmd, cwd=os.getcwd(), stdout=False, stderr=False):
     )
 
 
-def generate_nextflow(sample, fq1, fq2, coverage, is_miseq, cpu, resume):
+def generate_nextflow(sample, fq1, organism, database, fq2, coverage, is_miseq, cpu, resume):
     cmd = ['./bactopia.nf', '--sample', sample, '--fq1', '../{0}'.format(fq1),
-           '--cpu', cpu, '--coverage', coverage]
+           '--organism', organism, '--database', database, '--cpu', cpu,
+           '--coverage', coverage]
 
     if fq2:
         cmd.append('--fq2')
@@ -74,10 +75,14 @@ if __name__ == '__main__':
         prog='bactopia.py',
         conflict_handler='resolve',
         description=('A wrapper for executing Bactopia on CGC.'))
-    parser.add_argument('--fq1', metavar="FASTQ", type=str, required=True,
+    parser.add_argument('fq1', metavar="FASTQ", type=str,
                         help=('Input FASTQ file.'))
-    parser.add_argument('--sample', metavar="SAMPLE", type=str, required=True,
+    parser.add_argument('sample', metavar="SAMPLE", type=str,
                         help=('Sample name of the input.'))
+    parser.add_argument('organism', metavar="ORGANISM", type=str,
+                        help='Organism name of the input sample.')
+    parser.add_argument('database', metavar="DATABASE", type=str,
+                        help='Location of input databases.')
     parser.add_argument('--fq2', metavar="FASTQ", type=str,
                         help=('Second FASTQ file in paired end reads.'))
     parser.add_argument('--coverage', metavar="INT", type=int,
@@ -100,8 +105,8 @@ if __name__ == '__main__':
     run_command(['cp', '/usr/local/bin/bactopia.nf', outdir])
     run_command(['cp', '/opt/bactopia/data/bactopia-version.txt', outdir])
     bactopia_nf = generate_nextflow(
-        args.sample, args.fq1, args.fq2, str(args.coverage), args.is_miseq,
-        str(args.cpu), args.resume
+        args.sample, args.fq1, args.organism, args.database, args.fq2,
+        str(args.coverage), args.is_miseq, str(args.cpu), args.resume
     )
 
     run_command(bactopia_nf, cwd=outdir)

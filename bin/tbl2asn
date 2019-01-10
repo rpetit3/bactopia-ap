@@ -1,0 +1,9 @@
+#!/bin/bash
+# Avoid the expiring tbl2asn issue
+# @alexgraehl --> https://github.com/tseemann/prokka/issues/246#issuecomment-334319837
+if [[ ${@} == *"Annotated using"* ]]; then
+    GBF=`find -name "*.fsa" | head -n 1 | sed 's/.fsa/.gbf/'`
+    touch ${GBF}
+else
+    echo "tbl2asn 99.99"
+fi

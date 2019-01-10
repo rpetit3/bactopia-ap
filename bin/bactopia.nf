@@ -14,6 +14,7 @@ params.cpu = 1
 params.coverage = 100
 params.is_miseq = false
 params.bactopia_data = '/opt/bactopia/data'
+params.database
 params.gatk = '/usr/local/bin/GenomeAnalysisTK.jar'
 
 // Set some global variables
@@ -23,7 +24,11 @@ is_paired = params.fq1 && params.fq2 ? true : false
 is_miseq = params.is_miseq
 bactopia_data = params.bactopia_data
 cpu = params.cpu
-genome_size = 2814816
+genome_size = 1800000
+
+// Database variables
+database = params.database
+organism_database = database + "/" + params.organism
 
 // Output folders
 analysis_folder = outdir + "/analyses"
@@ -252,8 +257,8 @@ process annotation {
         gunzip_fa = fasta.getName().replace('.gz', '')
         '''
         gunzip -f !{fasta}
-        prokka --cpus !{cpu} --genus Staphylococcus --usegenus --outdir ./ \
-               --force --prefix !{sample} --locustag !{sample} --centre STA --compliant --quiet \
+        prokka --cpus !{cpu} --outdir ./ --force --prefix !{sample} \
+               --locustag !{sample} --centre BAC --compliant --quiet \
                !{gunzip_fa}
 
         rm -rf !{gunzip_fa} !{sample}.fna !{sample}.fsa !{sample}.gbf !{sample}.sqn !{sample}.tbl
@@ -275,7 +280,7 @@ process mlst_blast {
         file 'mlst-blastn.json'
     shell:
         '''
-        mlst-blast.py !{fasta} !{bactopia_data}/mlst-blastdb mlst-blastn.json --cpu !{cpu}
+        mlst-blast.py !{fasta} !{organism_database}/mlst/blast mlst-blastn.json --cpu !{cpu}
         '''
 }
 
@@ -289,7 +294,7 @@ process mlst_ariba {
     shell:
         if (is_paired)
         '''
-        ariba run !{bactopia_data}/ariba/mlst/ref_db !{fq} ariba
+        ariba run !{organism_database}/mlst/ariba/ref_db !{fq} ariba
         rm -rf ariba.tmp*
         '''
         else
@@ -328,7 +333,7 @@ process resistance_ariba {
     shell:
         if (is_paired)
         '''
-        ariba run !{bactopia_data}/ariba/megares !{fq} resistance
+        ariba run !{database}/ariba/megares !{fq} resistance
         ariba summary resistance/summary resistance/report.tsv \
               --cluster_cols assembled,match,known_var,pct_id,ctg_cov,novel_var \
               --col_filter n --row_filter n
@@ -350,7 +355,7 @@ process virulence_ariba {
     shell:
         if (is_paired)
         '''
-        ariba run !{bactopia_data}/ariba/vfdb !{fq} virulence
+        ariba run !{database}/ariba/vfdb_core !{fq} virulence
         ariba summary virulence/summary virulence/report.tsv \
               --cluster_cols assembled,match,known_var,pct_id,ctg_cov,novel_var \
               --col_filter n --row_filter n
@@ -363,75 +368,6 @@ process virulence_ariba {
 }
 /* ==== END RESISTANCE AND VIRULENCE ==== */
 
-/* ==== BEGIN SCCMEC ==== */
-process sccmec_proteins {
-    publishDir sccmec_folder, overwrite: true
-
-    input:
-        file blastdb from SCCMEC_PROTEINS
-    output:
-        file '*.json'
-    shell:
-        '''
-        BLASTDB="!{blastdb[0]}"
-        tblastn -db ${BLASTDB%.*} -query !{bactopia_data}/sccmec/proteins.fasta \
-                -outfmt 15 -num_threads !{cpu} -evalue 0.0001 \
-                -max_target_seqs 1 > proteins.json
-        '''
-}
-
-process sccmec_primers {
-    publishDir sccmec_folder, overwrite: true
-
-    input:
-        file blastdb from SCCMEC_PRIMERS
-    output:
-        file '*.json'
-    shell:
-        '''
-        BLASTDB="!{blastdb[0]}"
-        blastn -max_target_seqs 1 -dust no -word_size 7 -perc_identity 100 \
-               -db ${BLASTDB%.*} -outfmt 15 \
-               -query !{bactopia_data}/sccmec/primers.fasta > primers.json
-        '''
-}
-
-process sccmec_subtypes {
-    publishDir sccmec_folder, overwrite: true
-
-    input:
-        file blastdb from SCCMEC_SUBTYPES
-    output:
-        file '*.json'
-    shell:
-        '''
-        BLASTDB="!{blastdb[0]}"
-        blastn -max_target_seqs 1 -dust no -word_size 7 -perc_identity 100 \
-               -db ${BLASTDB%.*} -outfmt 15 \
-               -query !{bactopia_data}/sccmec/subtypes.fasta > subtypes.json
-        '''
-}
-
-process sccmec_mapping {
-    publishDir sccmec_folder, overwrite: true, pattern: '*.{gz,log}'
-
-    input:
-        file fq from FASTQ_SCCMEC
-    output:
-        file 'cassette-coverages.gz'
-        file '*.log'
-    shell:
-        p = is_paired ? '-p' : ''
-        n = read_length <= 70 ? '-n 9999' : ''
-        '''
-        bwa-align.sh "!{fq}" !{bactopia_data}/sccmec/sccmec_cassettes !{read_length} !{cpu} "!{p}" "!{n}"
-        samtools view -bS bwa.sam | samtools sort -o sccmec.bam -
-        genomeCoverageBed -ibam sccmec.bam -d | gzip --best - > cassette-coverages.gz
-        cp .command.err sccmec-mapping-stderr.log
-        cp .command.out sccmec-mapping-stdout.log
-        '''
-}
-/* ==== END SCCMEC ==== */
 
 /* ==== BEGIN VARIANTS ==== */
 process call_variants {
@@ -447,7 +383,7 @@ process call_variants {
         p = is_paired ? '-p' : ''
         '''
         # Build index will local copy of reference
-        cp !{bactopia_data}/variants/n315.fasta ref.fasta
+        cp !{organism_database}/reference/reference.fasta ref.fasta
         bwa index ref.fasta
         samtools faidx ref.fasta
         picard -Xmx4g CreateSequenceDictionary REFERENCE=ref.fasta OUTPUT=ref.dict
@@ -488,7 +424,7 @@ process call_variants {
                          --filterExpression "DP > 9 && AF >= 0.95" --filterName SuperPass \
                          --genotypeFilterExpression "GQ < 20" --genotypeFilterName LowGQ
 
-        vcf-annotator filtered.vcf !{bactopia_data}/variants/n315.gb > annotated.vcf
+        vcf-annotator filtered.vcf !{organism_database}/reference/reference.gb > annotated.vcf
         gzip --best -c annotated.vcf > !{sample}.variants.vcf.gz
         cp .command.err call-variants-stderr.log
         cp .command.out call-variants-stdout.log
@@ -514,14 +450,17 @@ def print_usage() {
     log.info 'Staphopia Analysis Pipeline'
     log.info ''
     log.info 'Required Options:'
-    log.info '    --fq1  FASTQ.GZ    Input FASTQ, compressed using GZIP'
-    log.info '    --sample  STR      A sample name to give the run.'
+    log.info '    --fq1  FASTQ.GZ       Input FASTQ, compressed using GZIP'
+    log.info '    --sample  STR         A sample name to give the run.'
+    log.info '    --organism  STR       Name of the organism'
+    log.info '    --data  STR           Database location'
     log.info ''
     log.info 'Optional:'
     log.info '    --outdir  DIR      Directory to write results to. (Default ./${NAME})'
     log.info '    --fq2  FASTQ.GZ    Second set of reads for paired end input.'
     log.info '    --coverage  INT    Reduce samples to a given coverage. (Default: 100x)'
-    log.info '    --is_miseq            For Illumina MiSeq (variable read lengths), reads '
+
+    log.info '    --is_miseq         For Illumina MiSeq (variable read lengths), reads '
     log.info '                           will not be filtered base on read lengths.'
     log.info '    --help          Show this message and exit'
     log.info ''
@@ -535,6 +474,7 @@ def check_input_params() {
         log.info('A sample name is required to continue. Please use --sample')
         error = true
     }
+
     if (!params.fq1) {
         log.info('Compressed FASTQ (gzip) is required. Please use --fq1')
         error = true
@@ -549,6 +489,17 @@ def check_input_params() {
             error = true
         }
     }
+
+    if (!params.organism) {
+        log.info('An organism name is required. Please use --organism')
+        error = true
+    }
+
+    if (!params.database) {
+        log.info('A database location is required. Please use --database')
+        error = true
+    }
+
     if (error) {
         log.info('See --help for more information')
         exit 1

@@ -159,12 +159,14 @@ def setup_mlst(request, available_databases, outdir, force=False):
             execute('date > blast-updated.txt', directory=blast_dir)
 
             # MentaLiST
+            """
             logging.info(f'Creating MentaLiST MLST database')
             mentalist_dir = f'{mlst_dir}/mentalist'
             execute(f'mkdir -p {mentalist_dir}')
             execute((f'mentalist download_pubmlst -o mlst -k 31 -s "{request}"'
                      ' --db mlst.db'), directory=mentalist_dir)
             execute('date > mentalist-updated.txt', directory=mentalist_dir)
+            """
 
             # Finish up
             execute(f'date > {species}-updated.txt', directory=mlst_dir)
@@ -287,7 +289,8 @@ if __name__ == '__main__':
 
     if args.ariba:
         logging.info('Setting up Ariba databases')
-        setup_ariba(args.ariba, ARIBA_DATABASES, args.outdir, force=args.force)
+        for database in args.ariba.split(','):
+            setup_ariba(database, ARIBA_DATABASES, args.outdir, force=args.force)
     else:
         logging.info('No requests for an Ariba database, skipping')
 
