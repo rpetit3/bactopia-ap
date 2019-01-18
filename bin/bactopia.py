@@ -51,13 +51,13 @@ def run_command(cmd, cwd=os.getcwd(), stdout=False, stderr=False):
 
 
 def generate_nextflow(sample, fq1, organism, database, fq2, coverage, is_miseq, cpu, resume):
-    cmd = ['./bactopia.nf', '--sample', sample, '--fq1', '../{0}'.format(fq1),
+    cmd = ['./bactopia.nf', '--sample', sample, '--fq1', fq1,
            '--organism', organism, '--database', database, '--cpu', cpu,
            '--coverage', coverage]
 
     if fq2:
         cmd.append('--fq2')
-        cmd.append('../{0}'.format(fq2))
+        cmd.append(fq2)
 
     if is_miseq:
         cmd.append('--is_miseq')
@@ -97,7 +97,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     outdir = '{0}/{1}'.format(os.getcwd(), args.sample)
     # Setup logs
-    logging.basicConfig(filename='{0}-bactopia.txt'.format(args.sample),
+    run_command(['mkdir', '-p', args.sample])
+    logging.basicConfig(filename='{0}/{0}-bactopia.txt'.format(args.sample),
                         filemode='w', level=logging.INFO)
     # Make directory and run pipeline
     run_command(['mkdir', '-p', args.sample])

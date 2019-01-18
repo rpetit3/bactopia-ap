@@ -79,8 +79,8 @@ process illumina_cleanup {
         fastq-scan -g !{genome_size} > !{sample}.post-ecc.fastq.json
 
         fastq-interleave corrected/bbduk-adapter-R1.00.0_0.cor.fastq corrected/bbduk-adapter-R2.00.0_0.cor.fastq | \
-        illumina-cleanup.py --paired --stats !{sample}.post-ecc.fastq.json --coverage !{params.coverage} \
-        !{no_length_filter} > cleanup.fastq
+        illumina-cleanup.py --paired --genome_size !{genome_size} --stats !{sample}.post-ecc.fastq.json \
+        --coverage !{params.coverage} !{no_length_filter} > cleanup.fastq
 
         reformat.sh in=cleanup.fastq out1=!{sample}_R1.cleanup.fastq out2=!{sample}_R2.cleanup.fastq
 
@@ -112,7 +112,7 @@ process illumina_cleanup {
         cat corrected/bbduk-adapter-R1.00.0_0.cor.fastq | fastq-scan -g !{genome_size} > !{sample}.post-ecc.fastq.json
 
         cat corrected/bbduk-adapter-R1.00.0_0.cor.fastq | illumina-cleanup.py --stats !{sample}.post-ecc.fastq.json \
-        --coverage !{params.coverage} !{no_length_filter} | gzip --best - > !{sample}.cleanup.fastq.gz
+        --coverage !{params.coverage} --genome_size !{genome_size} !{no_length_filter} | gzip --best - > !{sample}.cleanup.fastq.gz
 
         zcat !{sample}.cleanup.fastq.gz | fastq-scan -g !{genome_size} > !{sample}.cleanup.fastq.json
         zcat !{sample}.cleanup.fastq.gz | md5sum > !{sample}.cleanup.md5
